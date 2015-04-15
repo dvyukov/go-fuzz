@@ -154,6 +154,8 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 		}
 		ast.Walk(f, n.Else)
 		return nil
+	case *ast.IfStmt:
+		// TODO: handle increment statement)
 	case *ast.SelectStmt:
 		// Don't annotate an empty select - creates a syntax error.
 		if n.Body == nil || len(n.Body.List) == 0 {
@@ -164,6 +166,7 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 		if n.Body == nil || len(n.Body.List) == 0 {
 			return nil
 		}
+		// TODO: add default if it is not already there
 	case *ast.TypeSwitchStmt:
 		// Don't annotate an empty type switch - creates a syntax error.
 		if n.Body == nil || len(n.Body.List) == 0 {
