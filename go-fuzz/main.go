@@ -13,6 +13,7 @@ var (
 	flagProcs        = flag.Int("procs", runtime.NumCPU(), "parallelism level")
 	flagMaster       = flag.String("master", "", "master mode (value is master address)")
 	flagSlave       = flag.String("slave", "", "slave mode (value is master address)")
+	flagBin = flag.String("bin", "", "test binary built with go-fuzz-build")
 	flagV            = flag.Bool("v", false, "verbose mode")
 )
 
@@ -23,6 +24,9 @@ func main() {
 	}
 	if *flagWorkdir == "" {
 		log.Fatalf("-workdir is not set")
+	}
+	if *flagBin == "" {
+		log.Fatalf("-bin is not set")
 	}
 	if *flagMaster != "" && *flagSlave != "" {
 		log.Fatalf("both -master and -slave are specified")

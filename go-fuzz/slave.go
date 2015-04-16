@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 	"unsafe"
+	"os/exec"
 )
 
 type fuzzer struct {
@@ -25,6 +26,10 @@ type fuzzer struct {
 	commFilename string
 	lastPing     time.Time
 	execs        uint64
+
+	cmd *exec.Cmd
+	inPipe *os.File
+	outPipe *os.File
 }
 
 func slave() {
@@ -129,9 +134,37 @@ func (f *fuzzer) exec(data []byte) {
 
 	f.execs++
 
-	*(*uint64)(unsafe.Pointer(&f.rescueRegion[0])) = uint64(len(data))
-	copy(f.rescueRegion[8:], data)
+	if f.cmd == nil {
+		rIn, wIn, err := os.Pipe()
+		if err != nil {
+			log.Fatalf("failed to pipe: %v", err)
+		}
+		rOut, wOut, err := os.Pipe()
+		if err != nil {
+			log.Fatalf("failed to pipe: %v", err)
+		}
+		comm, err := os.Open(commFilename)
+		if err != nil {
+			log.Fatalf("failed to open comm file: %v", err)
+		}
 
+		f.cmd = exec.Command(*flagBin)
+		f.cmd.Stdout = os.Stdout
+		f.cmd.Stderr = os.Stderr
+		f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, comm)
+		f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, rOut)
+		f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, wIn)
+		if err = f.Start(); err != nil {
+			log.Fatalf("failed to start test binary: %v", err)
+		}
+		comm.Close()
+		rOut.Close()
+		wIn.Close()
+		f.inPipe = rIn
+		f.outPipe = wOut
+	}
+
+	/*
 	defer func() {
 		err := recover()
 		if err == nil {
@@ -149,18 +182,18 @@ func (f *fuzzer) exec(data []byte) {
 			//!!! handle
 		}
 	}()
+	*/
 
-	cov0 := testing.Coverage()
-	f.f(data)
-	cov1 := testing.Coverage()
-	cd := cov1 - cov0
-	if cd == 0 || f.execs < 100 {
-		return
+	copy(f.inputRegion[:], data)
+	if err := binary.Write(f.outPipe, binary.LittleEndian, len(data)); err != nil {
+		//!!! handle
 	}
-	print := data
-	if len(print) > 50 {
-		print = print[:50]
+	var res uint64
+	if err := binary.Read(f.InPipe, binary.LittleEndian, &res); err != nil {
+		//!!! handle
 	}
+
+
 	fmt.Printf("+%.04f%% on [%v]%q\n", cd*100, len(data), print)
 	f.corpus[string(data)] = data
 
