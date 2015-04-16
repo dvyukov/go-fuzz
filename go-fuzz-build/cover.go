@@ -2,17 +2,17 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/printer"
 	"go/token"
+	"io"
 	"io/ioutil"
 	"os"
-	"io"
 	"strconv"
 	"strings"
-"crypto/sha1"
 )
 
 const fuzzdepPkg = "_go_fuzz_dep_"
@@ -37,7 +37,7 @@ func instrument(in, out string) {
 	file.addImport("github.com/dvyukov/go-fuzz/go-fuzz-dep", fuzzdepPkg, "Main")
 
 	ast.Walk(file, file.astFile)
-	
+
 	fd, err := os.Create(out)
 	if err != nil {
 		failf("failed to create temp file: %v")
@@ -87,10 +87,10 @@ func initialComments(content []byte) []byte {
 }
 
 type File struct {
-	fset       *token.FileSet
-	name       string // Name of file.
-	astFile    *ast.File
-	blocks     []Block
+	fset    *token.FileSet
+	name    string // Name of file.
+	astFile *ast.File
+	blocks  []Block
 }
 
 type Block struct {
@@ -154,8 +154,8 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 		}
 		ast.Walk(f, n.Else)
 		return nil
-	case *ast.IfStmt:
-		// TODO: handle increment statement)
+	case *ast.ForStmt:
+		// TODO: handle increment statement
 	case *ast.SelectStmt:
 		// Don't annotate an empty select - creates a syntax error.
 		if n.Body == nil || len(n.Body.List) == 0 {
@@ -362,7 +362,7 @@ var counterGen uint32
 func genCounter() uint16 {
 	counterGen++
 	id := counterGen
-	buf := []byte{byte(id), byte(id>>8), byte(id>>16), byte(id>>24)}
+	buf := []byte{byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 	hash := sha1.Sum(buf)
 	return uint16(hash[0]) | uint16(hash[0])<<8
 }

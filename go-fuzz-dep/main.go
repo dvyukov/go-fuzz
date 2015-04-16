@@ -18,6 +18,15 @@ var (
 )
 
 func init() {
+	mem, err := syscall.Mmap(3, 0, 64<<10 + 1<<20, syscall.PROT_WRITE, syscall.MAP_SHARED)
+	HERE
+	if err != nil {
+		log.Fatalf("failed to mmap rescue file: %v", err)
+	}
+	f.coverRegion = mem[:64<<10]
+	f.inputRegion = mem[64<<10:]
+
+
 	shm, _ := syscall.Getenv("__AFL_SHM_ID")
 	if shm != "" {
 		shmID := atoi(shm)

@@ -70,7 +70,19 @@ func clonePackage(workdir, pkg string) {
 	}
 	newDir := filepath.Join(workdir, "src", pkg)
 	copyDir(dir, newDir, false)
-	for _, p := range []string{"runtime", "unsafe", "syscall", "sync", "sync/atomic", "time", "runtime/cgo", "runtime/pprof", "runtime/race"} {
+	ignore := []string{
+		"runtime",
+		"unsafe",
+		"errors",
+		"syscall",
+		"sync",
+		"sync/atomic",
+		"time",
+		"runtime/cgo",
+		"runtime/pprof",
+		"runtime/race",
+	}
+	for _, p := range ignore {
 		if pkg == p {
 			return
 		}
@@ -123,14 +135,15 @@ func copyDir(dir, newDir string, rec bool) {
 }
 
 func goListList(pkg, what string) []string {
-	out, err := exec.Command("go", "list", "-f", fmt.Sprintf("{{range .%v}}{{.}}|{{end}}", what), pkg).CombinedOutput()
+	templ := fmt.Sprintf("{{range .%v}}{{.}}|{{end}}", what)
+	out, err := exec.Command("go", "list", "-f", templ, pkg).CombinedOutput()
 	if err != nil {
-		failf("failed to execute go list: %v", err)
+		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
-	if len(out) == 0 {
+	if len(out) < 2 {
 		failf("go list output is empty")
 	}
-	out = out[:len(out)-1]
+	out = out[:len(out)-2]
 	return strings.Split(string(out), "|")
 }
 
@@ -141,7 +154,7 @@ func goListProps(pkg string, props ...string) []string {
 	}
 	out, err := exec.Command("go", "list", "-f", templ, pkg).CombinedOutput()
 	if err != nil {
-		failf("failed to execute go list: %v", err)
+		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
 	if len(out) == 0 {
 		failf("go list output is empty")
