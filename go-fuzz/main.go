@@ -43,12 +43,12 @@ func main() {
 		if *flagMaster == "localhost:0" && *flagSlave == "" {
 			*flagSlave = ln.Addr().String()
 		}
-		go master(ln)
+		go masterMain(ln)
 	}
 
 	if *flagSlave != "" {
 		for i := 0; i < *flagProcs; i++ {
-			go slave()
+			go slaveMain()
 		}
 	}
 

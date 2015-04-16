@@ -31,8 +31,16 @@ func main() {
 
 	testNormalBuild(pkg)
 
-	deps := goListList(pkg, "Deps")
-	deps = append(deps, pkg)
+	deps := make(map[string]bool)
+	for _, p := range goListList(pkg, "Deps") {
+		deps[p] = true
+	}
+	deps[pkg] = true
+	// These packages are used by go-fuzz-dep, so we need to copy them regardless.
+	deps["runtime"] = true
+	deps["syscall"] = true
+	deps["time"] = true
+	deps["unsafe"] = true
 
 	if *flagOut == "" {
 		*flagOut = goListProps(pkg, "Name")[0] + "-fuzz"
@@ -45,9 +53,9 @@ func main() {
 	}
 	defer os.RemoveAll(workdir)
 
-	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), true)
-	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "include"), filepath.Join(workdir, "pkg", "include"), true)
-	for _, p := range deps {
+	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), false, true)
+	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "include"), filepath.Join(workdir, "pkg", "include"), false, true)
+	for p := range deps {
 		clonePackage(workdir, p)
 	}
 	createFuzzMain(pkg)
@@ -99,7 +107,7 @@ func clonePackage(workdir, pkg string) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
 	}
 	newDir := filepath.Join(workdir, "src", pkg)
-	copyDir(dir, newDir, false)
+	copyDir(dir, newDir, true, false)
 	ignore := []string{
 		"runtime",
 		"unsafe",
@@ -138,7 +146,7 @@ func clonePackage(workdir, pkg string) {
 	}
 }
 
-func copyDir(dir, newDir string, rec bool) {
+func copyDir(dir, newDir string, src, rec bool) {
 	if err := os.MkdirAll(newDir, 0700); err != nil {
 		failf("failed to create temp dir: %v", err)
 	}
@@ -149,8 +157,11 @@ func copyDir(dir, newDir string, rec bool) {
 	for _, f := range files {
 		if f.IsDir() {
 			if rec {
-				copyDir(filepath.Join(dir, f.Name()), filepath.Join(newDir, f.Name()), rec)
+				copyDir(filepath.Join(dir, f.Name()), filepath.Join(newDir, f.Name()), src, rec)
 			}
+			continue
+		}
+		if src && !isSourceFile(f.Name()) {
 			continue
 		}
 		data, err := ioutil.ReadFile(filepath.Join(dir, f.Name()))
@@ -199,6 +210,17 @@ func failf(str string, args ...interface{}) {
 	}
 	fmt.Fprintf(os.Stderr, str+"\n", args...)
 	os.Exit(1)
+}
+
+func isSourceFile(f string) bool {
+	return strings.HasSuffix(f, ".go") ||
+		strings.HasSuffix(f, ".s") ||
+		strings.HasSuffix(f, ".c") ||
+		strings.HasSuffix(f, ".h") ||
+		strings.HasSuffix(f, ".cxx") ||
+		strings.HasSuffix(f, ".cpp") ||
+		strings.HasSuffix(f, ".c++") ||
+		strings.HasSuffix(f, ".cc")
 }
 
 var mainSrc = `

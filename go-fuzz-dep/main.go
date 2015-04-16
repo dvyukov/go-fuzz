@@ -3,29 +3,32 @@ package gofuzzdep
 import (
 	"runtime"
 	"syscall"
+	"time"
 	"unsafe"
 )
 
 const (
+	coverSize    = 64 << 10
+	maxInputSize = 1 << 20
+
 	commFD = 3
 	inFD   = 4
 	outFD  = 5
 )
 
 var (
-	CoverTab     *[64 << 10]byte
-	fakeCoverTab [64 << 10]byte
-	input        []byte
+	CoverTab *[coverSize]byte
+	input    []byte
 )
 
 func init() {
-	mem, err := syscall.Mmap(commFD, 0, 64<<10+1<<20, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	mem, err := syscall.Mmap(commFD, 0, coverSize+maxInputSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
 		println("failed to mmap fd = 3 errno =", err.(syscall.Errno))
 		syscall.Exit(1)
 	}
-	CoverTab = (*[64 << 10]byte)(unsafe.Pointer(&mem[0]))
-	input = mem[64<<10:]
+	CoverTab = (*[coverSize]byte)(unsafe.Pointer(&mem[0]))
+	input = mem[coverSize:]
 }
 
 func Main(f func([]byte) int) {
@@ -36,11 +39,14 @@ func Main(f func([]byte) int) {
 			println("invalid input length")
 			syscall.Exit(1)
 		}
+		t0 := time.Now()
 		res := f(input[:n])
-		write(outFD, uint64(res))
+		ns := time.Since(t0)
+		write(outFD, uint64(res), uint64(ns))
 	}
 }
 
+// read reads little-endian-encoded uint64 from fd.
 func read(fd int) uint64 {
 	rd := 0
 	var buf [8]byte
@@ -48,6 +54,9 @@ func read(fd int) uint64 {
 		n, err := syscall.Read(fd, buf[rd:])
 		if err == syscall.EINTR {
 			continue
+		}
+		if n == 0 {
+			syscall.Exit(1)
 		}
 		if err != nil {
 			println("failed to read fd =", fd, "errno =", err.(syscall.Errno))
@@ -65,16 +74,15 @@ func read(fd int) uint64 {
 		uint64(buf[7])<<56
 }
 
-func write(fd int, v uint64) {
-	buf := [8]byte{
-		byte(v >> 0),
-		byte(v >> 8),
-		byte(v >> 16),
-		byte(v >> 24),
-		byte(v >> 32),
-		byte(v >> 40),
-		byte(v >> 48),
-		byte(v >> 56),
+// write writes little-endian-encoded vals... to fd.
+func write(fd int, vals ...uint64) {
+	var tmp [2 * 8]byte
+	buf := tmp[:len(vals)*8]
+	for i, v := range vals {
+		for j := 0; j < 8; j++ {
+			buf[i*8+j] = byte(v)
+			v >>= 8
+		}
 	}
 	wr := 0
 	for wr != len(buf) {
