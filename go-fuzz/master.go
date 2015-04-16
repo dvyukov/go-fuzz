@@ -1,9 +1,8 @@
-package fuzz
+package main
 
 import (
 	"crypto/sha1"
 	"encoding/hex"
-	"flag"
 	"io/ioutil"
 	"log"
 	"net"
@@ -12,12 +11,8 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strconv"
 	"sync"
-	"syscall"
-	"testing"
 	"time"
-	"unsafe"
 )
 
 type driver struct {
@@ -103,21 +98,21 @@ func (d *driver) readInDir(m map[string]bool, dir string) {
 }
 
 func (d *driver) loop() {
-/*
-	for range time.NewTicker(time.Second).C {
-		d.Mu.Lock()
-		for _, w := range d.Workers {
-			if time.Since(w.LastPing) > time.Minute {
-				log.Printf("worker %v hang, killing", w.Id)
-				w.Cmd.Process.Kill()
+	/*
+		for range time.NewTicker(time.Second).C {
+			d.Mu.Lock()
+			for _, w := range d.Workers {
+				if time.Since(w.LastPing) > time.Minute {
+					log.Printf("worker %v hang, killing", w.Id)
+					w.Cmd.Process.Kill()
+				}
 			}
+			if len(d.Workers) < d.Procs {
+				w := d.newWorker()
+			}
+			d.Mu.Unlock()
 		}
-		if len(d.Workers) < d.Procs {
-			w := d.newWorker()
-		}
-		d.Mu.Unlock()
-	}
-*/
+	*/
 }
 
 func (d *driver) saveFile(dir string, str string) {
@@ -140,15 +135,15 @@ type InitArgs struct {
 }
 
 type InitRes struct {
-	Id int
+	Id     int
 	Corpus []string
 }
 
 func (d *driver) Init(a *InitArgs, r *InitRes) error {
-	log.Printf("Init: %v", a.Id)
+	//log.Printf("Init: %v", a.Id)
 	d.Mu.Lock()
 	defer d.Mu.Unlock()
-	w := newWorker()
+	w := d.newWorker()
 	r.Id = w.Id
 	for data := range d.Corpus {
 		r.Corpus = append(r.Corpus, data)

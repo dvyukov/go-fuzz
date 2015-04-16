@@ -1,50 +1,91 @@
 package gofuzzdep
 
 import (
+	"runtime"
 	"syscall"
 	"unsafe"
 )
 
-var data [1 << 20]byte
-
-func Main(f func([]byte) int) {
-	n, _ := syscall.Read(0, data[:])
-	f(data[:n])
-}
+const (
+	commFD = 3
+	inFD   = 4
+	outFD  = 5
+)
 
 var (
 	CoverTab     *[64 << 10]byte
 	fakeCoverTab [64 << 10]byte
+	input        []byte
 )
 
 func init() {
-	mem, err := syscall.Mmap(3, 0, 64<<10 + 1<<20, syscall.PROT_WRITE, syscall.MAP_SHARED)
-	HERE
+	mem, err := syscall.Mmap(commFD, 0, 64<<10+1<<20, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
-		log.Fatalf("failed to mmap rescue file: %v", err)
+		println("failed to mmap fd = 3 errno =", err.(syscall.Errno))
+		syscall.Exit(1)
 	}
-	f.coverRegion = mem[:64<<10]
-	f.inputRegion = mem[64<<10:]
+	CoverTab = (*[64 << 10]byte)(unsafe.Pointer(&mem[0]))
+	input = mem[64<<10:]
+}
 
-
-	shm, _ := syscall.Getenv("__AFL_SHM_ID")
-	if shm != "" {
-		shmID := atoi(shm)
-		shmMem, _, errno := syscall.Syscall(syscall.SYS_SHMAT, uintptr(shmID), 0, 0)
-		if errno != 0 {
-			println("failed to shmat")
+func Main(f func([]byte) int) {
+	runtime.GOMAXPROCS(1) // makes coverage more deterministic, we parallelize on higher level
+	for {
+		n := read(inFD)
+		if n > uint64(len(input)) {
+			println("invalid input length")
 			syscall.Exit(1)
 		}
-		CoverTab = (*[64 << 10]byte)(unsafe.Pointer(shmMem))
-	} else {
-		CoverTab = &fakeCoverTab
+		res := f(input[:n])
+		write(outFD, uint64(res))
 	}
 }
 
-func atoi(s string) uintptr {
-	var v uintptr
-	for _, x := range s {
-		v = v*10 + uintptr(x) - '0'
+func read(fd int) uint64 {
+	rd := 0
+	var buf [8]byte
+	for rd != len(buf) {
+		n, err := syscall.Read(fd, buf[rd:])
+		if err == syscall.EINTR {
+			continue
+		}
+		if err != nil {
+			println("failed to read fd =", fd, "errno =", err.(syscall.Errno))
+			syscall.Exit(1)
+		}
+		rd += n
 	}
-	return v
+	return uint64(buf[0])<<0 |
+		uint64(buf[1])<<8 |
+		uint64(buf[2])<<16 |
+		uint64(buf[3])<<24 |
+		uint64(buf[4])<<32 |
+		uint64(buf[5])<<40 |
+		uint64(buf[6])<<48 |
+		uint64(buf[7])<<56
+}
+
+func write(fd int, v uint64) {
+	buf := [8]byte{
+		byte(v >> 0),
+		byte(v >> 8),
+		byte(v >> 16),
+		byte(v >> 24),
+		byte(v >> 32),
+		byte(v >> 40),
+		byte(v >> 48),
+		byte(v >> 56),
+	}
+	wr := 0
+	for wr != len(buf) {
+		n, err := syscall.Write(fd, buf[wr:])
+		if err == syscall.EINTR {
+			continue
+		}
+		if err != nil {
+			println("failed to read fd =", fd, "errno =", err.(syscall.Errno))
+			syscall.Exit(1)
+		}
+		wr += n
+	}
 }
