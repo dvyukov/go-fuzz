@@ -1,8 +1,8 @@
 package gob
 
 import (
-	"encoding/gob"
 	"bytes"
+	"encoding/gob"
 )
 
 func Fuzz(data []byte) int {

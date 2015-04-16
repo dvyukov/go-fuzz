@@ -17,6 +17,10 @@ var (
 	workdir string
 )
 
+const (
+	mainPkg = "go-fuzz-main"
+)
+
 func main() {
 	flag.Parse()
 	if len(flag.Args()) != 1 {
@@ -24,6 +28,9 @@ func main() {
 	}
 
 	pkg := flag.Arg(0)
+
+	testNormalBuild(pkg)
+
 	deps := goListList(pkg, "Deps")
 	deps = append(deps, pkg)
 
@@ -43,14 +50,9 @@ func main() {
 	for _, p := range deps {
 		clonePackage(workdir, p)
 	}
-	err = os.MkdirAll(filepath.Join(workdir, "src", "go-fuzz-main"), 0700)
-	if err != nil {
-		failf("failed to create temp dir: %v", err)
-	}
-	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
-	err = ioutil.WriteFile(filepath.Join(workdir, "src", "go-fuzz-main", "main.go"), []byte(src), 0600)
+	createFuzzMain(pkg)
 
-	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", *flagOut, "go-fuzz-main")
+	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", *flagOut, mainPkg)
 	for _, v := range os.Environ() {
 		if strings.HasPrefix(v, "GOROOT") {
 			continue
@@ -60,6 +62,34 @@ func main() {
 	cmd.Env = append(cmd.Env, "GOROOT="+workdir)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
+	}
+}
+
+func testNormalBuild(pkg string) {
+	var err error
+	workdir, err = ioutil.TempDir("", "go-fuzz-build")
+	if err != nil {
+		failf("failed to create temp dir: %v", err)
+	}
+	defer func() {
+		os.RemoveAll(workdir)
+		workdir = ""
+	}()
+	createFuzzMain(pkg)
+	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", filepath.Join(workdir, "bin"), mainPkg)
+	cmd.Env = append([]string{"GOPATH=" + workdir + ":" + os.Getenv("GOPATH")}, os.Environ()...)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		failf("failed to execute go build: %v\n%v", err, string(out))
+	}
+}
+
+func createFuzzMain(pkg string) {
+	if err := os.MkdirAll(filepath.Join(workdir, "src", mainPkg), 0700); err != nil {
+		failf("failed to create temp dir: %v", err)
+	}
+	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
+	if err := ioutil.WriteFile(filepath.Join(workdir, "src", mainPkg, "main.go"), []byte(src), 0600); err != nil {
+		failf("failed to write temp file: %v", err)
 	}
 }
 

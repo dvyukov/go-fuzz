@@ -1,44 +1,52 @@
-package fuzz
+package main
 
 import (
+	"encoding/binary"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
 	"net/rpc"
+	"os"
+	"os/exec"
 	"runtime/debug"
 	"sort"
 	"syscall"
-	"testing"
 	"time"
-	"unsafe"
-	"os/exec"
 )
+
+const coverSize = 64 << 10
 
 type fuzzer struct {
 	id     int
 	f      func([]byte)
 	driver *rpc.Client
 
+	maxCover     []byte
 	corpus       map[string][]byte
-	coverRegion []byte
-	inputRegion []byte
+	coverRegion  []byte
+	inputRegion  []byte
 	commFilename string
 	lastPing     time.Time
 	execs        uint64
 
-	cmd *exec.Cmd
-	inPipe *os.File
+	cmd     *exec.Cmd
+	inPipe  *os.File
 	outPipe *os.File
 }
 
+type input struct {
+	data  []byte
+	cover []byte
+}
+
 func slave() {
-	rand.Seed(time.Now().UnixNano())  //!!! replace with local rand
-	c, err := rpc.Dial("tcp", addr)
+	rand.Seed(time.Now().UnixNano()) //!!! replace with local rand
+	c, err := rpc.Dial("tcp", *flagSlave)
 	if err != nil {
 		log.Fatalf("failed to dial: %v", err)
 	}
-	f := &fuzzer{id: id, f: ff, driver: c}
+	f := &fuzzer{driver: c}
 	f.main()
 }
 
@@ -54,12 +62,13 @@ func (f *fuzzer) main() {
 	if err != nil {
 		log.Fatalf("failed to open rescue file: %v", err)
 	}
-	mem, err = syscall.Mmap(fff, 0, 64<<10 + 1<<20, syscall.PROT_WRITE, syscall.MAP_SHARED)
+	mem, err := syscall.Mmap(fff, 0, 64<<10+1<<20, syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
 		log.Fatalf("failed to mmap rescue file: %v", err)
 	}
 	f.coverRegion = mem[:64<<10]
 	f.inputRegion = mem[64<<10:]
+	f.maxCover = make([]byte, coverSize)
 
 	var res InitRes
 	err = f.driver.Call("Driver.Init", &InitArgs{}, &res)
@@ -122,7 +131,7 @@ func (f *fuzzer) exec(data []byte) {
 	if time.Since(f.lastPing) > time.Second {
 		f.lastPing = time.Now()
 		res := new(PingRes)
-		args := &PingArgs{Id: f.id, CorpusSize: len(f.corpus), Execs: f.execs, Coverage: testing.Coverage()}
+		args := &PingArgs{Id: f.id, CorpusSize: len(f.corpus), Execs: f.execs}
 		if err := f.driver.Call("Driver.Ping", args, res); err != nil {
 			//!!! handle
 		}
@@ -135,70 +144,129 @@ func (f *fuzzer) exec(data []byte) {
 	f.execs++
 
 	if f.cmd == nil {
-		rIn, wIn, err := os.Pipe()
-		if err != nil {
-			log.Fatalf("failed to pipe: %v", err)
-		}
-		rOut, wOut, err := os.Pipe()
-		if err != nil {
-			log.Fatalf("failed to pipe: %v", err)
-		}
-		comm, err := os.Open(commFilename)
-		if err != nil {
-			log.Fatalf("failed to open comm file: %v", err)
-		}
-
-		f.cmd = exec.Command(*flagBin)
-		f.cmd.Stdout = os.Stdout
-		f.cmd.Stderr = os.Stderr
-		f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, comm)
-		f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, rOut)
-		f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, wIn)
-		if err = f.Start(); err != nil {
-			log.Fatalf("failed to start test binary: %v", err)
-		}
-		comm.Close()
-		rOut.Close()
-		wIn.Close()
-		f.inPipe = rIn
-		f.outPipe = wOut
+		f.recreateTestBinary()
 	}
 
 	/*
-	defer func() {
-		err := recover()
-		if err == nil {
-			return
-		}
-		errStr := ""
-		switch e := err.(type) {
-		case error:
-			errStr = e.Error()
-		case string:
-			errStr = e
-		}
-		args := &NewBugArgs{Id: f.id, Data: string(data), Error: errStr}
-		if err := f.driver.Call("Driver.NewBug", args, nil); err != nil {
-			//!!! handle
-		}
-	}()
+		defer func() {
+			err := recover()
+			if err == nil {
+				return
+			}
+			errStr := ""
+			switch e := err.(type) {
+			case error:
+				errStr = e.Error()
+			case string:
+				errStr = e
+			}
+			args := &NewBugArgs{Id: f.id, Data: string(data), Error: errStr}
+			if err := f.driver.Call("Driver.NewBug", args, nil); err != nil {
+				//!!! handle
+			}
+		}()
 	*/
 
+retry:
+	for i := range f.coverRegion {
+		f.coverRegion[i] = 0
+	}
 	copy(f.inputRegion[:], data)
-	if err := binary.Write(f.outPipe, binary.LittleEndian, len(data)); err != nil {
-		//!!! handle
+	if err := binary.Write(f.outPipe, binary.LittleEndian, uint64(len(data))); err != nil {
+		log.Printf("write to test binary failed: %v", err)
+		f.recreateTestBinary()
+		goto retry
 	}
 	var res uint64
-	if err := binary.Read(f.InPipe, binary.LittleEndian, &res); err != nil {
-		//!!! handle
+	if err := binary.Read(f.inPipe, binary.LittleEndian, &res); err != nil {
+		log.Printf("read from test binary failed: %v", err)
+		f.recreateTestBinary()
+		return
 	}
+	newCover, newCount := compareCover(f.maxCover, f.coverRegion)
+	if !newCover && !newCount {
+		return
+	}
+	updateCover(f.maxCover, f.coverRegion)
 
-
-	fmt.Printf("+%.04f%% on [%v]%q\n", cd*100, len(data), print)
+	print := data
+	if len(print) > 50 {
+		print = print[:50]
+	}
+	fmt.Printf("new cover(%v)/count(%v) on [%v]%q\n", newCover, newCount, len(data), print)
 	f.corpus[string(data)] = data
 
 	if err := f.driver.Call("Driver.NewInput", &NewInputArgs{f.id, string(data)}, new(int)); err != nil {
 		//!!! handle
+	}
+}
+
+func (f *fuzzer) recreateTestBinary() {
+	if f.cmd != nil {
+		f.cmd.Process.Kill()
+		f.cmd.Wait()
+		f.cmd = nil
+		f.inPipe.Close()
+		f.inPipe = nil
+		f.outPipe.Close()
+		f.outPipe = nil
+	}
+
+	rIn, wIn, err := os.Pipe()
+	if err != nil {
+		log.Fatalf("failed to pipe: %v", err)
+	}
+	rOut, wOut, err := os.Pipe()
+	if err != nil {
+		log.Fatalf("failed to pipe: %v", err)
+	}
+	comm, err := os.OpenFile(f.commFilename, os.O_RDWR, 0)
+	if err != nil {
+		log.Fatalf("failed to open comm file: %v", err)
+	}
+
+	f.cmd = exec.Command(*flagBin)
+	f.cmd.Stdout = os.Stdout
+	f.cmd.Stderr = os.Stderr
+	f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, comm)
+	f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, rOut)
+	f.cmd.ExtraFiles = append(f.cmd.ExtraFiles, wIn)
+	if err = f.cmd.Start(); err != nil {
+		log.Fatalf("failed to start test binary: %v", err)
+	}
+	comm.Close()
+	rOut.Close()
+	wIn.Close()
+	f.inPipe = rIn
+	f.outPipe = wOut
+}
+
+func compareCover(base, cur []byte) (bool, bool) {
+	if len(base) != coverSize || len(cur) != coverSize {
+		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
+	}
+	cnt := false
+	for i, v := range base {
+		x := cur[i]
+		if v == 0 && x != 0 {
+			return true, true
+		}
+		if x > v {
+			cnt = true
+		}
+	}
+	return false, cnt
+}
+
+func updateCover(base, cur []byte) {
+	if len(base) != coverSize || len(cur) != coverSize {
+		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
+	}
+	for i, v := range cur {
+		x := base[i]
+		if x < v {
+			base[i] = v
+		}
 	}
 }
 
