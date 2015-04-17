@@ -53,6 +53,17 @@ func main() {
 	}
 	defer os.RemoveAll(workdir)
 
+	if deps["runtime/cgo"] {
+		// Trick go command into thinking that it has up-to-date sources for cmd/cgo.
+		cgoDir := filepath.Join(workdir, "src", "cmd", "cgo")
+		if err := os.MkdirAll(cgoDir, 0700); err != nil {
+			failf("failed to create temp dir: %v", err)
+		}
+		src := "// +build never\npackage main\n"
+		if err := ioutil.WriteFile(filepath.Join(cgoDir, "fake.go"), []byte(src), 0600); err != nil {
+			failf("failed to write temp file: %v", err)
+		}
+	}
 	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), false, true)
 	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "include"), filepath.Join(workdir, "pkg", "include"), false, true)
 	for p := range deps {
@@ -168,9 +179,8 @@ func copyDir(dir, newDir string, src, rec bool) {
 		if err != nil {
 			failf("failed to read file: %v", err)
 		}
-		err = ioutil.WriteFile(filepath.Join(newDir, f.Name()), data, 0700)
-		if err != nil {
-			failf("failed to write file: %v", err)
+		if err := ioutil.WriteFile(filepath.Join(newDir, f.Name()), data, 0700); err != nil {
+			failf("failed to write temp file: %v", err)
 		}
 	}
 }
@@ -215,6 +225,7 @@ func failf(str string, args ...interface{}) {
 func isSourceFile(f string) bool {
 	return strings.HasSuffix(f, ".go") ||
 		strings.HasSuffix(f, ".s") ||
+		strings.HasSuffix(f, ".S") ||
 		strings.HasSuffix(f, ".c") ||
 		strings.HasSuffix(f, ".h") ||
 		strings.HasSuffix(f, ".cxx") ||

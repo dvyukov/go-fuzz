@@ -4,6 +4,8 @@ import (
 	"flag"
 	"log"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
@@ -20,6 +22,7 @@ var (
 	flagMaster  = flag.String("master", "", "master mode (value is master address)")
 	flagSlave   = flag.String("slave", "", "slave mode (value is master address)")
 	flagBin     = flag.String("bin", "", "test binary built with go-fuzz-build")
+	flagPprof   = flag.String("pprof", "", "serve pprof handlers on that address")
 	flagV       = flag.Bool("v", false, "verbose mode")
 
 	shutdown  uint32
@@ -39,6 +42,10 @@ func main() {
 	}
 	if *flagMaster != "" && *flagSlave != "" {
 		log.Fatalf("both -master and -slave are specified")
+	}
+
+	if *flagPprof != "" {
+		go http.ListenAndServe(*flagPprof, nil)
 	}
 
 	go func() {

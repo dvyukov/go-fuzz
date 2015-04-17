@@ -1,0 +1,8 @@
+group:          compat
+group_compat:   nis
+hosts:          files dns
+netgroup:       files [notfound=return] nis
+networks:       files
+passwd:         compat
+passwd_compat:  nis
+shells:         files

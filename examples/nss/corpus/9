@@ -1,0 +1,19 @@
+passwd: centrifydc  files centrifydc
+shadow: centrifydc  files centrifydc
+group: centrifydc   files centrifydc
+
+hosts:          files dns
+networks:       files dns
+
+services:       files
+protocols:      files
+rpc:            files
+ethers:         files
+netmasks:       files
+netgroup:       files
+publickey:      files
+
+bootparams:     files
+automount:      files
+aliases:        files
+

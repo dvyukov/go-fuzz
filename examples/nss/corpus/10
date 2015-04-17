@@ -1,0 +1,22 @@
+passwd: files nis
+shadow: files nis
+group:  files nis
+
+passwd: compat
+group:  compat
+
+hosts:      files mdns_minimal [NOTFOUND=return] dns
+networks:   files dns
+
+services:   files
+protocols:  files
+rpc:        files
+ethers:     files
+netmasks:   files
+netgroup:   files nis
+publickey:  files
+
+bootparams: files
+automount:  files nis
+aliases:    files
+

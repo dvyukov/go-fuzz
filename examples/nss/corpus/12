@@ -1,0 +1,14 @@
+passwd:         files [success=return notfound=continue unavail=continue tryagain=continue] ldap
+group:          files [success=return notfound=continue unavail=continue tryagain=continue] ldap
+shadow:         files [success=return notfound=continue unavail=continue tryagain=continue] ldap
+
+hosts:          dns [success=return notfound=continue unavail=continue tryagain=continue] files [notfound=return]
+networks:       files
+
+protocols:      db files
+services:       db files
+ethers:         db files
+rpc:            db files
+
+netgroup:       nis
+

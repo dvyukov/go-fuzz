@@ -1,0 +1,15 @@
+passwd: files
+group: files
+shadow: files
+publickey: files
+
+hosts: files mdns dns myhostname
+networks: files
+
+protocols: files
+services: files
+ethers: files
+rpc: files
+
+netgroup: files
+

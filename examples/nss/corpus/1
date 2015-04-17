@@ -1,0 +1,26 @@
+passwd:     files
+group:      files
+hosts:      files mdns dns
+ipnodes:    files mdns dns
+networks:   files
+protocols:  files
+rpc:        files
+ethers:     files
+netmasks:   files
+bootparams: files
+publickey:  files
+# At present there isn't a 'files' backend for netgroup;  the system will 
+#   figure it out pretty quickly, and won't use netgroups at all.
+netgroup:   files
+automount:  files
+aliases:    files
+services:   files
+printers:   user files
+
+auth_attr:  files
+prof_attr:  files
+project:    files
+
+tnrhtp:     files
+tnrhdb:     files
+

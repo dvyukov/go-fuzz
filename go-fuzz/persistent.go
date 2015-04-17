@@ -69,16 +69,21 @@ func (ps *PersistentSet) readInDir(dir string) {
 	})
 }
 
+func persistentFilename(dir string, a Artifact, sig Sig) string {
+	fname := filepath.Join(dir, hex.EncodeToString(sig[:]))
+	if a.meta != 0 {
+		fname += fmt.Sprintf("-%v", a.meta)
+	}
+	return fname
+}
+
 func (ps *PersistentSet) add(a Artifact) bool {
 	sig := hash(a.data)
 	if _, ok := ps.m[sig]; ok {
 		return false
 	}
 	ps.m[sig] = a
-	fname := filepath.Join(ps.dir, hex.EncodeToString(sig[:]))
-	if a.meta != 0 {
-		fname += fmt.Sprintf("-%v", a.meta)
-	}
+	fname := persistentFilename(ps.dir, a, sig)
 	if err := ioutil.WriteFile(fname, a.data, 0660); err != nil {
 		log.Printf("failed to write file: %v", err)
 	}
@@ -91,4 +96,22 @@ func (ps *PersistentSet) addDescription(data []byte, desc []byte, typ string) {
 	if err := ioutil.WriteFile(fname, desc, 0660); err != nil {
 		log.Printf("failed to write file: %v", err)
 	}
+}
+
+func (ps *PersistentSet) remove() Artifact {
+	var min Artifact
+	for _, a := range ps.m {
+		if len(min.data) == 0 || len(min.data) > len(a.data) {
+			min = a
+		}
+	}
+	delete(ps.m, hash(min.data))
+	return min
+}
+
+func (ps *PersistentSet) removePersistent(a Artifact) {
+	sig := hash(a.data)
+	delete(ps.m, sig)
+	fname := persistentFilename(ps.dir, a, sig)
+	os.Remove(fname)
 }

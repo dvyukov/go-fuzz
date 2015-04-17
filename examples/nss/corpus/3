@@ -1,0 +1,9 @@
+group:                compat, dns, files, nis
+group_compat:         dns, nis
+hosts:                dns, files, nis, mdnsd, multicast_dns
+netgroup:             files, nis
+networks:             dns, files, nis
+passwd:               compat, dns, files, nis
+passwd_compat:        dns, nis
+shells:               dns, files, nis
+

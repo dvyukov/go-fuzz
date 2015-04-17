@@ -1,0 +1,22 @@
+passwd:      compat
+shadow:      compat
+group:       compat
+
+# passwd:    db files nis
+# shadow:    db files nis
+# group:     db files nis
+
+hosts:       files dns
+networks:    files dns
+
+services:    db files
+protocols:   db files
+rpc:         db files
+ethers:      db files
+netmasks:    files
+netgroup:    files
+bootparams:  files
+
+automount:   files
+aliases:     files
+

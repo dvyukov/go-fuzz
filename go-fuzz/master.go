@@ -25,6 +25,7 @@ type Master struct {
 	crashers     *PersistentSet
 
 	startTime    time.Time
+	lastInput    time.Time
 	statExecs    uint64
 	statRestarts uint64
 }
@@ -32,7 +33,7 @@ type Master struct {
 type MasterSlave struct {
 	id       int
 	pending  []MasterInput
-	smashing Artifact
+	smashing *Artifact
 	lastSync time.Time
 }
 
@@ -40,6 +41,7 @@ func masterMain(ln net.Listener) {
 	m := &Master{}
 
 	m.startTime = time.Now()
+	m.lastInput = time.Now()
 	m.fresh = newPersistentSet(filepath.Join(*flagWorkdir, "fresh"))
 	m.suppressions = newPersistentSet(filepath.Join(*flagWorkdir, "suppressions"))
 	m.crashers = newPersistentSet(filepath.Join(*flagWorkdir, "crashers"))
@@ -55,18 +57,19 @@ func masterMain(ln net.Listener) {
 }
 
 func masterLoop(m *Master) {
-	for range time.NewTicker(time.Second).C {
+	for range time.NewTicker(3 * time.Second).C {
 		if atomic.LoadUint32(&shutdown) != 0 {
 			return
 		}
 		m.mu.Lock()
 		uptime := time.Since(m.startTime)
+		lastInput := time.Since(m.lastInput)
 		restarts := uint64(0)
 		if m.statExecs != 0 {
 			restarts = m.statExecs / m.statRestarts
 		}
-		log.Printf("slaves: %v, corpus: %v, crashers: %v, suppressions: %v, restarts: 1/%v, execs: %v (%.0f/sec), uptime: %v",
-			len(m.slaves), len(m.corpus.m), len(m.crashers.m), len(m.suppressions.m),
+		log.Printf("slaves: %v, corpus: %v (%v ago), fresh: %v, crashers: %v, suppressions: %v, restarts: 1/%v, execs: %v (%.0f/sec), uptime: %v",
+			len(m.slaves), len(m.corpus.m), lastInput, len(m.fresh.m), len(m.crashers.m), len(m.suppressions.m),
 			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime), uptime)
 		for id, s := range m.slaves {
 			if time.Since(s.lastSync) < syncDeadline {
@@ -74,11 +77,11 @@ func masterLoop(m *Master) {
 			}
 			log.Printf("slave %v died", s.id)
 			delete(m.slaves, id)
-			if s.smashing.data != nil {
+			if s.smashing != nil {
 				// The slave was smashing a new input.
 				// Add the input back to the fresh list,
 				// so that another slave can pick it up.
-				m.fresh.add(s.smashing)
+				m.fresh.add(*s.smashing)
 			}
 		}
 		m.mu.Unlock()
@@ -134,22 +137,17 @@ func (m *Master) NewInput(a *NewInputArgs, r *int) error {
 	for _, s := range m.slaves {
 		s.pending = append(s.pending, a.Input)
 	}
-
-	data := []byte(a.Input.Data)
-	if len(data) > 50 {
-		data = data[:50]
-	}
-	//log.Printf("NewInput: [%v]%q", len(a.Input.Data), data)
+	m.lastInput = time.Now()
 
 	return nil
 }
 
-type NewBugArgs struct {
+type NewCrasherArgs struct {
 	Data  []byte
 	Error []byte
 }
 
-func (m *Master) NewBug(a *NewBugArgs, r *int) error {
+func (m *Master) NewCrasher(a *NewCrasherArgs, r *int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -158,9 +156,6 @@ func (m *Master) NewBug(a *NewBugArgs, r *int) error {
 		return nil
 	}
 	m.crashers.addDescription(a.Data, a.Error, "output")
-
-	//log.Printf("Failed with '%s' on [%v]%s", a.Error, len(a.Data), hex.EncodeToString(a.Data))
-
 	return nil
 }
 
@@ -172,13 +167,13 @@ type SyncArgs struct {
 
 type SyncRes struct {
 	Inputs []MasterInput
+	Smash  MasterInput
 }
 
 func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	//log.Printf("Ping from %v: corpus=%v cov=%.4f execs=%v", a.Id, a.CorpusSize, a.Coverage*100, a.Execs)
 	s := m.slaves[a.ID]
 	if s == nil {
 		return errors.New("unknown slave")
@@ -188,6 +183,32 @@ func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
 	s.lastSync = time.Now()
 	r.Inputs = s.pending
 	s.pending = nil
+	if s.smashing == nil && len(m.fresh.m) > 0 {
+		input := m.fresh.remove()
+		s.smashing = &input
+		r.Smash = MasterInput{input.data, input.meta}
+	}
+	return nil
+}
+
+type DoneSmashingArgs struct {
+	ID    int
+	Input MasterInput
+}
+
+func (m *Master) DoneSmashing(a *DoneSmashingArgs, r *int) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	s := m.slaves[a.ID]
+	if s == nil {
+		return errors.New("unknown slave")
+	}
+	if s.smashing == nil {
+		panic("bad")
+	}
+	s.smashing = nil
+	m.fresh.removePersistent(Artifact{a.Input.Data, a.Input.Prio})
 	return nil
 }
 
