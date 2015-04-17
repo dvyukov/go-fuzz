@@ -5,7 +5,7 @@ import (
 )
 
 func Fuzz(data []byte) int {
-	if len(data) == 2 {
+	if len(data) == 1 {
 		if data[0] == '!' || data[0] == '#' {
 			panic("bingo 0")
 		}
@@ -26,7 +26,7 @@ func Fuzz(data []byte) int {
 			// new coverage
 		}
 	}
-	if len(data) == 15 && bytes.HasPrefix(data, []byte("0123456789")) {
+	if len(data) == 14 && bytes.HasPrefix(data, []byte("0123456789")) {
 		x := int(data[10]) + int(data[11]) << 8 + int(data[12]) << 16 + int(data[13]) << 24
 		if x == 0 || x == -1 {
 			panic("bingo 1")

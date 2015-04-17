@@ -56,12 +56,12 @@ func (ps *PersistentSet) readInDir(dir string) {
 			return nil
 		}
 		name := info.Name()
-		if len(name) > sha1.Size+1 && name[sha1.Size] == '.' {
+		if len(name) > 2*sha1.Size+1 && name[2*sha1.Size] == '.' {
 			return nil // description file
 		}
 		var meta uint64
-		if len(name) > sha1.Size+1 && name[sha1.Size] == '-' {
-			meta, _ = strconv.ParseUint(name[sha1.Size+1:], 10, 64)
+		if len(name) > 2*sha1.Size+1 && name[2*sha1.Size] == '-' {
+			meta, _ = strconv.ParseUint(name[2*sha1.Size+1:], 10, 64)
 		}
 		a := Artifact{data, meta}
 		ps.m[sig] = a

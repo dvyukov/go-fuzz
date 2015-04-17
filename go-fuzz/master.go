@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"encoding/hex"
 	"errors"
 	"log"
 	"net"
@@ -11,18 +10,23 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
 type Master struct {
-	sync.Mutex
-	idSeq     int
-	slaves    map[int]*MasterSlave
-	bootstrap *PersistentSet
-	corpus    *PersistentSet
-	fresh     *PersistentSet
-	known     *PersistentSet
-	bugs      *PersistentSet
+	mu           sync.Mutex
+	idSeq        int
+	slaves       map[int]*MasterSlave
+	bootstrap    *PersistentSet
+	corpus       *PersistentSet
+	fresh        *PersistentSet
+	suppressions *PersistentSet
+	crashers     *PersistentSet
+
+	startTime    time.Time
+	statExecs    uint64
+	statRestarts uint64
 }
 
 type MasterSlave struct {
@@ -35,25 +39,35 @@ type MasterSlave struct {
 func masterMain(ln net.Listener) {
 	m := &Master{}
 
+	m.startTime = time.Now()
 	m.fresh = newPersistentSet(filepath.Join(*flagWorkdir, "fresh"))
-	m.known = newPersistentSet(filepath.Join(*flagWorkdir, "known"))
-	m.bugs = newPersistentSet(filepath.Join(*flagWorkdir, "bugs"))
+	m.suppressions = newPersistentSet(filepath.Join(*flagWorkdir, "suppressions"))
+	m.crashers = newPersistentSet(filepath.Join(*flagWorkdir, "crashers"))
 	m.bootstrap = newPersistentSet(*flagCorpus)
 	m.corpus = newPersistentSet(filepath.Join(*flagWorkdir, "corpus"))
 
-	log.Printf("corpus contains %v inputs, know %v bugs\n", len(m.corpus.m), len(m.known.m))
-
 	m.slaves = make(map[int]*MasterSlave)
-	go m.loop()
+	go masterLoop(m)
 
 	s := rpc.NewServer()
 	s.Register(m)
 	s.Accept(ln)
 }
 
-func (m *Master) loop() {
-	for range time.NewTicker(syncPeriod).C {
-		m.Lock()
+func masterLoop(m *Master) {
+	for range time.NewTicker(time.Second).C {
+		if atomic.LoadUint32(&shutdown) != 0 {
+			return
+		}
+		m.mu.Lock()
+		uptime := time.Since(m.startTime)
+		restarts := uint64(0)
+		if m.statExecs != 0 {
+			restarts = m.statExecs / m.statRestarts
+		}
+		log.Printf("slaves: %v, corpus: %v, crashers: %v, suppressions: %v, restarts: 1/%v, execs: %v (%.0f/sec), uptime: %v",
+			len(m.slaves), len(m.corpus.m), len(m.crashers.m), len(m.suppressions.m),
+			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime), uptime)
 		for id, s := range m.slaves {
 			if time.Since(s.lastSync) < syncDeadline {
 				continue
@@ -67,7 +81,7 @@ func (m *Master) loop() {
 				m.fresh.add(s.smashing)
 			}
 		}
-		m.Unlock()
+		m.mu.Unlock()
 	}
 }
 
@@ -86,8 +100,8 @@ type MasterInput struct {
 }
 
 func (m *Master) Connect(a *ConnectArgs, r *ConnectRes) error {
-	m.Lock()
-	defer m.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	m.idSeq++
 	s := &MasterSlave{id: m.idSeq}
@@ -109,8 +123,8 @@ type NewInputArgs struct {
 }
 
 func (m *Master) NewInput(a *NewInputArgs, r *int) error {
-	m.Lock()
-	defer m.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	art := Artifact{a.Input.Data, a.Input.Prio}
 	if !m.corpus.add(art) {
@@ -125,7 +139,7 @@ func (m *Master) NewInput(a *NewInputArgs, r *int) error {
 	if len(data) > 50 {
 		data = data[:50]
 	}
-	log.Printf("NewInput: [%v]%q", len(a.Input.Data), data)
+	//log.Printf("NewInput: [%v]%q", len(a.Input.Data), data)
 
 	return nil
 }
@@ -136,25 +150,24 @@ type NewBugArgs struct {
 }
 
 func (m *Master) NewBug(a *NewBugArgs, r *int) error {
-	m.Lock()
-	defer m.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	supp := extractSuppression(a.Error)
-	if !m.known.add(Artifact{supp, 0}) || !m.bugs.add(Artifact{a.Data, 0}) {
+	if !m.suppressions.add(Artifact{supp, 0}) || !m.crashers.add(Artifact{a.Data, 0}) {
 		return nil
 	}
-	m.bugs.addDescription(a.Data, a.Error, "output")
+	m.crashers.addDescription(a.Data, a.Error, "output")
 
-	log.Printf("Failed with '%s' on [%v]%s", a.Error, len(a.Data), hex.EncodeToString(a.Data))
+	//log.Printf("Failed with '%s' on [%v]%s", a.Error, len(a.Data), hex.EncodeToString(a.Data))
 
 	return nil
 }
 
 type SyncArgs struct {
-	ID         int
-	CorpusSize int
-	Execs      uint64
-	Coverage   float64
+	ID       int
+	Execs    uint64
+	Restarts uint64
 }
 
 type SyncRes struct {
@@ -162,14 +175,16 @@ type SyncRes struct {
 }
 
 func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
-	m.Lock()
-	defer m.Unlock()
+	m.mu.Lock()
+	defer m.mu.Unlock()
 
 	//log.Printf("Ping from %v: corpus=%v cov=%.4f execs=%v", a.Id, a.CorpusSize, a.Coverage*100, a.Execs)
 	s := m.slaves[a.ID]
 	if s == nil {
 		return errors.New("unknown slave")
 	}
+	m.statExecs += a.Execs
+	m.statRestarts += a.Restarts
 	s.lastSync = time.Now()
 	r.Inputs = s.pending
 	s.pending = nil
