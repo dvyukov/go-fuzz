@@ -4,7 +4,12 @@ import (
 	"flag"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"runtime"
+	"sync/atomic"
+	"syscall"
+	"time"
 )
 
 var (
@@ -16,6 +21,9 @@ var (
 	flagSlave   = flag.String("slave", "", "slave mode (value is master address)")
 	flagBin     = flag.String("bin", "", "test binary built with go-fuzz-build")
 	flagV       = flag.Bool("v", false, "verbose mode")
+
+	shutdown  uint32
+	shutdownC = make(chan struct{})
 )
 
 func main() {
@@ -32,6 +40,20 @@ func main() {
 	if *flagMaster != "" && *flagSlave != "" {
 		log.Fatalf("both -master and -slave are specified")
 	}
+
+	go func() {
+		c := make(chan os.Signal, 1)
+		signal.Notify(c, syscall.SIGINT)
+		<-c
+		atomic.StoreUint32(&shutdown, 1)
+		close(shutdownC)
+		log.Printf("shutting down...")
+		time.Sleep(2 * time.Second)
+		os.Exit(0)
+	}()
+
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	syscall.Setpriority(syscall.PRIO_PROCESS, 0, 19)
 
 	if *flagMaster != "" || *flagSlave == "" {
 		if *flagMaster == "" {

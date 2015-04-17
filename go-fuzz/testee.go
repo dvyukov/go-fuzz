@@ -97,7 +97,7 @@ func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
 		copy(trimmed, data)
 		t.outputC <- trimmed
 	}()
-	// Timeout goroutine.
+	// Hang watcher goroutine.
 	go func() {
 		timeout := time.Duration(*flagTimeout) * time.Millisecond
 		ticker := time.NewTicker(timeout / 2)
@@ -120,6 +120,14 @@ func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
 
 		}
 	}()
+	// Shutdown watcher goroutine.
+	go func() {
+		select {
+		case <-t.downC:
+		case <-shutdownC:
+			t.cmd.Process.Signal(syscall.SIGKILL)
+		}
+	}()
 	return t
 }
 
@@ -133,7 +141,9 @@ func (t *Testee) test(data []byte) (res int, ns int64, cover []byte, crashed, ha
 	copy(t.inputRegion[:], data)
 	atomic.StoreInt64(&t.startTime, time.Now().UnixNano())
 	if err := binary.Write(t.outPipe, binary.LittleEndian, uint64(len(data))); err != nil {
-		log.Printf("write to testee failed: %v", err)
+		if *flagV {
+			log.Printf("write to testee failed: %v", err)
+		}
 		retry = true
 		return
 	}

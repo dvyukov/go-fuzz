@@ -1,10 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"log"
 	"net/rpc"
+	"sync/atomic"
 	"syscall"
 	"time"
 )
@@ -16,26 +16,29 @@ const (
 	syncDeadline = 5 * syncPeriod
 )
 
-type slave struct {
+type Slave struct {
 	id      int
 	f       func([]byte)
 	master  *rpc.Client
 	mutator *Mutator
 
-	maxCover    []byte
-	corpus      []Input
-	corpusSigs  map[Sig]bool
-	triageQueue []MasterInput
-	inputQueue  []MasterInput
-	smashInputs []MasterInput
-	newInputs   []MasterInput
-	newBugs     []NewBugArgs
+	maxCover      []byte
+	corpus        []Input
+	corpusSigs    map[Sig]struct{}
+	triageQueue   []MasterInput
+	inputQueue    []MasterInput
+	smashInputs   []MasterInput
+	newInputs     []MasterInput
+	newBugs       []NewBugArgs
+	hangingInputs map[Sig]struct{}
 
 	coverRegion []byte
 	inputRegion []byte
 	commFile    string
 	lastSync    time.Time
-	execs       uint64
+
+	statExecs    uint64
+	statRestarts uint64
 
 	testee *Testee
 }
@@ -53,11 +56,12 @@ func slaveMain() {
 	if err != nil {
 		log.Fatalf("failed to dial: %v", err)
 	}
-	s := &slave{master: c}
+	s := &Slave{master: c}
 	s.setupCommFile()
 	s.mutator = newMutator()
 	s.maxCover = make([]byte, coverSize)
-	s.corpusSigs = make(map[Sig]bool)
+	s.corpusSigs = make(map[Sig]struct{})
+	s.hangingInputs = make(map[Sig]struct{})
 
 	var res ConnectRes
 	err = s.master.Call("Master.Connect", &ConnectArgs{}, &res)
@@ -71,7 +75,7 @@ func slaveMain() {
 	s.loop()
 }
 
-func (s *slave) setupCommFile() {
+func (s *Slave) setupCommFile() {
 	comm, err := ioutil.TempFile("", "go-fuzz-comm")
 	if err != nil {
 		log.Fatalf("failed to create comm file: %v", err)
@@ -91,9 +95,8 @@ func (s *slave) setupCommFile() {
 	s.inputRegion = mem[coverSize:]
 }
 
-func (s *slave) loop() {
-	log.Printf("starting fuzzing")
-	for {
+func (s *Slave) loop() {
+	for atomic.LoadUint32(&shutdown) == 0 {
 		for len(s.newBugs) > 0 {
 			n := len(s.newBugs) - 1
 			bug := s.newBugs[n]
@@ -135,15 +138,17 @@ func (s *slave) loop() {
 	}
 }
 
-func (s *slave) handleNewInput(input MasterInput, triage bool) {
+func (s *Slave) handleNewInput(input MasterInput, triage bool) {
 	sig := hash(input.Data)
-	if s.corpusSigs[sig] {
+	if _, ok := s.corpusSigs[sig]; ok {
 		return // already have this
+	}
+	if _, ok := s.hangingInputs[sig]; ok {
+		return // no, thanks
 	}
 	inp := Input{data: input.Data, depth: int(input.Prio), execTime: 1 << 60}
 	for i := 0; i < 3; i++ {
-		res, ns, cover, crashed, hang := s.execImpl(inp.data, inp.depth)
-		_ = hang
+		res, ns, cover, crashed := s.execImpl(inp.data, inp.depth)
 		if crashed {
 			return // inputs in corpus should not crash
 		}
@@ -169,16 +174,18 @@ func (s *slave) handleNewInput(input MasterInput, triage bool) {
 		// TODO: minimize input
 	}
 	updateCover(s.maxCover, inp.cover)
-	s.corpusSigs[sig] = true
+	s.corpusSigs[sig] = struct{}{}
 	s.corpus = append(s.corpus, inp)
 	if triage {
 		s.newInputs = append(s.newInputs, input)
 	}
 }
 
-func (s *slave) exec(data []byte, depth int) {
-	_, _, cover, crashed, hang := s.execImpl(data, depth)
-	_ = hang
+func (s *Slave) exec(data []byte, depth int) {
+	if _, ok := s.hangingInputs[hash(data)]; ok {
+		return // no, thanks
+	}
+	_, _, cover, crashed := s.execImpl(data, depth)
 	if crashed {
 		return
 	}
@@ -189,29 +196,39 @@ func (s *slave) exec(data []byte, depth int) {
 	updateCover(s.maxCover, cover)
 	input := MasterInput{data, uint64(depth)}
 	s.triageQueue = append(s.triageQueue, input)
-
-	print := input.Data
-	if len(print) > 50 {
-		print = print[:50]
-	}
-	fmt.Printf("new cover(%v)/count(%v) on [%v]%q\n", newCover, newCount, len(data), print)
+	/*
+		print := input.Data
+		if len(print) > 50 {
+			print = print[:50]
+		}
+		fmt.Printf("new cover(%v)/count(%v) on [%v]%q\n", newCover, newCount, len(data), print)
+	*/
 }
 
-func (s *slave) execImpl(data []byte, depth int) (res int, ns int64, cover []byte, crashed, hang bool) {
+func (s *Slave) execImpl(data []byte, depth int) (res int, ns int64, cover []byte, crashed bool) {
 	for {
+		if atomic.LoadUint32(&shutdown) != 0 {
+			select {}
+		}
 		s.sendSync()
-		s.execs++
+
+		s.statExecs++
 		if s.testee == nil {
+			s.statRestarts++
 			s.testee = newTestee(*flagBin, s.commFile, s.coverRegion, s.inputRegion)
 		}
-		var retry bool
+		var hang, retry bool
 		res, ns, cover, crashed, hang, retry = s.testee.test(data)
 		if retry {
 			s.testee.shutdown()
 			s.testee = nil
 			continue
 		}
-		if crashed {
+		if crashed || hang {
+			if hang {
+				s.hangingInputs[hash(data)] = struct{}{}
+				crashed = true
+			}
 			out := s.testee.shutdown()
 			s.testee = nil
 			s.newBugs = append(s.newBugs, NewBugArgs{data, out})
@@ -221,13 +238,15 @@ func (s *slave) execImpl(data []byte, depth int) (res int, ns int64, cover []byt
 	}
 }
 
-func (s *slave) sendSync() {
+func (s *Slave) sendSync() {
 	if time.Since(s.lastSync) < syncPeriod {
 		return
 	}
 	s.lastSync = time.Now()
 	res := new(SyncRes)
-	args := &SyncArgs{ID: s.id, CorpusSize: len(s.corpus), Execs: s.execs}
+	args := &SyncArgs{ID: s.id, Execs: s.statExecs, Restarts: s.statRestarts}
+	s.statExecs = 0
+	s.statRestarts = 0
 	if err := s.master.Call("Master.Sync", args, res); err != nil {
 		log.Printf("sync call failed: %v", err)
 		return
