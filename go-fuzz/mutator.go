@@ -18,6 +18,9 @@ func (m *Mutator) rand(n int) int {
 }
 
 func (m *Mutator) generate(corpus []Input) ([]byte, int) {
+	if len(corpus) == 0 {
+		return []byte{byte(m.rand(256))}, 0
+	}
 	idx := m.rand(len(corpus))
 	return m.mutate(corpus[idx].data, corpus)
 }
