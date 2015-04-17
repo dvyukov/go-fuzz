@@ -33,11 +33,11 @@ func newPersistentSet(dir string) *PersistentSet {
 		m:   make(map[Sig]Artifact),
 	}
 	os.MkdirAll(dir, 0770)
-	ps.readInDir(dir, nil)
+	ps.readInDir(dir)
 	return ps
 }
 
-func (ps *PersistentSet) readInDir(dir string, onNew func(a Artifact)) {
+func (ps *PersistentSet) readInDir(dir string) {
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			log.Printf("error during dir walk: %v\n", err)
@@ -65,9 +65,6 @@ func (ps *PersistentSet) readInDir(dir string, onNew func(a Artifact)) {
 		}
 		a := Artifact{data, meta}
 		ps.m[sig] = a
-		if onNew != nil {
-			onNew(a)
-		}
 		return nil
 	})
 }

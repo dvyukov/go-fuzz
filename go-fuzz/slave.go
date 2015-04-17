@@ -25,6 +25,7 @@ type slave struct {
 	maxCover    []byte
 	corpus      []Input
 	corpusSigs  map[Sig]bool
+	triageQueue []MasterInput
 	inputQueue  []MasterInput
 	smashInputs []MasterInput
 	newInputs   []MasterInput
@@ -64,6 +65,7 @@ func slaveMain() {
 		log.Fatalf("failed to connect to master: %v", err)
 	}
 	s.id = res.ID
+	s.triageQueue = res.Bootstrap
 	s.inputQueue = res.Corpus
 
 	s.loop()
@@ -112,12 +114,20 @@ func (s *slave) loop() {
 			}
 		}
 
+		for len(s.triageQueue) > 0 {
+			n := len(s.triageQueue) - 1
+			input := s.triageQueue[n]
+			s.triageQueue[n] = MasterInput{}
+			s.triageQueue = s.triageQueue[:n]
+			s.handleNewInput(input, true)
+		}
+
 		for len(s.inputQueue) > 0 {
 			n := len(s.inputQueue) - 1
 			input := s.inputQueue[n]
 			s.inputQueue[n] = MasterInput{}
 			s.inputQueue = s.inputQueue[:n]
-			s.handleNewInput(input)
+			s.handleNewInput(input, false)
 		}
 
 		data, depth := s.mutator.generate(s.corpus)
@@ -125,14 +135,15 @@ func (s *slave) loop() {
 	}
 }
 
-func (s *slave) handleNewInput(input MasterInput) {
+func (s *slave) handleNewInput(input MasterInput, triage bool) {
 	sig := hash(input.Data)
 	if s.corpusSigs[sig] {
 		return // already have this
 	}
 	inp := Input{data: input.Data, depth: int(input.Prio), execTime: 1 << 60}
 	for i := 0; i < 3; i++ {
-		res, ns, cover, crashed := s.execImpl(inp.data, inp.depth)
+		res, ns, cover, crashed, hang := s.execImpl(inp.data, inp.depth)
+		_ = hang
 		if crashed {
 			return // inputs in corpus should not crash
 		}
@@ -154,13 +165,20 @@ func (s *slave) handleNewInput(input MasterInput) {
 			inp.execTime = ns
 		}
 	}
+	if triage {
+		// TODO: minimize input
+	}
 	updateCover(s.maxCover, inp.cover)
 	s.corpusSigs[sig] = true
 	s.corpus = append(s.corpus, inp)
+	if triage {
+		s.newInputs = append(s.newInputs, input)
+	}
 }
 
 func (s *slave) exec(data []byte, depth int) {
-	_, _, cover, crashed := s.execImpl(data, depth)
+	_, _, cover, crashed, hang := s.execImpl(data, depth)
+	_ = hang
 	if crashed {
 		return
 	}
@@ -170,8 +188,7 @@ func (s *slave) exec(data []byte, depth int) {
 	}
 	updateCover(s.maxCover, cover)
 	input := MasterInput{data, uint64(depth)}
-	s.newInputs = append(s.newInputs, input)
-	s.inputQueue = append(s.inputQueue, input) // don't wait till master sends it back to us
+	s.triageQueue = append(s.triageQueue, input)
 
 	print := input.Data
 	if len(print) > 50 {
@@ -180,7 +197,7 @@ func (s *slave) exec(data []byte, depth int) {
 	fmt.Printf("new cover(%v)/count(%v) on [%v]%q\n", newCover, newCount, len(data), print)
 }
 
-func (s *slave) execImpl(data []byte, depth int) (res int, ns int64, cover []byte, crashed bool) {
+func (s *slave) execImpl(data []byte, depth int) (res int, ns int64, cover []byte, crashed, hang bool) {
 	for {
 		s.sendSync()
 		s.execs++
@@ -188,7 +205,7 @@ func (s *slave) execImpl(data []byte, depth int) (res int, ns int64, cover []byt
 			s.testee = newTestee(*flagBin, s.commFile, s.coverRegion, s.inputRegion)
 		}
 		var retry bool
-		res, ns, cover, crashed, retry = s.testee.test(data)
+		res, ns, cover, crashed, hang, retry = s.testee.test(data)
 		if retry {
 			s.testee.shutdown()
 			s.testee = nil

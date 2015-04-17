@@ -1,24 +1,28 @@
 package main
 
 import (
+	"bufio"
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"log"
 	"net"
 	"net/rpc"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 )
 
 type Master struct {
 	sync.Mutex
-	idSeq  int
-	slaves map[int]*MasterSlave
-	corpus *PersistentSet
-	fresh  *PersistentSet
-	known  *PersistentSet
-	bugs   *PersistentSet
+	idSeq     int
+	slaves    map[int]*MasterSlave
+	bootstrap *PersistentSet
+	corpus    *PersistentSet
+	fresh     *PersistentSet
+	known     *PersistentSet
+	bugs      *PersistentSet
 }
 
 type MasterSlave struct {
@@ -34,13 +38,8 @@ func masterMain(ln net.Listener) {
 	m.fresh = newPersistentSet(filepath.Join(*flagWorkdir, "fresh"))
 	m.known = newPersistentSet(filepath.Join(*flagWorkdir, "known"))
 	m.bugs = newPersistentSet(filepath.Join(*flagWorkdir, "bugs"))
+	m.bootstrap = newPersistentSet(*flagCorpus)
 	m.corpus = newPersistentSet(filepath.Join(*flagWorkdir, "corpus"))
-	m.corpus.readInDir(*flagCorpus, func(a Artifact) {
-		m.fresh.add(a)
-	})
-	if len(m.corpus.m) == 0 {
-		m.corpus.add(Artifact{[]byte{}, 0})
-	}
 
 	log.Printf("corpus contains %v inputs, know %v bugs\n", len(m.corpus.m), len(m.known.m))
 
@@ -76,8 +75,9 @@ type ConnectArgs struct {
 }
 
 type ConnectRes struct {
-	ID     int
-	Corpus []MasterInput
+	ID        int
+	Bootstrap []MasterInput
+	Corpus    []MasterInput
 }
 
 type MasterInput struct {
@@ -95,6 +95,9 @@ func (m *Master) Connect(a *ConnectArgs, r *ConnectRes) error {
 	m.slaves[s.id] = s
 
 	r.ID = s.id
+	for _, a := range m.bootstrap.m {
+		r.Bootstrap = append(r.Bootstrap, MasterInput{a.data, a.meta})
+	}
 	for _, a := range m.corpus.m {
 		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta})
 	}
@@ -173,6 +176,46 @@ func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
 	return nil
 }
 
-func extractSuppression(s []byte) []byte {
-	return s
+func extractSuppression(out []byte) []byte {
+	var supp []byte
+	seenPanic := false
+	collect := false
+	s := bufio.NewScanner(bytes.NewReader(out))
+	for s.Scan() {
+		line := s.Text()
+		if !seenPanic && (strings.HasPrefix(line, "panic: ") ||
+			strings.HasPrefix(line, "fatal error: ") ||
+			strings.HasPrefix(line, "SIG") && strings.Index(line, ": ") != 0) {
+			// Start of a crash message.
+			seenPanic = true
+			supp = append(supp, line...)
+			supp = append(supp, '\n')
+		}
+		if collect && line == "runtime stack:" {
+			// Skip runtime stack.
+			// Unless it is a runtime bug, user stack is more descriptive.
+			collect = false
+		}
+		if collect && len(line) > 0 && (line[0] >= 'a' && line[0] <= 'z' ||
+			line[0] >= 'A' && line[0] <= 'Z') {
+			// Function name line.
+			idx := strings.IndexByte(line, '(')
+			if idx != -1 {
+				supp = append(supp, line[:idx]...)
+				supp = append(supp, '\n')
+			}
+		}
+		if collect && line == "" {
+			// End of first goroutine stack.
+			break
+		}
+		if seenPanic && !collect && line == "" {
+			// Start of first goroutine stack.
+			collect = true
+		}
+	}
+	if len(supp) == 0 {
+		supp = out
+	}
+	return supp
 }

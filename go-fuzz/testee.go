@@ -5,6 +5,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sync/atomic"
+	"syscall"
 	"time"
 )
 
@@ -15,6 +17,7 @@ type Testee struct {
 	inPipe      *os.File
 	outPipe     *os.File
 	stdoutPipe  *os.File
+	startTime   int64
 	outputC     chan []byte
 	downC       chan bool
 	down        bool
@@ -60,11 +63,13 @@ func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
 		outputC:     make(chan []byte),
 		downC:       make(chan bool),
 	}
+	// Stdout reader goroutine.
 	go func() {
 		// The testee should not output unless it crashes.
 		// But there are still chances that it does. If so, it can overflow
 		// the stdout pipe during testing and deadlock. To prevent the
 		// deadlock we periodically read out stdout.
+		// This goroutine also collects crash output.
 		ticker := time.NewTicker(time.Second)
 		const N = 1 << 20
 		data := make([]byte, N)
@@ -87,14 +92,38 @@ func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
 				filled -= N / 2
 			}
 		}
+		ticker.Stop()
 		trimmed := make([]byte, filled)
 		copy(trimmed, data)
 		t.outputC <- trimmed
 	}()
+	// Timeout goroutine.
+	go func() {
+		timeout := time.Duration(*flagTimeout) * time.Millisecond
+		ticker := time.NewTicker(timeout / 2)
+		for {
+			select {
+			case <-ticker.C:
+				start := atomic.LoadInt64(&t.startTime)
+				if start != 0 && time.Now().UnixNano()-start > int64(timeout) {
+					atomic.StoreInt64(&t.startTime, -1)
+					t.cmd.Process.Signal(syscall.SIGABRT)
+					time.Sleep(time.Second)
+					t.cmd.Process.Signal(syscall.SIGKILL)
+					ticker.Stop()
+					return
+				}
+			case <-t.downC:
+				ticker.Stop()
+				return
+			}
+
+		}
+	}()
 	return t
 }
 
-func (t *Testee) test(data []byte) (res int, ns int64, cover []byte, crashed, retry bool) {
+func (t *Testee) test(data []byte) (res int, ns int64, cover []byte, crashed, hang, retry bool) {
 	if t.down {
 		log.Fatalf("cannot test: testee is already shutdown")
 	}
@@ -102,9 +131,9 @@ func (t *Testee) test(data []byte) (res int, ns int64, cover []byte, crashed, re
 		t.coverRegion[i] = 0
 	}
 	copy(t.inputRegion[:], data)
+	atomic.StoreInt64(&t.startTime, time.Now().UnixNano())
 	if err := binary.Write(t.outPipe, binary.LittleEndian, uint64(len(data))); err != nil {
 		log.Printf("write to testee failed: %v", err)
-		crashed = false
 		retry = true
 		return
 	}
@@ -115,10 +144,12 @@ func (t *Testee) test(data []byte) (res int, ns int64, cover []byte, crashed, re
 		Ns  uint64
 	}
 	var r Reply
-	if err := binary.Read(t.inPipe, binary.LittleEndian, &r); err != nil {
+	err := binary.Read(t.inPipe, binary.LittleEndian, &r)
+	hang = atomic.LoadInt64(&t.startTime) == -1
+	atomic.StoreInt64(&t.startTime, 0)
+	if err != nil {
 		// Should have been crashed.
 		crashed = true
-		retry = false
 		return
 	}
 	res = int(r.Res)
