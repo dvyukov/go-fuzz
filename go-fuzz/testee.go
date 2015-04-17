@@ -131,7 +131,7 @@ func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
 	return t
 }
 
-func (t *Testee) test(data []byte) (res int, ns int64, cover []byte, crashed, hang, retry bool) {
+func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, hang, retry bool) {
 	if t.down {
 		log.Fatalf("cannot test: testee is already shutdown")
 	}
@@ -163,7 +163,7 @@ func (t *Testee) test(data []byte) (res int, ns int64, cover []byte, crashed, ha
 		return
 	}
 	res = int(r.Res)
-	ns = int64(r.Ns)
+	ns = r.Ns
 	cover = t.coverRegion
 	return
 }
