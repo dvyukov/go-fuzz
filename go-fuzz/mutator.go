@@ -3,6 +3,7 @@ package main
 import (
 	"math/rand"
 	"sort"
+	"strconv"
 	"time"
 	"unsafe"
 )
@@ -40,7 +41,7 @@ func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
 		nm++
 	}
 	for iter := 0; iter < nm; iter++ {
-		switch m.rand(15) {
+		switch m.rand(17) {
 		case 0:
 			// Remove a range of bytes.
 			if len(res) <= 1 {
@@ -233,13 +234,71 @@ func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
 			}
 			*(*uint32)(unsafe.Pointer(&res[pos])) = v
 		case 14:
+			// Replace an ascii digit with another digit.
+			var digits []int
+			for i, v := range res {
+				if v >= '0' && v <= '9' {
+					digits = append(digits, i)
+				}
+			}
+			if len(digits) == 0 {
+				iter--
+				continue
+			}
+			pos := m.rand(len(digits))
+			res[digits[pos]] = byte(m.rand(10)) + '0'
+		case 15:
+			// Replace an ascii number with another number.
+			type arange struct {
+				start int
+				end   int
+			}
+			var numbers []arange
+			start := -1
+			for i, v := range res {
+				if v >= '0' && v <= '9' {
+					if start == -1 {
+						start = i
+					}
+				} else {
+					if start != -1 {
+						if i-start > 1 {
+							numbers = append(numbers, arange{start, i})
+							start = -1
+						}
+					}
+				}
+			}
+			if len(numbers) == 0 {
+				iter--
+				continue
+			}
+			r := numbers[m.rand(len(numbers))]
+			var v int64
+			switch m.rand(4) {
+			case 0:
+				v = int64(m.rand(1000))
+			case 1:
+				v = int64(m.rand(1 << 30))
+			case 2:
+				v = int64(m.rand(1<<30)) * int64(m.rand(1<<30))
+			case 3:
+				v = -int64(m.rand(1 << 30))
+			}
+			str := strconv.FormatInt(v, 10)
+			tmp := make([]byte, len(res)-(r.end-r.start)+len(str))
+			copy(tmp, res[:r.start])
+			copy(tmp[r.start:], str)
+			copy(tmp[r.start+len(str):], res[r.end:])
+			res = tmp
+		case 16:
 			// Splice another input.
 			if len(res) < 4 || len(corpus) < 2 {
 				iter--
 				continue
 			}
 			other := corpus[m.rand(len(corpus))].data
-			if len(other) < 4 || &data[0] == &other[0] {
+			if len(other) < 4 || &res[0] == &other[0] {
 				iter--
 				continue
 			}
@@ -259,11 +318,6 @@ func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
 				continue
 			}
 			copy(res[idx0:idx0+m.rand(diff-2)+1], other[idx0:])
-
-			// TODO: replace letters 'a'..'z' with other letters.
-			// TODO: replace digits '0'..'9' with other digits.
-			// TODO: replace runs of digits with other runs of digits.
-			// TODO: auto-detect magic bytes and strings in inputs and insert them more frequently.
 		}
 	}
 	if len(res) > maxInputSize {

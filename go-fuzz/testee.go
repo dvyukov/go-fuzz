@@ -83,7 +83,7 @@ func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
 			if err != nil {
 				break
 			}
-			if *flagV {
+			if *flagV >= 3 {
 				log.Printf("testee: %v\n", string(data[filled:filled+n]))
 			}
 			filled += n
@@ -141,7 +141,7 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, h
 	copy(t.inputRegion[:], data)
 	atomic.StoreInt64(&t.startTime, time.Now().UnixNano())
 	if err := binary.Write(t.outPipe, binary.LittleEndian, uint64(len(data))); err != nil {
-		if *flagV {
+		if *flagV >= 1 {
 			log.Printf("write to testee failed: %v", err)
 		}
 		retry = true

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"io/ioutil"
 	"log"
 	"net/rpc"
@@ -105,18 +106,18 @@ func (s *Slave) setupCommFile() {
 }
 
 func (s *Slave) loop() {
+loop:
 	for atomic.LoadUint32(&shutdown) == 0 {
-		for len(s.newCrashers) > 0 {
+		if len(s.newCrashers) > 0 {
 			n := len(s.newCrashers) - 1
-			bug := s.newCrashers[n]
+			crash := s.newCrashers[n]
 			s.newCrashers[n] = NewCrasherArgs{}
 			s.newCrashers = s.newCrashers[:n]
-			if err := s.master.Call("Master.NewCrasher", bug, nil); err != nil {
-				log.Printf("new crasher call failed: %v", err)
-			}
+			s.handleNewCrasher(crash)
+			continue loop
 		}
 
-		for len(s.newInputs) > 0 {
+		if len(s.newInputs) > 0 {
 			n := len(s.newInputs) - 1
 			input := s.newInputs[n]
 			s.newInputs[n] = MasterInput{}
@@ -124,42 +125,44 @@ func (s *Slave) loop() {
 			if err := s.master.Call("Master.NewInput", NewInputArgs{input}, nil); err != nil {
 				log.Printf("new input call failed: %v", err)
 			}
+			continue loop
 		}
 
-		for len(s.triageQueue) > 0 {
+		if len(s.triageQueue) > 0 {
 			n := len(s.triageQueue) - 1
 			input := s.triageQueue[n]
 			s.triageQueue[n] = MasterInput{}
 			s.triageQueue = s.triageQueue[:n]
 			s.handleNewInput(input, true)
+			continue loop
 		}
 
-		for len(s.inputQueue) > 0 {
+		if len(s.inputQueue) > 0 {
 			n := len(s.inputQueue) - 1
 			input := s.inputQueue[n]
 			s.inputQueue[n] = MasterInput{}
 			s.inputQueue = s.inputQueue[:n]
 			s.handleNewInput(input, false)
+			continue loop
 		}
 
-		for len(s.smashQueue) > 0 {
+		if len(s.smashQueue) > 0 {
 			n := len(s.smashQueue) - 1
 			input := s.smashQueue[n]
 			s.smashQueue[n] = MasterInput{}
 			s.smashQueue = s.smashQueue[:n]
 			s.smash(input)
-			if err := s.master.Call("Master.DoneSmashing", DoneSmashingArgs{s.id, input}, nil); err != nil {
-				log.Printf("done smashing call failed: %v", err)
-			}
+			continue loop
 		}
 
+		// TODO: recalculate periodically to reset freshness boost.
 		if s.lastScoreLen != len(s.corpus) {
 			s.recalculateScores()
 			s.lastScoreLen = len(s.corpus)
 		}
 
 		data, depth := s.mutator.generate(s.corpus)
-		s.exec(data, depth)
+		s.testInput(data, depth)
 	}
 }
 
@@ -174,8 +177,9 @@ func (s *Slave) handleNewInput(input MasterInput, triage bool) {
 	inp := Input{data: input.Data, depth: int(input.Prio), execTime: 1 << 60, addTime: time.Now().UnixNano()}
 	// Calculate min exec time, min coverage and max result of 3 runs.
 	for i := 0; i < 3; i++ {
-		res, ns, cover, crashed := s.execImpl(inp.data, inp.depth)
+		res, ns, cover, output, crashed := s.exec(inp.data)
 		if crashed {
+			s.newCrashers = append(s.newCrashers, NewCrasherArgs{inp.data, output})
 			return // inputs in corpus should not crash
 		}
 		if inp.cover == nil {
@@ -197,7 +201,11 @@ func (s *Slave) handleNewInput(input MasterInput, triage bool) {
 		}
 	}
 	if triage {
-		// TODO: minimize input
+		inp.data = s.minimizeInput(inp.data, inp.cover, inp.res)
+		if input.Prio < uint64(inp.res) {
+			input.Prio = uint64(inp.res)
+		}
+		s.newInputs = append(s.newInputs, input)
 	}
 	updateCover(s.maxCover, inp.cover)
 	inp.coverSize = 0
@@ -208,76 +216,159 @@ func (s *Slave) handleNewInput(input MasterInput, triage bool) {
 	}
 	s.corpusSigs[sig] = struct{}{}
 	s.corpus = append(s.corpus, inp)
-	if triage {
-		if input.Prio < uint64(inp.res) {
-			input.Prio = uint64(inp.res)
-		}
-		s.newInputs = append(s.newInputs, input)
+}
+
+func (s *Slave) handleNewCrasher(crash NewCrasherArgs) {
+	crash.Data = s.minimizeCrasher(crash.Data, crash.Error)
+	if err := s.master.Call("Master.NewCrasher", crash, nil); err != nil {
+		log.Printf("new crasher call failed: %v", err)
 	}
+}
+
+func (s *Slave) minimizeCrasher(data, error []byte) []byte {
+	error = extractSuppression(error)
+	tmp := s.minimize(data, func(candidate, cover, output []byte, res int, crashed bool) bool {
+		if !crashed {
+			return false
+		}
+		if !bytes.Equal(error, extractSuppression(output)) {
+			s.newCrashers = append(s.newCrashers, NewCrasherArgs{candidate, output})
+			return false
+		}
+		return true
+	})
+	if *flagV >= 1 {
+		log.Printf("minimized crasher [%v]%q -> [%v]%q", len(data), data, len(tmp), tmp)
+	}
+	return tmp
+}
+
+func (s *Slave) minimizeInput(data, cover []byte, res int) []byte {
+	tmp := s.minimize(data, func(candidate, cover1, output []byte, res1 int, crashed bool) bool {
+		if crashed {
+			s.newCrashers = append(s.newCrashers, NewCrasherArgs{candidate, output})
+			return false
+		}
+		if res != res1 {
+			return false
+		}
+		if !bytes.Equal(cover, cover1) {
+			// TODO: this can be a new intersting input.
+			return false
+		}
+		return true
+	})
+	if *flagV >= 1 {
+		log.Printf("minimized input [%v]%q -> [%v]%q", len(data), data, len(tmp), tmp)
+	}
+	return tmp
+}
+
+func (s *Slave) minimize(data []byte, pred func(candidate, cover, output []byte, result int, crashed bool) bool) []byte {
+	res := make([]byte, len(data))
+	copy(res, data)
+
+	// First, try to cut tail.
+	for n := 1024; n != 0; n /= 2 {
+		for len(res) > n {
+			candidate := res[:len(res)-n]
+			result, _, cover, output, crashed := s.exec(candidate)
+			if !pred(candidate, cover, output, result, crashed) {
+				break
+			}
+			res = candidate
+		}
+	}
+
+	// Then, try to remove each individual byte.
+	for i := 0; i < len(res); i++ {
+		candidate := make([]byte, len(res)-1)
+		copy(candidate[:i], res[:i])
+		copy(candidate[i:], res[i+1:])
+		result, _, cover, output, crashed := s.exec(candidate)
+		if !pred(candidate, cover, output, result, crashed) {
+			continue
+		}
+		res = candidate
+		i--
+	}
+	return res
 }
 
 func (s *Slave) smash(input MasterInput) {
 	data := input.Data
 	depth := int(input.Prio)
 
-	// Stage 0: flip each bit one-by-one.
-	for i := 0; i < len(data)*8; i++ {
-		data[i/8] ^= 1 << uint(i%8)
-		s.exec(data, depth)
-		data[i/8] ^= 1 << uint(i%8)
-	}
+	// TODO: auto-detect magic bytes and strings in inputs and insert them more frequently.
 
-	// Stage 1: two walking bits.
-	for i := 0; i < len(data)*8-1; i++ {
-		data[i/8] ^= 1 << uint(i%8)
-		data[(i+1)/8] ^= 1 << uint((i+1)%8)
-		s.exec(data, depth)
-		data[i/8] ^= 1 << uint(i%8)
-		data[(i+1)/8] ^= 1 << uint((i+1)%8)
-	}
+	_, _ = data, depth
+	/*
+			// Stage 0: flip each bit one-by-one.
+			for i := 0; i < len(data)*8; i++ {
+				data[i/8] ^= 1 << uint(i%8)
+				s.testInput(data, depth)
+				data[i/8] ^= 1 << uint(i%8)
+			}
 
-	// Stage 2: four walking bits.
-	for i := 0; i < len(data)*8-3; i++ {
-		data[i/8] ^= 1 << uint(i%8)
-		data[(i+1)/8] ^= 1 << uint((i+1)%8)
-		data[(i+2)/8] ^= 1 << uint((i+2)%8)
-		data[(i+3)/8] ^= 1 << uint((i+3)%8)
-		s.exec(data, depth)
-		data[i/8] ^= 1 << uint(i%8)
-		data[(i+1)/8] ^= 1 << uint((i+1)%8)
-		data[(i+2)/8] ^= 1 << uint((i+2)%8)
-		data[(i+3)/8] ^= 1 << uint((i+3)%8)
-	}
+			// Stage 1: two walking bits.
+			for i := 0; i < len(data)*8-1; i++ {
+				data[i/8] ^= 1 << uint(i%8)
+				data[(i+1)/8] ^= 1 << uint((i+1)%8)
+				s.testInput(data, depth)
+				data[i/8] ^= 1 << uint(i%8)
+				data[(i+1)/8] ^= 1 << uint((i+1)%8)
+			}
 
-	// Stage 3: byte flip.
-	for i := 0; i < len(data); i++ {
-		data[i] ^= 0xff
-		s.exec(data, depth)
-		data[i] ^= 0xff
-	}
+			// Stage 2: four walking bits.
+			for i := 0; i < len(data)*8-3; i++ {
+				data[i/8] ^= 1 << uint(i%8)
+				data[(i+1)/8] ^= 1 << uint((i+1)%8)
+				data[(i+2)/8] ^= 1 << uint((i+2)%8)
+				data[(i+3)/8] ^= 1 << uint((i+3)%8)
+				s.testInput(data, depth)
+				data[i/8] ^= 1 << uint(i%8)
+				data[(i+1)/8] ^= 1 << uint((i+1)%8)
+				data[(i+2)/8] ^= 1 << uint((i+2)%8)
+				data[(i+3)/8] ^= 1 << uint((i+3)%8)
+			}
 
-	// Stage 4: two walking bytes.
-	for i := 0; i < len(data)-1; i++ {
-		data[i] ^= 0xff
-		data[i+1] ^= 0xff
-		s.exec(data, depth)
-		data[i] ^= 0xff
-		data[i+1] ^= 0xff
-	}
+		// Stage 3: byte flip.
+		for i := 0; i < len(data); i++ {
+			data[i] ^= 0xff
+			s.testInput(data, depth)
+			data[i] ^= 0xff
+		}
 
-	// Stage 5: four walking bytes.
-	for i := 0; i < len(data)-3; i++ {
-		data[i] ^= 0xff
-		data[i+1] ^= 0xff
-		data[i+2] ^= 0xff
-		data[i+3] ^= 0xff
-		s.exec(data, depth)
-		data[i] ^= 0xff
-		data[i+1] ^= 0xff
-		data[i+2] ^= 0xff
-		data[i+3] ^= 0xff
-	}
+			// Stage 4: two walking bytes.
+			for i := 0; i < len(data)-1; i++ {
+				data[i] ^= 0xff
+				data[i+1] ^= 0xff
+				s.testInput(data, depth)
+				data[i] ^= 0xff
+				data[i+1] ^= 0xff
+			}
 
+			// Stage 5: four walking bytes.
+			for i := 0; i < len(data)-3; i++ {
+				data[i] ^= 0xff
+				data[i+1] ^= 0xff
+				data[i+2] ^= 0xff
+				data[i+3] ^= 0xff
+				s.testInput(data, depth)
+				data[i] ^= 0xff
+				data[i+1] ^= 0xff
+				data[i+2] ^= 0xff
+				data[i+3] ^= 0xff
+			}
+	*/
+
+	var res DoneSmashingRes
+	if err := s.master.Call("Master.DoneSmashing", DoneSmashingArgs{s.id, input}, &res); err != nil {
+		log.Printf("done smashing call failed: %v", err)
+	}
+	if res.Smash.Data != nil {
+		s.smashQueue = append(s.smashQueue, res.Smash)
+	}
 }
 
 func (s *Slave) recalculateScores() {
@@ -333,16 +424,15 @@ func (s *Slave) recalculateScores() {
 
 		// Input depth multiplier 1-5x.
 		// Deeper inputs have higher chances of digging deeper into code.
-		switch inp.depth {
-		case 0, 1, 2, 3:
+		if inp.depth < 10 {
 			// no boost for you
-		case 4, 5, 6, 7:
+		} else if inp.depth < 20 {
 			score *= 2
-		case 8, 9, 10, 11:
+		} else if inp.depth < 40 {
 			score *= 3
-		case 12, 13, 14, 15:
+		} else if inp.depth < 80 {
 			score *= 4
-		default:
+		} else {
 			score *= 5
 		}
 
@@ -376,14 +466,15 @@ func (s *Slave) recalculateScores() {
 	}
 }
 
-func (s *Slave) exec(data []byte, depth int) {
+func (s *Slave) testInput(data []byte, depth int) {
 	if len(s.hangingInputs) > 0 {
 		if _, ok := s.hangingInputs[hash(data)]; ok {
 			return // no, thanks
 		}
 	}
-	_, _, cover, crashed := s.execImpl(data, depth)
+	_, _, cover, output, crashed := s.exec(data)
 	if crashed {
+		s.newCrashers = append(s.newCrashers, NewCrasherArgs{data, output})
 		return
 	}
 	newCover, newCount := compareCover(s.maxCover, cover)
@@ -396,7 +487,7 @@ func (s *Slave) exec(data []byte, depth int) {
 	s.triageQueue = append(s.triageQueue, input)
 }
 
-func (s *Slave) execImpl(data []byte, depth int) (res int, ns uint64, cover []byte, crashed bool) {
+func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, crashed bool) {
 	for {
 		if atomic.LoadUint32(&shutdown) != 0 {
 			select {}
@@ -420,9 +511,8 @@ func (s *Slave) execImpl(data []byte, depth int) (res int, ns uint64, cover []by
 				s.hangingInputs[hash(data)] = struct{}{}
 				crashed = true
 			}
-			out := s.testee.shutdown()
+			output = s.testee.shutdown()
 			s.testee = nil
-			s.newCrashers = append(s.newCrashers, NewCrasherArgs{data, out})
 			return
 		}
 		return
@@ -482,10 +572,31 @@ func updateCover(base, cur []byte) {
 	if len(base) != coverSize || len(cur) != coverSize {
 		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
 	}
-	for i, v := range cur {
-		x := base[i]
-		if x < v {
-			base[i] = v
+	for i, x := range cur {
+		// Quantize the counters.
+		// Otherwise we get too inflated corpus.
+		if x == 0 {
+			x = 0
+		} else if x <= 1 {
+			x = 1
+		} else if x <= 2 {
+			x = 2
+		} else if x <= 4 {
+			x = 4
+		} else if x <= 8 {
+			x = 8
+		} else if x <= 16 {
+			x = 16
+		} else if x <= 32 {
+			x = 32
+		} else if x <= 64 {
+			x = 64
+		} else {
+			x = 255
+		}
+		v := base[i]
+		if v < x {
+			base[i] = x
 		}
 	}
 }
