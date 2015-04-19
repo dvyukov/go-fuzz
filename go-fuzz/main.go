@@ -23,13 +23,36 @@ var (
 	flagSlave   = flag.String("slave", "", "slave mode (value is master address)")
 	flagBin     = flag.String("bin", "", "test binary built with go-fuzz-build")
 	flagPprof   = flag.String("pprof", "", "serve pprof handlers on that address")
-	flagV       = flag.Bool("v", false, "verbose mode")
+	flagV       = flag.Int("v", 0, "verbosity level")
 
 	shutdown  uint32
 	shutdownC = make(chan struct{})
 )
 
 func main() {
+	buf0 := make([]byte, coverSize)
+	buf1 := make([]byte, coverSize)
+	for _, v0 := range []byte{0, 1, 2, 3, 4, 127, 128, 129, 255} {
+		for _, v1 := range []byte{0, 1, 2, 3, 4, 127, 128, 129, 255} {
+			for _, v2 := range []byte{0, 1, 2, 3, 4, 127, 128, 129, 255} {
+				for _, v3 := range []byte{0, 1, 2, 3, 4, 127, 128, 129, 255} {
+					buf0[0] = v0
+					buf0[coverSize-1] = v1
+					buf1[0] = v2
+					buf1[coverSize-1] = v3
+					newCover, newCounter := compareCoverBody(&buf0[0], &buf1[0])
+					newCover1, newCounter1 := compareCoverDump(buf0, buf1)
+					if newCover != newCover1 || newCounter != newCounter1 {
+						println("data:", v0, v1, "/", v2, v3)
+						println("res:", newCover1, newCounter1, "/", newCover, newCounter)
+						panic("bad")
+					}
+				}
+			}
+		}
+	}
+	//os.Exit(0)
+
 	flag.Parse()
 	if *flagCorpus == "" {
 		log.Fatalf("-corpus is not set")

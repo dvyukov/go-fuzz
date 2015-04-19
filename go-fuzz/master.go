@@ -196,7 +196,11 @@ type DoneSmashingArgs struct {
 	Input MasterInput
 }
 
-func (m *Master) DoneSmashing(a *DoneSmashingArgs, r *int) error {
+type DoneSmashingRes struct {
+	Smash MasterInput
+}
+
+func (m *Master) DoneSmashing(a *DoneSmashingArgs, r *DoneSmashingRes) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -209,6 +213,11 @@ func (m *Master) DoneSmashing(a *DoneSmashingArgs, r *int) error {
 	}
 	s.smashing = nil
 	m.fresh.removePersistent(Artifact{a.Input.Data, a.Input.Prio})
+	if len(m.fresh.m) > 0 {
+		input := m.fresh.remove()
+		s.smashing = &input
+		r.Smash = MasterInput{input.data, input.meta}
+	}
 	return nil
 }
 
