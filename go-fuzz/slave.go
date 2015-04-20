@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/rpc"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -17,13 +18,15 @@ const (
 	syncDeadline = 10 * syncPeriod
 )
 
-type Slave struct {
-	id      int
-	f       func([]byte)
-	master  *rpc.Client
-	mutator *Mutator
-
+// Hub contains data shared between all slaves in the process (e.g. corpus).
+// This reduces memory consumption for highly parallel slaves.
+type Hub struct {
+	id            int
+	procs         int
+	master        *rpc.Client
+	mu            sync.RWMutex
 	startTime     int64
+	lastSync      time.Time
 	maxCover      []byte
 	corpus        []Input
 	corpusSigs    map[Sig]struct{}
@@ -33,18 +36,25 @@ type Slave struct {
 	newInputs     []MasterInput
 	newCrashers   []NewCrasherArgs
 	hangingInputs map[Sig]struct{}
+	scoredLen     int
+
+	totalExecs    uint64
+	totalRestarts uint64
+}
+
+type Slave struct {
+	*Hub
+	mutator *Mutator
 
 	coverRegion []byte
 	inputRegion []byte
 	commFile    string
-	lastSync    time.Time
 
-	statExecs    uint64
-	statRestarts uint64
+	lastStatUpdate time.Time
+	statExecs      uint64
+	statRestarts   uint64
 
 	testee *Testee
-
-	lastScoreLen int
 }
 
 type Input struct {
@@ -60,29 +70,36 @@ type Input struct {
 	runningScoreSum int
 }
 
-func slaveMain() {
+func slaveMain(procs int) {
 	c, err := rpc.Dial("tcp", *flagSlave)
 	if err != nil {
 		log.Fatalf("failed to dial: %v", err)
 	}
-	s := &Slave{master: c}
-	s.setupCommFile()
-	s.mutator = newMutator()
-	s.maxCover = make([]byte, coverSize)
-	s.corpusSigs = make(map[Sig]struct{})
-	s.hangingInputs = make(map[Sig]struct{})
-	s.startTime = time.Now().UnixNano()
-
 	var res ConnectRes
-	err = s.master.Call("Master.Connect", &ConnectArgs{}, &res)
-	if err != nil {
+	if err := c.Call("Master.Connect", &ConnectArgs{Procs: procs}, &res); err != nil {
 		log.Fatalf("failed to connect to master: %v", err)
 	}
-	s.id = res.ID
-	s.triageQueue = res.Bootstrap
-	s.inputQueue = res.Corpus
 
-	s.loop()
+	hub := &Hub{
+		procs:         procs,
+		id:            res.ID,
+		master:        c,
+		maxCover:      make([]byte, coverSize),
+		corpusSigs:    make(map[Sig]struct{}),
+		hangingInputs: make(map[Sig]struct{}),
+		startTime:     time.Now().UnixNano(),
+		triageQueue:   res.Bootstrap,
+		inputQueue:    res.Corpus,
+	}
+
+	for i := 0; i < procs; i++ {
+		s := &Slave{
+			Hub:     hub,
+			mutator: newMutator(),
+		}
+		s.setupCommFile()
+		go s.loop()
+	}
 }
 
 func (s *Slave) setupCommFile() {
@@ -106,63 +123,91 @@ func (s *Slave) setupCommFile() {
 }
 
 func (s *Slave) loop() {
-loop:
 	for atomic.LoadUint32(&shutdown) == 0 {
-		if len(s.newCrashers) > 0 {
-			n := len(s.newCrashers) - 1
-			crash := s.newCrashers[n]
-			s.newCrashers[n] = NewCrasherArgs{}
-			s.newCrashers = s.newCrashers[:n]
-			s.handleNewCrasher(crash)
-			continue loop
-		}
+		s.mu.RLock()
+		if len(s.newCrashers) > 0 ||
+			len(s.newInputs) > 0 ||
+			len(s.triageQueue) > 0 ||
+			len(s.inputQueue) > 0 ||
+			len(s.smashQueue) > 0 ||
+			s.scoredLen != len(s.corpus) {
+			s.mu.RUnlock()
+			s.mu.Lock()
 
-		if len(s.newInputs) > 0 {
-			n := len(s.newInputs) - 1
-			input := s.newInputs[n]
-			s.newInputs[n] = MasterInput{}
-			s.newInputs = s.newInputs[:n]
-			if err := s.master.Call("Master.NewInput", NewInputArgs{input}, nil); err != nil {
-				log.Printf("new input call failed: %v", err)
+			if len(s.newCrashers) > 0 {
+				n := len(s.newCrashers) - 1
+				crash := s.newCrashers[n]
+				s.newCrashers[n] = NewCrasherArgs{}
+				s.newCrashers = s.newCrashers[:n]
+				s.mu.Unlock()
+				s.mu.RLock()
+				s.handleNewCrasher(crash)
+				s.mu.RUnlock()
+				continue
 			}
-			continue loop
-		}
 
-		if len(s.triageQueue) > 0 {
-			n := len(s.triageQueue) - 1
-			input := s.triageQueue[n]
-			s.triageQueue[n] = MasterInput{}
-			s.triageQueue = s.triageQueue[:n]
-			s.handleNewInput(input, true)
-			continue loop
-		}
+			if len(s.newInputs) > 0 {
+				n := len(s.newInputs) - 1
+				input := s.newInputs[n]
+				s.newInputs[n] = MasterInput{}
+				s.newInputs = s.newInputs[:n]
+				s.mu.Unlock()
+				if err := s.master.Call("Master.NewInput", NewInputArgs{input}, nil); err != nil {
+					log.Printf("new input call failed: %v", err)
+				}
+				continue
+			}
 
-		if len(s.inputQueue) > 0 {
-			n := len(s.inputQueue) - 1
-			input := s.inputQueue[n]
-			s.inputQueue[n] = MasterInput{}
-			s.inputQueue = s.inputQueue[:n]
-			s.handleNewInput(input, false)
-			continue loop
-		}
+			if len(s.triageQueue) > 0 {
+				n := len(s.triageQueue) - 1
+				input := s.triageQueue[n]
+				s.triageQueue[n] = MasterInput{}
+				s.triageQueue = s.triageQueue[:n]
+				s.mu.Unlock()
+				s.mu.RLock()
+				s.handleNewInput(input, true)
+				s.mu.RUnlock()
+				continue
+			}
 
-		if len(s.smashQueue) > 0 {
-			n := len(s.smashQueue) - 1
-			input := s.smashQueue[n]
-			s.smashQueue[n] = MasterInput{}
-			s.smashQueue = s.smashQueue[:n]
-			s.smash(input)
-			continue loop
-		}
+			if len(s.inputQueue) > 0 {
+				n := len(s.inputQueue) - 1
+				input := s.inputQueue[n]
+				s.inputQueue[n] = MasterInput{}
+				s.inputQueue = s.inputQueue[:n]
+				s.mu.Unlock()
+				s.mu.RLock()
+				s.handleNewInput(input, false)
+				s.mu.RUnlock()
+				continue
+			}
 
-		// TODO: recalculate periodically to reset freshness boost.
-		if s.lastScoreLen != len(s.corpus) {
-			s.recalculateScores()
-			s.lastScoreLen = len(s.corpus)
+			if len(s.smashQueue) > 0 {
+				n := len(s.smashQueue) - 1
+				input := s.smashQueue[n]
+				s.smashQueue[n] = MasterInput{}
+				s.smashQueue = s.smashQueue[:n]
+				s.mu.Unlock()
+				s.mu.RLock()
+				s.smash(input)
+				s.mu.RUnlock()
+				continue
+			}
+
+			// TODO: recalculate periodically to reset freshness boost.
+			if s.scoredLen != len(s.corpus) {
+				s.recalculateScores()
+				s.scoredLen = len(s.corpus)
+				s.mu.Unlock()
+				continue
+			}
+			s.mu.Unlock()
+			continue
 		}
 
 		data, depth := s.mutator.generate(s.corpus)
 		s.testInput(data, depth)
+		s.mu.RUnlock()
 	}
 }
 
@@ -179,8 +224,13 @@ func (s *Slave) handleNewInput(input MasterInput, triage bool) {
 	for i := 0; i < 3; i++ {
 		res, ns, cover, output, crashed := s.exec(inp.data)
 		if crashed {
+			// Inputs in corpus should not crash.
+			s.mu.RUnlock()
+			s.mu.Lock()
 			s.newCrashers = append(s.newCrashers, NewCrasherArgs{inp.data, output})
-			return // inputs in corpus should not crash
+			s.mu.Unlock()
+			s.mu.RLock()
+			return
 		}
 		if inp.cover == nil {
 			inp.cover = make([]byte, coverSize)
@@ -200,22 +250,28 @@ func (s *Slave) handleNewInput(input MasterInput, triage bool) {
 			inp.execTime = ns
 		}
 	}
-	if triage {
-		inp.data = s.minimizeInput(inp.data, inp.cover, inp.res)
-		if input.Prio < uint64(inp.res) {
-			input.Prio = uint64(inp.res)
-		}
-		s.newInputs = append(s.newInputs, input)
-	}
-	updateCover(s.maxCover, inp.cover)
 	inp.coverSize = 0
 	for _, v := range inp.cover {
 		if v != 0 {
 			inp.coverSize++
 		}
 	}
+	if triage {
+		inp.data = s.minimizeInput(inp.data, inp.cover, inp.res)
+		if input.Prio < uint64(inp.res) {
+			input.Prio = uint64(inp.res)
+		}
+	}
+	s.mu.RUnlock()
+	s.mu.Lock()
+	if triage {
+		s.newInputs = append(s.newInputs, input)
+	}
+	s.updateMaxCover(inp.cover)
 	s.corpusSigs[sig] = struct{}{}
 	s.corpus = append(s.corpus, inp)
+	s.mu.Unlock()
+	s.mu.RLock()
 }
 
 func (s *Slave) handleNewCrasher(crash NewCrasherArgs) {
@@ -232,7 +288,11 @@ func (s *Slave) minimizeCrasher(data, error []byte) []byte {
 			return false
 		}
 		if !bytes.Equal(error, extractSuppression(output)) {
+			s.mu.RUnlock()
+			s.mu.Lock()
 			s.newCrashers = append(s.newCrashers, NewCrasherArgs{candidate, output})
+			s.mu.Unlock()
+			s.mu.RLock()
 			return false
 		}
 		return true
@@ -246,7 +306,11 @@ func (s *Slave) minimizeCrasher(data, error []byte) []byte {
 func (s *Slave) minimizeInput(data, cover []byte, res int) []byte {
 	tmp := s.minimize(data, func(candidate, cover1, output []byte, res1 int, crashed bool) bool {
 		if crashed {
+			s.mu.RUnlock()
+			s.mu.Lock()
 			s.newCrashers = append(s.newCrashers, NewCrasherArgs{candidate, output})
+			s.mu.Unlock()
+			s.mu.RLock()
 			return false
 		}
 		if res != res1 {
@@ -301,73 +365,84 @@ func (s *Slave) smash(input MasterInput) {
 
 	// TODO: auto-detect magic bytes and strings in inputs and insert them more frequently.
 
-	_, _ = data, depth
+	// Stage 0: flip each bit one-by-one.
+	for i := 0; i < len(data)*8; i++ {
+		data[i/8] ^= 1 << uint(i%8)
+		s.testInput(data, depth)
+		data[i/8] ^= 1 << uint(i%8)
+	}
+
 	/*
-			// Stage 0: flip each bit one-by-one.
-			for i := 0; i < len(data)*8; i++ {
-				data[i/8] ^= 1 << uint(i%8)
-				s.testInput(data, depth)
-				data[i/8] ^= 1 << uint(i%8)
-			}
-
-			// Stage 1: two walking bits.
-			for i := 0; i < len(data)*8-1; i++ {
-				data[i/8] ^= 1 << uint(i%8)
-				data[(i+1)/8] ^= 1 << uint((i+1)%8)
-				s.testInput(data, depth)
-				data[i/8] ^= 1 << uint(i%8)
-				data[(i+1)/8] ^= 1 << uint((i+1)%8)
-			}
-
-			// Stage 2: four walking bits.
-			for i := 0; i < len(data)*8-3; i++ {
-				data[i/8] ^= 1 << uint(i%8)
-				data[(i+1)/8] ^= 1 << uint((i+1)%8)
-				data[(i+2)/8] ^= 1 << uint((i+2)%8)
-				data[(i+3)/8] ^= 1 << uint((i+3)%8)
-				s.testInput(data, depth)
-				data[i/8] ^= 1 << uint(i%8)
-				data[(i+1)/8] ^= 1 << uint((i+1)%8)
-				data[(i+2)/8] ^= 1 << uint((i+2)%8)
-				data[(i+3)/8] ^= 1 << uint((i+3)%8)
-			}
-
-		// Stage 3: byte flip.
-		for i := 0; i < len(data); i++ {
-			data[i] ^= 0xff
+		// Stage 1: two walking bits.
+		for i := 0; i < len(data)*8-1; i++ {
+			data[i/8] ^= 1 << uint(i%8)
+			data[(i+1)/8] ^= 1 << uint((i+1)%8)
 			s.testInput(data, depth)
-			data[i] ^= 0xff
+			data[i/8] ^= 1 << uint(i%8)
+			data[(i+1)/8] ^= 1 << uint((i+1)%8)
 		}
 
-			// Stage 4: two walking bytes.
-			for i := 0; i < len(data)-1; i++ {
-				data[i] ^= 0xff
-				data[i+1] ^= 0xff
-				s.testInput(data, depth)
-				data[i] ^= 0xff
-				data[i+1] ^= 0xff
-			}
-
-			// Stage 5: four walking bytes.
-			for i := 0; i < len(data)-3; i++ {
-				data[i] ^= 0xff
-				data[i+1] ^= 0xff
-				data[i+2] ^= 0xff
-				data[i+3] ^= 0xff
-				s.testInput(data, depth)
-				data[i] ^= 0xff
-				data[i+1] ^= 0xff
-				data[i+2] ^= 0xff
-				data[i+3] ^= 0xff
-			}
+		// Stage 2: four walking bits.
+		for i := 0; i < len(data)*8-3; i++ {
+			data[i/8] ^= 1 << uint(i%8)
+			data[(i+1)/8] ^= 1 << uint((i+1)%8)
+			data[(i+2)/8] ^= 1 << uint((i+2)%8)
+			data[(i+3)/8] ^= 1 << uint((i+3)%8)
+			s.testInput(data, depth)
+			data[i/8] ^= 1 << uint(i%8)
+			data[(i+1)/8] ^= 1 << uint((i+1)%8)
+			data[(i+2)/8] ^= 1 << uint((i+2)%8)
+			data[(i+3)/8] ^= 1 << uint((i+3)%8)
+		}
 	*/
+
+	// Stage 3: byte flip.
+	for i := 0; i < len(data); i++ {
+		data[i] ^= 0xff
+		s.testInput(data, depth)
+		data[i] ^= 0xff
+	}
+
+	/*
+		// Stage 4: two walking bytes.
+		for i := 0; i < len(data)-1; i++ {
+			data[i] ^= 0xff
+			data[i+1] ^= 0xff
+			s.testInput(data, depth)
+			data[i] ^= 0xff
+			data[i+1] ^= 0xff
+		}
+
+		// Stage 5: four walking bytes.
+		for i := 0; i < len(data)-3; i++ {
+			data[i] ^= 0xff
+			data[i+1] ^= 0xff
+			data[i+2] ^= 0xff
+			data[i+3] ^= 0xff
+			s.testInput(data, depth)
+			data[i] ^= 0xff
+			data[i+1] ^= 0xff
+			data[i+2] ^= 0xff
+			data[i+3] ^= 0xff
+		}
+	*/
+
+	// Stage 6: trim after every byte.
+	for i := 1; i < len(data); i++ {
+		tmp := data[:i]
+		s.testInput(tmp, depth)
+	}
 
 	var res DoneSmashingRes
 	if err := s.master.Call("Master.DoneSmashing", DoneSmashingArgs{s.id, input}, &res); err != nil {
 		log.Printf("done smashing call failed: %v", err)
 	}
 	if res.Smash.Data != nil {
+		s.mu.RUnlock()
+		s.mu.Lock()
 		s.smashQueue = append(s.smashQueue, res.Smash)
+		s.mu.Unlock()
+		s.mu.RLock()
 	}
 }
 
@@ -474,25 +549,32 @@ func (s *Slave) testInput(data []byte, depth int) {
 	}
 	_, _, cover, output, crashed := s.exec(data)
 	if crashed {
+		s.mu.RUnlock()
+		s.mu.Lock()
 		s.newCrashers = append(s.newCrashers, NewCrasherArgs{data, output})
+		s.mu.Unlock()
+		s.mu.RLock()
 		return
 	}
 	newCover, newCount := compareCover(s.maxCover, cover)
 	if !newCover && !newCount {
 		return
 	}
+	s.mu.RUnlock()
+	s.mu.Lock()
 	// TODO: give more priority for newCover
-	updateCover(s.maxCover, cover)
+	s.updateMaxCover(cover)
 	input := MasterInput{data, uint64(depth)}
 	s.triageQueue = append(s.triageQueue, input)
+	s.mu.Unlock()
+	s.mu.RLock()
 }
 
 func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, crashed bool) {
 	for {
-		if atomic.LoadUint32(&shutdown) != 0 {
-			select {}
-		}
-		s.sendSync()
+		// This is the only function that is executed regularly,
+		// so we tie some periodic checks to it.
+		s.periodicCheck()
 
 		s.statExecs++
 		if s.testee == nil {
@@ -508,7 +590,11 @@ func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, cra
 		}
 		if crashed || hang {
 			if hang {
+				s.mu.RUnlock()
+				s.mu.Lock()
 				s.hangingInputs[hash(data)] = struct{}{}
+				s.mu.Unlock()
+				s.mu.RLock()
 				crashed = true
 			}
 			output = s.testee.shutdown()
@@ -519,22 +605,69 @@ func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, cra
 	}
 }
 
-func (s *Slave) sendSync() {
-	if time.Since(s.lastSync) < syncPeriod {
+func (s *Slave) periodicCheck() {
+	if atomic.LoadUint32(&shutdown) != 0 {
+		select {}
+	}
+	if time.Since(s.lastStatUpdate) < syncPeriod {
 		return
 	}
-	s.lastSync = time.Now()
-	res := new(SyncRes)
-	args := &SyncArgs{ID: s.id, Execs: s.statExecs, Restarts: s.statRestarts}
+	s.mu.RUnlock()
+	s.mu.Lock()
+	s.totalExecs += s.statExecs
 	s.statExecs = 0
+	s.totalRestarts += s.statRestarts
 	s.statRestarts = 0
-	if err := s.master.Call("Master.Sync", args, res); err != nil {
-		log.Printf("sync call failed: %v", err)
-		return
+	if time.Since(s.lastSync) >= syncPeriod {
+		res := new(SyncRes)
+		args := &SyncArgs{ID: s.id, Execs: s.totalExecs, Restarts: s.totalRestarts}
+		s.totalExecs = 0
+		s.totalRestarts = 0
+		if err := s.master.Call("Master.Sync", args, res); err != nil {
+			log.Printf("sync call failed: %v", err)
+		} else {
+			s.inputQueue = append(s.inputQueue, res.Inputs...)
+			if res.Smash.Data != nil {
+				s.smashQueue = append(s.smashQueue, res.Smash)
+			}
+		}
+		s.lastSync = time.Now()
 	}
-	s.inputQueue = append(s.inputQueue, res.Inputs...)
-	if res.Smash.Data != nil {
-		s.smashQueue = append(s.smashQueue, res.Smash)
+	s.mu.Unlock()
+	s.mu.RLock()
+}
+
+func (s *Slave) updateMaxCover(cur []byte) {
+	base := s.maxCover
+	if len(base) != coverSize || len(cur) != coverSize {
+		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
+	}
+	for i, x := range cur {
+		// Quantize the counters.
+		// Otherwise we get too inflated corpus.
+		if x == 0 {
+			x = 0
+		} else if x <= 1 {
+			x = 1
+		} else if x <= 2 {
+			x = 2
+		} else if x <= 4 {
+			x = 4
+		} else if x <= 8 {
+			x = 8
+		} else if x <= 16 {
+			x = 16
+		} else if x <= 32 {
+			x = 32
+		} else if x <= 64 {
+			x = 64
+		} else {
+			x = 255
+		}
+		v := base[i]
+		if v < x {
+			base[i] = x
+		}
 	}
 }
 
@@ -567,36 +700,3 @@ func compareCoverDump(base, cur []byte) (bool, bool) {
 }
 
 func compareCoverBody(base, cur *byte) (bool, bool) // in compare.s
-
-func updateCover(base, cur []byte) {
-	if len(base) != coverSize || len(cur) != coverSize {
-		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
-	}
-	for i, x := range cur {
-		// Quantize the counters.
-		// Otherwise we get too inflated corpus.
-		if x == 0 {
-			x = 0
-		} else if x <= 1 {
-			x = 1
-		} else if x <= 2 {
-			x = 2
-		} else if x <= 4 {
-			x = 4
-		} else if x <= 8 {
-			x = 8
-		} else if x <= 16 {
-			x = 16
-		} else if x <= 32 {
-			x = 32
-		} else if x <= 64 {
-			x = 64
-		} else {
-			x = 255
-		}
-		v := base[i]
-		if v < x {
-			base[i] = x
-		}
-	}
-}

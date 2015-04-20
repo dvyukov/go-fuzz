@@ -54,19 +54,9 @@ func main() {
 	//os.Exit(0)
 
 	flag.Parse()
-	if *flagCorpus == "" {
-		log.Fatalf("-corpus is not set")
-	}
-	if *flagWorkdir == "" {
-		log.Fatalf("-workdir is not set")
-	}
-	if *flagBin == "" {
-		log.Fatalf("-bin is not set")
-	}
 	if *flagMaster != "" && *flagSlave != "" {
 		log.Fatalf("both -master and -slave are specified")
 	}
-
 	if *flagPprof != "" {
 		go http.ListenAndServe(*flagPprof, nil)
 	}
@@ -86,6 +76,12 @@ func main() {
 	syscall.Setpriority(syscall.PRIO_PROCESS, 0, 19)
 
 	if *flagMaster != "" || *flagSlave == "" {
+		if *flagCorpus == "" {
+			log.Fatalf("-corpus is not set")
+		}
+		if *flagWorkdir == "" {
+			log.Fatalf("-workdir is not set")
+		}
 		if *flagMaster == "" {
 			*flagMaster = "localhost:0"
 		}
@@ -100,9 +96,10 @@ func main() {
 	}
 
 	if *flagSlave != "" {
-		for i := 0; i < *flagProcs; i++ {
-			go slaveMain()
+		if *flagBin == "" {
+			log.Fatalf("-bin is not set")
 		}
+		go slaveMain(*flagProcs)
 	}
 
 	select {}
