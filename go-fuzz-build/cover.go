@@ -125,8 +125,11 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 	case *ast.IfStmt:
 		ast.Walk(f, n.Body)
 		if n.Else == nil {
-			// TODO: add else because we want coverage for "not taken"
-			return nil
+			// Add else because we want coverage for "not taken".
+			n.Else = &ast.BlockStmt{
+				Lbrace: n.Body.End(),
+				Rbrace: n.Body.End(),
+			}
 		}
 		// The elses are special, because if we have
 		//	if x {
@@ -162,6 +165,21 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 			return nil
 		}
 	case *ast.SwitchStmt:
+		hasDefault := false
+		if n.Body == nil {
+			n.Body = new(ast.BlockStmt)
+		}
+		for _, s := range n.Body.List {
+			if cas, ok := s.(*ast.CaseClause); ok && cas.List == nil {
+				hasDefault = true
+				break
+			}
+		}
+		if !hasDefault {
+			// Add default case to get additional coverage.
+			n.Body.List = append(n.Body.List, &ast.CaseClause{})
+		}
+
 		// Don't annotate an empty switch - creates a syntax error.
 		if n.Body == nil || len(n.Body.List) == 0 {
 			return nil

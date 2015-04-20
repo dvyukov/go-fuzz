@@ -32,6 +32,7 @@ type Master struct {
 
 type MasterSlave struct {
 	id       int
+	procs    int
 	pending  []MasterInput
 	smashing *Artifact
 	lastSync time.Time
@@ -68,8 +69,12 @@ func masterLoop(m *Master) {
 		if m.statExecs != 0 {
 			restarts = m.statExecs / m.statRestarts
 		}
-		log.Printf("slaves: %v, corpus: %v (%v ago), fresh: %v, crashers: %v, suppressions: %v, restarts: 1/%v, execs: %v (%.0f/sec), uptime: %v",
-			len(m.slaves), len(m.corpus.m), lastInput, len(m.fresh.m), len(m.crashers.m), len(m.suppressions.m),
+		procs := 0
+		for _, s := range m.slaves {
+			procs += s.procs
+		}
+		log.Printf("slaves: %v/%v, corpus: %v (%v ago), fresh: %v, crashers: %v, suppressions: %v, restarts: 1/%v, execs: %v (%.0f/sec), uptime: %v",
+			len(m.slaves), procs, len(m.corpus.m), lastInput, len(m.fresh.m), len(m.crashers.m), len(m.suppressions.m),
 			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime), uptime)
 		for id, s := range m.slaves {
 			if time.Since(s.lastSync) < syncDeadline {
@@ -89,6 +94,7 @@ func masterLoop(m *Master) {
 }
 
 type ConnectArgs struct {
+	Procs int
 }
 
 type ConnectRes struct {
@@ -107,7 +113,7 @@ func (m *Master) Connect(a *ConnectArgs, r *ConnectRes) error {
 	defer m.mu.Unlock()
 
 	m.idSeq++
-	s := &MasterSlave{id: m.idSeq}
+	s := &MasterSlave{id: m.idSeq, procs: a.Procs}
 	s.lastSync = time.Now()
 	m.slaves[s.id] = s
 
