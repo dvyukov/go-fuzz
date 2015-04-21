@@ -24,10 +24,11 @@ type Master struct {
 	suppressions *PersistentSet
 	crashers     *PersistentSet
 
-	startTime    time.Time
-	lastInput    time.Time
-	statExecs    uint64
-	statRestarts uint64
+	startTime     time.Time
+	lastInput     time.Time
+	statExecs     uint64
+	statRestarts  uint64
+	coverFullness float64
 }
 
 type MasterSlave struct {
@@ -73,9 +74,10 @@ func masterLoop(m *Master) {
 		for _, s := range m.slaves {
 			procs += s.procs
 		}
-		log.Printf("slaves: %v/%v, corpus: %v (%v ago), fresh: %v, crashers: %v, suppressions: %v, restarts: 1/%v, execs: %v (%.0f/sec), uptime: %v",
+		log.Printf("slaves: %v/%v, corpus: %v (%v ago), fresh: %v, crashers: %v, suppressions: %v,"+
+			" restarts: 1/%v, execs: %v (%.0f/sec), cover: %.2f%%, uptime: %v",
 			len(m.slaves), procs, len(m.corpus.m), lastInput, len(m.fresh.m), len(m.crashers.m), len(m.suppressions.m),
-			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime), uptime)
+			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime), m.coverFullness*100, uptime)
 		for id, s := range m.slaves {
 			if time.Since(s.lastSync) < syncDeadline {
 				continue
@@ -166,9 +168,10 @@ func (m *Master) NewCrasher(a *NewCrasherArgs, r *int) error {
 }
 
 type SyncArgs struct {
-	ID       int
-	Execs    uint64
-	Restarts uint64
+	ID            int
+	Execs         uint64
+	Restarts      uint64
+	CoverFullness float64
 }
 
 type SyncRes struct {
@@ -186,6 +189,9 @@ func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
 	}
 	m.statExecs += a.Execs
 	m.statRestarts += a.Restarts
+	if m.coverFullness < a.CoverFullness {
+		m.coverFullness = a.CoverFullness
+	}
 	s.lastSync = time.Now()
 	r.Inputs = s.pending
 	s.pending = nil
