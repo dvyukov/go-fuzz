@@ -131,7 +131,7 @@ func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
 	return t
 }
 
-func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, hang, retry bool) {
+func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, hanged, retry bool) {
 	if t.down {
 		log.Fatalf("cannot test: testee is already shutdown")
 	}
@@ -155,9 +155,9 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, h
 	}
 	var r Reply
 	err := binary.Read(t.inPipe, binary.LittleEndian, &r)
-	hang = atomic.LoadInt64(&t.startTime) == -1
+	hanged = atomic.LoadInt64(&t.startTime) == -1
 	atomic.StoreInt64(&t.startTime, 0)
-	if err != nil {
+	if err != nil || hanged {
 		// Should have been crashed.
 		crashed = true
 		return

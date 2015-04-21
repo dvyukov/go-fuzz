@@ -51,8 +51,7 @@ func main() {
 	if err != nil {
 		failf("failed to create temp dir: %v", err)
 	}
-	println(workdir)
-	//defer os.RemoveAll(workdir)
+	defer os.RemoveAll(workdir)
 
 	if deps["runtime/cgo"] {
 		// Trick go command into thinking that it has up-to-date sources for cmd/cgo.

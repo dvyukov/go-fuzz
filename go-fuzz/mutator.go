@@ -21,9 +21,6 @@ func (m *Mutator) rand(n int) int {
 }
 
 func (m *Mutator) generate(corpus []Input) ([]byte, int) {
-	if len(corpus) == 0 {
-		return []byte{byte(m.rand(256))}, 0
-	}
 	scoreSum := corpus[len(corpus)-1].runningScoreSum
 	weightedIdx := m.rand(scoreSum)
 	idx := sort.Search(len(corpus), func(i int) bool {
@@ -347,21 +344,6 @@ func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
 	return res
 }
 
-var (
-	interesting8  = []int8{-128, -1, 0, 1, 16, 32, 64, 100, 127}
-	interesting16 = []int16{-32768, -129, 128, 255, 256, 512, 1000, 1024, 4096, 32767}
-	interesting32 = []int32{-2147483648, -100663046, -32769, 32768, 65535, 65536, 100663045, 2147483647}
-)
-
-func init() {
-	for _, v := range interesting8 {
-		interesting16 = append(interesting16, int16(v))
-	}
-	for _, v := range interesting16 {
-		interesting32 = append(interesting32, int32(v))
-	}
-}
-
 // chooseLen chooses length of range mutation.
 // It gives preference to shorter ranges.
 func (m *Mutator) chooseLen(n int) int {
@@ -423,4 +405,19 @@ func swap64(v uint64) uint64 {
 	v |= uint64(v1) << 48
 	v |= uint64(v0) << 56
 	return v
+}
+
+var (
+	interesting8  = []int8{-128, -1, 0, 1, 16, 32, 64, 100, 127}
+	interesting16 = []int16{-32768, -129, 128, 255, 256, 512, 1000, 1024, 4096, 32767}
+	interesting32 = []int32{-2147483648, -100663046, -32769, 32768, 65535, 65536, 100663045, 2147483647}
+)
+
+func init() {
+	for _, v := range interesting8 {
+		interesting16 = append(interesting16, int16(v))
+	}
+	for _, v := range interesting16 {
+		interesting32 = append(interesting32, int32(v))
+	}
 }

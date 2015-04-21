@@ -30,29 +30,6 @@ var (
 )
 
 func main() {
-	buf0 := make([]byte, coverSize)
-	buf1 := make([]byte, coverSize)
-	for _, v0 := range []byte{0, 1, 2, 3, 4, 127, 128, 129, 255} {
-		for _, v1 := range []byte{0, 1, 2, 3, 4, 127, 128, 129, 255} {
-			for _, v2 := range []byte{0, 1, 2, 3, 4, 127, 128, 129, 255} {
-				for _, v3 := range []byte{0, 1, 2, 3, 4, 127, 128, 129, 255} {
-					buf0[0] = v0
-					buf0[coverSize-1] = v1
-					buf1[0] = v2
-					buf1[coverSize-1] = v3
-					newCover, newCounter := compareCoverBody(&buf0[0], &buf1[0])
-					newCover1, newCounter1 := compareCoverDump(buf0, buf1)
-					if newCover != newCover1 || newCounter != newCounter1 {
-						println("data:", v0, v1, "/", v2, v3)
-						println("res:", newCover1, newCounter1, "/", newCover, newCounter)
-						panic("bad")
-					}
-				}
-			}
-		}
-	}
-	//os.Exit(0)
-
 	flag.Parse()
 	if *flagMaster != "" && *flagSlave != "" {
 		log.Fatalf("both -master and -slave are specified")
@@ -99,7 +76,7 @@ func main() {
 		if *flagBin == "" {
 			log.Fatalf("-bin is not set")
 		}
-		go slaveMain(*flagProcs)
+		go slaveMain()
 	}
 
 	select {}
