@@ -97,21 +97,3 @@ func (ps *PersistentSet) addDescription(data []byte, desc []byte, typ string) {
 		log.Printf("failed to write file: %v", err)
 	}
 }
-
-func (ps *PersistentSet) remove() Artifact {
-	var min Artifact
-	for _, a := range ps.m {
-		if len(min.data) == 0 || len(min.data) > len(a.data) {
-			min = a
-		}
-	}
-	delete(ps.m, hash(min.data))
-	return min
-}
-
-func (ps *PersistentSet) removePersistent(a Artifact) {
-	sig := hash(a.data)
-	delete(ps.m, sig)
-	fname := persistentFilename(ps.dir, a, sig)
-	os.Remove(fname)
-}
