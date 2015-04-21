@@ -25,9 +25,9 @@ type Hub struct {
 	procs         int
 	master        *rpc.Client
 	mu            sync.RWMutex
-	startTime     int64
 	lastSync      time.Time
 	maxCover      []byte
+	maxCoverSize  int
 	corpus        []Input
 	corpusSigs    map[Sig]struct{}
 	triageQueue   []MasterInput
@@ -65,7 +65,6 @@ type Input struct {
 	depth           int
 	execTime        uint64
 	boost           int
-	addTime         int64
 	score           int
 	runningScoreSum int
 }
@@ -87,7 +86,6 @@ func slaveMain(procs int) {
 		maxCover:      make([]byte, coverSize),
 		corpusSigs:    make(map[Sig]struct{}),
 		hangingInputs: make(map[Sig]struct{}),
-		startTime:     time.Now().UnixNano(),
 		triageQueue:   res.Bootstrap,
 		inputQueue:    res.Corpus,
 	}
@@ -194,7 +192,6 @@ func (s *Slave) loop() {
 				continue
 			}
 
-			// TODO: recalculate periodically to reset freshness boost.
 			if s.scoredLen != len(s.corpus) {
 				s.recalculateScores()
 				s.scoredLen = len(s.corpus)
@@ -219,7 +216,7 @@ func (s *Slave) handleNewInput(input MasterInput, triage bool) {
 	if _, ok := s.hangingInputs[sig]; ok {
 		return // no, thanks
 	}
-	inp := Input{data: input.Data, depth: int(input.Prio), execTime: 1 << 60, addTime: time.Now().UnixNano()}
+	inp := Input{data: input.Data, depth: int(input.Prio), execTime: 1 << 60}
 	// Calculate min exec time, min coverage and max result of 3 runs.
 	for i := 0; i < 3; i++ {
 		res, ns, cover, output, crashed := s.exec(inp.data)
@@ -427,10 +424,23 @@ func (s *Slave) smash(input MasterInput) {
 		}
 	*/
 
-	// Stage 6: trim after every byte.
+	// arith for bytes
+	// arith for shorts (both endianess)
+	// arith for ints (both endianess)
+	// set to interesting_8
+	// set to interesting_16 (both endianess)
+	// set to interesting_32 (both endianess)
+
+	// Trim after every byte.
 	for i := 1; i < len(data); i++ {
 		tmp := data[:i]
 		s.testInput(tmp, depth)
+	}
+
+	// Do a bunch of random mutations so that this input catches up with the rest.
+	for i := 0; i < 1e4; i++ {
+		tmp := s.mutator.mutate(data, s.corpus)
+		s.testInput(tmp, depth+1)
 	}
 
 	var res DoneSmashingRes
@@ -457,7 +467,6 @@ func (s *Slave) recalculateScores() {
 	avgCoverSize := sumCoverSize / n
 
 	scoreSum := 0
-	now := int64(time.Now().UnixNano())
 	for i, inp := range s.corpus {
 		score := 10.0
 
@@ -522,11 +531,6 @@ func (s *Slave) recalculateScores() {
 		default:
 			// Assuming this is a correct and interesting in some way input.
 			score *= 4
-		}
-
-		// New inputs get 3x boost for the first hour to catch up with the rest.
-		if now-s.startTime > int64(time.Hour) && now-inp.addTime < int64(time.Hour) {
-			score *= 3
 		}
 
 		if score < 1 {
@@ -620,7 +624,12 @@ func (s *Slave) periodicCheck() {
 	s.statRestarts = 0
 	if time.Since(s.lastSync) >= syncPeriod {
 		res := new(SyncRes)
-		args := &SyncArgs{ID: s.id, Execs: s.totalExecs, Restarts: s.totalRestarts}
+		args := &SyncArgs{
+			ID:            s.id,
+			Execs:         s.totalExecs,
+			Restarts:      s.totalRestarts,
+			CoverFullness: float64(s.maxCoverSize) / coverSize,
+		}
 		s.totalExecs = 0
 		s.totalRestarts = 0
 		if err := s.master.Call("Master.Sync", args, res); err != nil {
@@ -666,6 +675,9 @@ func (s *Slave) updateMaxCover(cur []byte) {
 		}
 		v := base[i]
 		if v < x {
+			if v == 0 {
+				s.maxCoverSize++
+			}
 			base[i] = x
 		}
 	}

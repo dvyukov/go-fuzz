@@ -41,7 +41,7 @@ func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
 		nm++
 	}
 	for iter := 0; iter < nm; iter++ {
-		switch m.rand(17) {
+		switch m.rand(18) {
 		case 0:
 			// Remove a range of bytes.
 			if len(res) <= 1 {
@@ -318,6 +318,27 @@ func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
 				continue
 			}
 			copy(res[idx0:idx0+m.rand(diff-2)+1], other[idx0:])
+		case 17:
+			// Insert a part of another input.
+			if len(res) < 4 || len(corpus) < 2 {
+				iter--
+				continue
+			}
+			other := corpus[m.rand(len(corpus))].data
+			if len(other) < 4 || &res[0] == &other[0] {
+				iter--
+				continue
+			}
+			pos0 := m.rand(len(res) + 1)
+			pos1 := m.rand(len(other) - 2)
+			n := m.chooseLen(len(other)-pos1-2) + 2
+			for i := 0; i < n; i++ {
+				res = append(res, 0)
+			}
+			copy(res[pos0+n:], res[pos0:])
+			for i := 0; i < n; i++ {
+				res[pos0+i] = other[pos1+i]
+			}
 		}
 	}
 	if len(res) > maxInputSize {
