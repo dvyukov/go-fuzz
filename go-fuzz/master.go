@@ -114,6 +114,7 @@ func (m *Master) Connect(a *ConnectArgs, r *ConnectRes) error {
 	}
 	m.slaves[s.id] = s
 	r.ID = s.id
+	log.Printf("Connect: %v %v", len(m.bootstrap.m), len(m.corpus.m))
 	for _, a := range m.bootstrap.m {
 		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, false, false})
 	}

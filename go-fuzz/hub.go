@@ -90,6 +90,14 @@ func (hub *Hub) loop() {
 
 	syncTicker := time.NewTicker(syncPeriod).C
 	for {
+		if len(hub.triageQueue) > 0 && triageC == nil {
+			n := len(hub.triageQueue) - 1
+			triageInput = hub.triageQueue[n]
+			hub.triageQueue[n] = MasterInput{}
+			hub.triageQueue = hub.triageQueue[:n]
+			triageC = hub.triageC
+		}
+
 		select {
 		case <-syncTicker:
 			// Sync with the master.
@@ -108,12 +116,8 @@ func (hub *Hub) loop() {
 			}
 			if len(res.Inputs) > 0 {
 				hub.triageQueue = append(hub.triageQueue, res.Inputs...)
-				if triageC == nil {
-					n := len(hub.triageQueue) - 1
-					triageInput = hub.triageQueue[n]
-					hub.triageQueue[n] = MasterInput{}
-					hub.triageQueue = hub.triageQueue[:n]
-					triageC = hub.triageC
+				for _, inp := range res.Inputs {
+					log.Printf("Connect: mini=%v smashed=%v", inp.Minimized, inp.Smashed)
 				}
 			}
 			if hub.corpusStale {
@@ -122,6 +126,7 @@ func (hub *Hub) loop() {
 			}
 
 		case triageC <- triageInput:
+			log.Printf("triageC <- triageInput")
 			// Send new input to slaves for triage.
 			if len(hub.triageQueue) > 0 {
 				n := len(hub.triageQueue) - 1
@@ -139,6 +144,7 @@ func (hub *Hub) loop() {
 			hub.stats.restarts += s.restarts
 
 		case input := <-hub.newInputC:
+			log.Printf("input := <-hub.newInputC: mine=%v", input.mine)
 			// New interesting input from slaves.
 			ro := hub.ro.Load().(*ROData)
 			newCover, newCount := compareCover(ro.maxCover, input.cover)
