@@ -18,12 +18,14 @@ type Testee struct {
 	outPipe     *os.File
 	stdoutPipe  *os.File
 	startTime   int64
+	execs       int
 	outputC     chan []byte
 	downC       chan bool
 	down        bool
 }
 
 func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
+retry:
 	rIn, wIn, err := os.Pipe()
 	if err != nil {
 		log.Fatalf("failed to pipe: %v", err)
@@ -47,7 +49,17 @@ func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
 	cmd.ExtraFiles = append(cmd.ExtraFiles, rOut)
 	cmd.ExtraFiles = append(cmd.ExtraFiles, wIn)
 	if err = cmd.Start(); err != nil {
-		log.Fatalf("failed to start test binary: %v", err)
+		// This can be a transient failure like "cannot allocate memory" or "text file is busy".
+		log.Printf("failed to start test binary: %v", err)
+		rIn.Close()
+		wIn.Close()
+		rOut.Close()
+		wOut.Close()
+		rStdout.Close()
+		wStdout.Close()
+		comm.Close()
+		time.Sleep(time.Second)
+		goto retry
 	}
 	rOut.Close()
 	wIn.Close()
@@ -135,6 +147,16 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, h
 	if t.down {
 		log.Fatalf("cannot test: testee is already shutdown")
 	}
+
+	// The test binary can accumulate significant amount of memory,
+	// so we recreate it periodically.
+	t.execs++
+	if t.execs > 10000 {
+		t.cmd.Process.Signal(syscall.SIGKILL)
+		retry = true
+		return
+	}
+
 	for i := range t.coverRegion {
 		t.coverRegion[i] = 0
 	}

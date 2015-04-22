@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime"
+	"runtime/debug"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -18,7 +19,7 @@ var (
 	flagCorpus  = flag.String("corpus", "", "dir with input corpus (one file per input)")
 	flagWorkdir = flag.String("workdir", "", "dir with persistent work data")
 	flagProcs   = flag.Int("procs", runtime.NumCPU(), "parallelism level")
-	flagTimeout = flag.Int("timeout", 5000, "test timeout, in ms")
+	flagTimeout = flag.Int("timeout", 10000, "test timeout, in ms")
 	flagMaster  = flag.String("master", "", "master mode (value is master address)")
 	flagSlave   = flag.String("slave", "", "slave mode (value is master address)")
 	flagBin     = flag.String("bin", "", "test binary built with go-fuzz-build")
@@ -36,6 +37,8 @@ func main() {
 	}
 	if *flagPprof != "" {
 		go http.ListenAndServe(*flagPprof, nil)
+	} else {
+		runtime.MemProfileRate = 0
 	}
 
 	go func() {
@@ -49,7 +52,8 @@ func main() {
 		os.Exit(0)
 	}()
 
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	runtime.GOMAXPROCS(min(*flagProcs, runtime.NumCPU()))
+	debug.SetGCPercent(50) // most memory is in large binary blobs
 	syscall.Setpriority(syscall.PRIO_PROCESS, 0, 19)
 
 	if *flagMaster != "" || *flagSlave == "" {
