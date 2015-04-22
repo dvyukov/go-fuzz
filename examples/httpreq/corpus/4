@@ -1,0 +1,2 @@
+GET http://www.somehost.com/path/file.html HTTP/1.0
+

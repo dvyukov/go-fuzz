@@ -1,0 +1,18 @@
+HTTP/1.1 200 OK
+Vary: Authorization,Accept
+Transfer-Encoding: chunked
+Etag: "030d9f50e8508b198ccf7603097e502b"
+Content-Type: application/vnd.bonfire+xml; charset=utf-8
+Date: Wed, 01 Jun 2011 14:59:37 GMT
+Server: thin 1.2.11 codename Bat-Shit Crazy
+Allow: GET,DELETE,PUT,OPTIONS,HEAD
+Cache-Control: public,max-age=15
+Connection: close
+
+<network xmlns="http://api.bonfire-project.eu/doc/schemas/occi" href="/locations/fr-inria/networks/20">
+  <id>20</id>
+  <name>Public Network</name>
+  <address />
+  <public>YES</public>
+</network>
+

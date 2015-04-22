@@ -1,0 +1,13 @@
+HTTP/1.1 201 Created
+Vary: Authorization,Accept
+Transfer-Encoding: chunked
+Location: https://api.bonfire-project.eu:444/experiments/336
+Content-Type: application/vnd.bonfire+xml; charset=utf-8
+Date: Wed, 01 Jun 2011 14:59:31 GMT
+Server: thin 1.2.11 codename Bat-Shit Crazy
+Cache-Control: no-cache
+Connection: close
+
+<?xml version="1.0" encoding="UTF-8"?>
+<experiment href="/experiments/336" xmlns="http://api.bonfire-project.eu/doc/schemas/occi">
+

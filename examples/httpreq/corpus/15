@@ -1,0 +1,14 @@
+POST / HTTP/1.1
+content-type:application/x-www-form-urlencoded;charset=utf-8
+host: https://importexport.amazonaws.com
+content-length:207
+
+Action=GetStatus
+&JobId=JOBID
+
+&SignatureMethod=HmacSHA256
+&SignatureVersion=2
+&Version=2014-12-18
+&Signature=lBP67vCvGlDMBQ1dofZxg8E8SUEXAMPLE
+&Timestamp=2014-12-20T22%3A30%3A59.556Z
+

@@ -1,0 +1,21 @@
+HTTP/1.1 200 OK
+Vary: Authorization,Accept
+Transfer-Encoding: chunked
+Etag: "fa2ba873343ba638123b7671c8c09998"
+Content-Type: application/vnd.bonfire+xml; charset=utf-8
+Date: Wed, 01 Jun 2011 14:59:30 GMT
+Server: thin 1.2.11 codename Bat-Shit Crazy
+Allow: GET,OPTIONS,HEAD
+Cache-Control: public,max-age=120
+Connection: close
+
+<?xml version="1.0" encoding="UTF-8"?>
+<root xmlns="http://api.bonfire-project.eu/doc/schemas/occi" href="/">
+  <version>0.8.9</version>
+  <timestamp>1306940370</timestamp>
+  <link rel="experiments" href="/experiments" type="application/vnd.bonfire+xml"/>
+  <link rel="locations" href="/locations" type="application/vnd.bonfire+xml"/>
+  <link rel="users" href="/users" type="application/vnd.bonfire+xml"/>
+</root>
+
+

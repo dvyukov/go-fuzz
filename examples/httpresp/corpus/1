@@ -1,0 +1,15 @@
+HTTP/1.0 200 OK
+Date: Fri, 31 Dec 1999 23:59:59 GMT
+Content-Type: text/html
+Content-Length: 30
+
+<html>
+<body>
+<h1>Happy New Millennium!</h1>
+(more file contents)
+  .
+  .
+  .
+</body>
+</html>
+

@@ -1,0 +1,4 @@
+GET /path/file.html HTTP/1.1
+Host: www.host1.com:80
+
+

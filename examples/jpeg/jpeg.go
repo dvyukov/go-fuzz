@@ -1,18 +1,19 @@
 package jpeg
 
 import (
-	"image/jpeg"
 	"bytes"
+	"image/jpeg"
 )
 
-func Fuzz(data []byte) {
+func Fuzz(data []byte) int {
 	img, err := jpeg.Decode(bytes.NewReader(data))
 	if err != nil {
-		return
+		return 0
 	}
 	var w bytes.Buffer
 	err = jpeg.Encode(&w, img, nil)
 	if err != nil {
 		panic(err)
 	}
+	return 1
 }

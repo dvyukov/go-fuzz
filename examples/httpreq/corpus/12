@@ -1,0 +1,16 @@
+POST /experiments HTTP/1.1
+Host: api.bonfire-project.eu:444
+Accept: */*
+Authorization: Basic XXX
+Accept-Encoding: gzip, deflate
+Content-Type: application/vnd.bonfire+xml; charset=utf-8
+
+<?xml version="1.0" encoding="UTF-8"?>
+<experiment xmlns="http://api.bonfire-project.eu/doc/schemas/occi">
+  <name>Scenario1</name>
+  <walltime>1800</walltime>
+  <description>Demo of scenario1 using Restfully</description>
+</experiment>
+
+
+

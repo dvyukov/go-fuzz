@@ -1,0 +1,17 @@
+HTTP/1.1 200 OK
+Alternate-Protocol:80:quic,p=0.5
+Cache-Control:private
+Content-Length:258
+Content-Type:text/html; charset=UTF-8
+Date:Tue, 14 Apr 2015 09:19:01 GMT
+Location:http://www.google.ru/?gfe_rd=cr&ei=hdssVfWvAqaG8QeAjICQAg
+Server:GFE/2.0
+X-Google-Backends:acfq6:80
+X-Google-DOS-Service-Trace:main:home
+X-Google-GFE-Request-Trace:acfq6:80
+X-Google-GFE-Response-Code-Details-Trace:handled_by_response_generator_plugin
+X-Google-GFE-Service-Trace:home
+X-Google-Service:home
+X-Google-Shellfish-Status:CIgC
+
+asdasdsad

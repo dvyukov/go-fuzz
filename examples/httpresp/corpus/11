@@ -1,0 +1,32 @@
+HTTP/1.1 200 OK
+Vary: Authorization,Accept
+Transfer-Encoding: chunked
+Etag: "922928aa66e64e4150d43fd361747ab0"
+Content-Type: application/vnd.bonfire+xml; charset=utf-8
+Date: Wed, 01 Jun 2011 14:59:32 GMT
+Server: thin 1.2.11 codename Bat-Shit Crazy
+Allow: GET,PUT,DELETE,OPTIONS,HEAD
+Cache-Control: public,max-age=30
+Connection: close
+
+<?xml version="1.0" encoding="UTF-8"?>
+<experiment href="/experiments/336" xmlns="http://api.bonfire-project.eu/doc/schemas/occi">
+  <id>336</id>
+  <description>Demo of scenario1 using Restfully</description>
+  <name>Scenario1</name>
+  <walltime>1800</walltime>
+  <user_id>crohr</user_id>
+  <status>running</status>
+  <networks>
+  </networks>
+  <computes>
+  </computes>
+  <storages>
+  </storages>
+  <link rel="parent" href="/"/>
+  <link rel="storages" href="/experiments/336/storages"/>
+  <link rel="networks" href="/experiments/336/networks"/>
+  <link rel="computes" href="/experiments/336/computes"/>
+</experiment>
+
+

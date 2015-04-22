@@ -100,13 +100,11 @@ func (s *Slave) triageInput(input MasterInput) {
 		depth:    int(input.Prio),
 		execTime: 1 << 60,
 	}
-	log.Printf("triageInput: [%v] mini=%v smash=%v", len(input.Data), input.Minimized, input.Smashed)
 	// Calculate min exec time, min coverage and max result of 3 runs.
 	for i := 0; i < 3; i++ {
 		res, ns, cover, output, crashed, hanged := s.exec(inp.data)
 		if crashed {
 			// Inputs in corpus should not crash.
-			log.Printf("s.crasherQueue = append")
 			s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{inp.data, output, extractSuppression(output), hanged})
 			return
 		}
@@ -135,9 +133,8 @@ func (s *Slave) triageInput(input MasterInput) {
 		}
 	}
 	if !input.Minimized {
-		log.Printf("minimizing")
 		inp.mine = true
-		inp.data = s.minimizeInput(inp.data, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
+		inp.data = s.minimizeInput(inp.data, false, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if crashed {
 				s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{candidate, output, extractSuppression(output), hanged})
 				return false
@@ -148,19 +145,15 @@ func (s *Slave) triageInput(input MasterInput) {
 			}
 			return true
 		})
-		log.Printf("minimized")
 	} else if !input.Smashed {
-		log.Printf("smash {{{")
 		s.smash(inp.data, inp.depth)
-		log.Printf("smash }}}")
 	}
-	log.Printf("s.hub.newInputC <- inp")
 	s.hub.newInputC <- inp
 }
 
 func (s *Slave) processCrasher(crash NewCrasherArgs) {
 	if !crash.Hanging {
-		crash.Data = s.minimizeInput(crash.Data, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
+		crash.Data = s.minimizeInput(crash.Data, true, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if !crashed {
 				return false
 			}
@@ -175,7 +168,7 @@ func (s *Slave) processCrasher(crash NewCrasherArgs) {
 	s.hub.newCrasherC <- crash
 }
 
-func (s *Slave) minimizeInput(data []byte, pred func(candidate, cover, output []byte, result int, crashed, hanged bool) bool) []byte {
+func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidate, cover, output []byte, result int, crashed, hanged bool) bool) []byte {
 	res := make([]byte, len(data))
 	copy(res, data)
 
@@ -205,18 +198,20 @@ func (s *Slave) minimizeInput(data []byte, pred func(candidate, cover, output []
 	}
 
 	// Then, try to replace each individual byte with '0'.
-	for i := 0; i < len(res); i++ {
-		if res[i] == '0' {
-			continue
+	if canonicalize {
+		for i := 0; i < len(res); i++ {
+			if res[i] == '0' {
+				continue
+			}
+			candidate := make([]byte, len(res))
+			copy(candidate, res)
+			candidate[i] = '0'
+			result, _, cover, output, crashed, hanged := s.exec(candidate)
+			if !pred(candidate, cover, output, result, crashed, hanged) {
+				continue
+			}
+			res = candidate
 		}
-		candidate := make([]byte, len(res))
-		copy(candidate, res)
-		candidate[i] = '0'
-		result, _, cover, output, crashed, hanged := s.exec(candidate)
-		if !pred(candidate, cover, output, result, crashed, hanged) {
-			continue
-		}
-		res = candidate
 	}
 
 	return res
@@ -340,7 +335,6 @@ func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, cra
 		}
 		var retry bool
 		res, ns, cover, crashed, hanged, retry = s.testee.test(data)
-		log.Println("exec:", res, ns, cover, crashed, hanged, retry)
 		if retry {
 			s.testee.shutdown()
 			s.testee = nil
@@ -348,7 +342,6 @@ func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, cra
 		}
 		if crashed {
 			output = s.testee.shutdown()
-			log.Printf("output: %q", output)
 			s.testee = nil
 			return
 		}

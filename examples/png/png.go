@@ -1,8 +1,8 @@
 package png
 
 import (
-	"image/png"
 	"bytes"
+	"image/png"
 )
 
 func Fuzz(data []byte) int {

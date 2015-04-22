@@ -1,0 +1,139 @@
+HTTP/1.1 200 OK
+Vary: Authorization,Accept
+Transfer-Encoding: chunked
+Etag: "272348cca31dbd5e3e29a37b13c57281"
+Content-Type: application/vnd.bonfire+xml; charset=utf-8
+Date: Wed, 01 Jun 2011 14:59:30 GMT
+Server: thin 1.2.11 codename Bat-Shit Crazy
+Allow: GET,POST,OPTIONS,HEAD
+Cache-Control: public,max-age=30
+Connection: close
+
+<?xml version="1.0" encoding="UTF-8"?>
+<collection xmlns="http://api.bonfire-project.eu/doc/schemas/occi" href="/experiments">
+  <items offset="0" total="6">
+<experiment href="/experiments/335">
+  <id>335</id>
+  <description>Demo of scenario1 using Restfully</description>
+  <name>Scenario1</name>
+  <walltime>1800</walltime>
+  <user_id>crohr</user_id>
+  <status>running</status>
+  <networks>
+  </networks>
+  <computes>
+    <compute href="/locations/fr-inria/computes/424" name="BonFIRE-monitor-experiment335"/>
+    <compute href="/locations/fr-inria/computes/425" name="server-experiment#335"/>
+    <compute href="/locations/uk-epcc/computes/288" name="client-experiment#335"/>
+  </computes>
+  <storages>
+  </storages>
+  <link rel="parent" href="/"/>
+  <link rel="storages" href="/experiments/335/storages"/>
+  <link rel="networks" href="/experiments/335/networks"/>
+  <link rel="computes" href="/experiments/335/computes"/>
+</experiment>
+<experiment href="/experiments/334">
+  <id>334</id>
+  <description>Demo of scenario1 using Restfully</description>
+  <name>Scenario1</name>
+  <walltime>1800</walltime>
+  <user_id>crohr</user_id>
+  <status>running</status>
+  <networks>
+  </networks>
+  <computes>
+  </computes>
+  <storages>
+  </storages>
+  <link rel="parent" href="/"/>
+  <link rel="storages" href="/experiments/334/storages"/>
+  <link rel="networks" href="/experiments/334/networks"/>
+  <link rel="computes" href="/experiments/334/computes"/>
+</experiment>
+<experiment href="/experiments/332">
+  <id>332</id>
+  <description>Demo of scenario1 using Restfully</description>
+  <name>Scenario1</name>
+  <walltime>1800</walltime>
+  <user_id>crohr</user_id>
+  <status>canceled</status>
+  <networks>
+  </networks>
+  <computes>
+  </computes>
+  <storages>
+  </storages>
+  <link rel="parent" href="/"/>
+  <link rel="storages" href="/experiments/332/storages"/>
+  <link rel="networks" href="/experiments/332/networks"/>
+  <link rel="computes" href="/experiments/332/computes"/>
+</experiment>
+<experiment href="/experiments/331">
+  <id>331</id>
+  <description>Demo of scenario2 using Restfully</description>
+  <name>Scenario1</name>
+  <walltime>14400</walltime>
+  <user_id>crohr</user_id>
+  <status>running</status>
+  <networks>
+    <network href="/locations/be-ibbt/networks/10" name="network-experiment#331"/>
+  </networks>
+  <computes>
+    <compute href="/locations/be-ibbt/computes/15" name="compute1-experiment#331"/>
+    <compute href="/locations/be-ibbt/computes/16" name="compute2-experiment#331"/>
+  </computes>
+  <storages>
+  </storages>
+  <link rel="parent" href="/"/>
+  <link rel="storages" href="/experiments/331/storages"/>
+  <link rel="networks" href="/experiments/331/networks"/>
+  <link rel="computes" href="/experiments/331/computes"/>
+</experiment>
+<experiment href="/experiments/283">
+  <id>283</id>
+  <description>SDFsd</description>
+  <name>hlrs-tests</name>
+  <walltime>40000</walltime>
+  <user_id>crohr</user_id>
+  <status>running</status>
+  <networks>
+  </networks>
+  <computes>
+    <compute href="/locations/de-hlrs/computes/436" name="whatever"/>
+    <compute href="/locations/fr-inria/computes/361" name="test"/>
+    <compute href="/locations/fr-inria/computes/363" name="test-2g"/>
+    <compute href="/locations/de-hlrs/computes/440" name="hlrs_c2"/>
+    <compute href="/locations/de-hlrs/computes/441" name="hlrs_c1"/>
+    <compute href="/locations/de-hlrs/computes/446" name="hlrs_c1_experiment#283"/>
+  </computes>
+  <storages>
+  </storages>
+  <link rel="parent" href="/"/>
+  <link rel="storages" href="/experiments/283/storages"/>
+  <link rel="networks" href="/experiments/283/networks"/>
+  <link rel="computes" href="/experiments/283/computes"/>
+</experiment>
+<experiment href="/experiments/224">
+  <id>224</id>
+  <description>sfsdf</description>
+  <name>sdfdfs</name>
+  <walltime>200000</walltime>
+  <user_id>crohr</user_id>
+  <status>waiting</status>
+  <networks>
+  </networks>
+  <computes>
+  </computes>
+  <storages>
+  </storages>
+  <link rel="parent" href="/"/>
+  <link rel="storages" href="/experiments/224/storages"/>
+  <link rel="networks" href="/experiments/224/networks"/>
+  <link rel="computes" href="/experiments/224/computes"/>
+</experiment>
+  </items>
+  <link href="/" rel="parent" type="application/vnd.bonfire+xml"/>
+</collection>
+
+

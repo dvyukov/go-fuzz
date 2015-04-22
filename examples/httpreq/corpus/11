@@ -1,0 +1,8 @@
+GET /experiments HTTP/1.1
+Host: api.bonfire-project.eu:444
+Accept: application/vnd.bonfire+xml
+Authorization: Basic XXX
+Accept-Encoding: gzip, deflate
+
+
+

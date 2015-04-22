@@ -1,0 +1,24 @@
+HTTP/1.1 200 OK
+Vary: Authorization,Accept
+Transfer-Encoding: chunked
+Etag: "1fad72ba8fb530cd72e022bd22d4ecdb"
+Content-Type: application/vnd.bonfire+xml; charset=utf-8
+Date: Wed, 01 Jun 2011 14:59:33 GMT
+Server: thin 1.2.11 codename Bat-Shit Crazy
+Allow: GET,OPTIONS,HEAD
+Cache-Control: public,max-age=30
+Connection: close
+
+<?xml version="1.0" encoding="UTF-8"?>
+<collection xmlns="http://api.bonfire-project.eu/doc/schemas/occi">
+  <items>
+    <storage href="/locations/uk-epcc/storages/44" name="data"/>
+    <storage href="/locations/uk-epcc/storages/47" name="data2"/>
+    <storage href="/locations/uk-epcc/storages/74" name="whatever name"/>
+    <storage href="/locations/uk-epcc/storages/91" name="Squeeze"/>
+    <storage href="/locations/uk-epcc/storages/92" name="Squeeze 2G"/>
+    <storage href="/locations/uk-epcc/storages/93" name="Zabbix Aggregator"/>
+  </items>
+</collection>
+
+

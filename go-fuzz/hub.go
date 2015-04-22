@@ -116,9 +116,6 @@ func (hub *Hub) loop() {
 			}
 			if len(res.Inputs) > 0 {
 				hub.triageQueue = append(hub.triageQueue, res.Inputs...)
-				for _, inp := range res.Inputs {
-					log.Printf("Connect: mini=%v smashed=%v", inp.Minimized, inp.Smashed)
-				}
 			}
 			if hub.corpusStale {
 				hub.updateScores()
@@ -126,7 +123,6 @@ func (hub *Hub) loop() {
 			}
 
 		case triageC <- triageInput:
-			log.Printf("triageC <- triageInput")
 			// Send new input to slaves for triage.
 			if len(hub.triageQueue) > 0 {
 				n := len(hub.triageQueue) - 1
@@ -144,7 +140,6 @@ func (hub *Hub) loop() {
 			hub.stats.restarts += s.restarts
 
 		case input := <-hub.newInputC:
-			log.Printf("input := <-hub.newInputC: mine=%v", input.mine)
 			// New interesting input from slaves.
 			ro := hub.ro.Load().(*ROData)
 			newCover, newCount := compareCover(ro.maxCover, input.cover)

@@ -2,16 +2,11 @@ package tls
 
 import (
 	"crypto/tls"
+	"encoding/hex"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"time"
-)
-
-const (
-	cert = "examples/tls/cert.pem"
-	key  = "examples/tls/key.pem"
 )
 
 type Req struct {
@@ -80,14 +75,8 @@ func (c *MyConn) SetWriteDeadline(t time.Time) error {
 
 func init() {
 	go func() {
-		c, err := ioutil.ReadFile(cert)
-		if err != nil {
-			panic(err)
-		}
-		k, err := ioutil.ReadFile(key)
-		if err != nil {
-			panic(err)
-		}
+		c, _ := hex.DecodeString(cert)
+		k, _ := hex.DecodeString(key)
 		cert, err := tls.X509KeyPair(c, k)
 		if err != nil {
 			panic(err)
@@ -115,61 +104,6 @@ func Fuzz(data []byte) int {
 	ln <- &MyConn{data, done}
 	<-done
 	return 0
-}
-
-/*
-package main
-
-import (
-	"crypto/tls"
-	"encoding/hex"
-	//"fmt"
-	//"io/ioutil"
-	"net"
-	"net/http"
-	"time"
-)
-
-func main() {
-	addr := "localhost:49706"
-	ln, err := net.Listen("tcp", addr)
-	if err != nil {
-		panic(err)
-	}
-	go func() {
-		c, _ := hex.DecodeString(cert)
-		k, _ := hex.DecodeString(key)
-		cert, err := tls.X509KeyPair(c, k)
-		if err != nil {
-			panic(err)
-		}
-		tlsConfig := &tls.Config{
-			NextProtos:   []string{"http/1.1"},
-			Certificates: []tls.Certificate{cert},
-		}
-		tlsListener := tls.NewListener(ln, tlsConfig)
-		http.HandleFunc("/", handler)
-		panic(http.Serve(tlsListener, nil))
-	}()
-	for i := 0; i < 50; i++ {
-	c, err := net.Dial("tcp", addr)
-	if err != nil {
-		panic(err)
-	}
-	data0 := []byte{0x16, 0x03, 0x1a, 0x00, 0x00}
-	c.Write(data0)
-	c.Close()
-	//c.(*net.TCPConn).CloseWrite()
-	//data, err := ioutil.ReadAll(c)
-	//fmt.Printf("read returned %q (%v)\n", data, err)
-	}
-	time.Sleep(time.Second)
-	panic("aaa")
-}
-
-func handler(w http.ResponseWriter, req *http.Request) {
-	w.Header().Set("Content-Type", "text/plain")
-	w.Write([]byte("hello"))
 }
 
 const cert = "2d2d2d2d2d424547494e2043455254494649434154452d2d2d2d2d0a4d494943" +
@@ -261,4 +195,3 @@ const key = "2d2d2d2d2d424547494e205253412050524956415445204b45592d2d2d2d2d0a" +
 	"643358766a6a5a364358465742593970764939476c5163455a4343665a767752" +
 	"69696f76306f436a674d53646e513d3d0a2d2d2d2d2d454e4420525341205052" +
 	"4956415445204b45592d2d2d2d2d0a"
-*/

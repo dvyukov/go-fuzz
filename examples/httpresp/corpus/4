@@ -1,0 +1,9 @@
+HTTP/1.1 400 Bad Request
+Content-Type: text/html
+Content-Length: 111
+
+<html><body>
+<h2>No Host: header received</h2>
+HTTP 1.1 requests must include the Host: header.
+</body></html>
+

@@ -1,0 +1,9 @@
+HTTP/1.1 200 OK
+Date: Fri, 31 Dec 1999 23:59:59 GMT
+Content-Type: text/plain
+Content-Length: 42
+some-footer: some-value
+another-footer: another-value
+
+abcdefghijklmnopqrstuvwxyz1234567890abcdef
+
