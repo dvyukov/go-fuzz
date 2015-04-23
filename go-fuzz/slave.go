@@ -105,7 +105,7 @@ func (s *Slave) triageInput(input MasterInput) {
 		res, ns, cover, output, crashed, hanged := s.exec(inp.data)
 		if crashed {
 			// Inputs in corpus should not crash.
-			s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{inp.data, output, extractSuppression(output), hanged})
+			s.noteCrasher(inp.data, output, hanged)
 			return
 		}
 		if inp.cover == nil {
@@ -136,7 +136,7 @@ func (s *Slave) triageInput(input MasterInput) {
 		inp.mine = true
 		inp.data = s.minimizeInput(inp.data, false, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if crashed {
-				s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{candidate, output, extractSuppression(output), hanged})
+				s.noteCrasher(candidate, output, hanged)
 				return false
 			}
 			if inp.res != res || !bytes.Equal(inp.cover, cover) {
@@ -159,7 +159,7 @@ func (s *Slave) processCrasher(crash NewCrasherArgs) {
 			}
 			supp := extractSuppression(output)
 			if hanged || !bytes.Equal(crash.Suppression, supp) {
-				s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{candidate, output, supp, hanged})
+				s.noteCrasher(candidate, output, hanged)
 				return false
 			}
 			return true
@@ -304,14 +304,14 @@ func (s *Slave) smash(data []byte, depth int) {
 
 func (s *Slave) testInput(data []byte, depth int) {
 	ro := s.hub.ro.Load().(*ROData)
-	if len(ro.hangingInputs) > 0 {
-		if _, ok := ro.hangingInputs[hash(data)]; ok {
+	if len(ro.badInputs) > 0 {
+		if _, ok := ro.badInputs[hash(data)]; ok {
 			return // no, thanks
 		}
 	}
 	_, _, cover, output, crashed, hanged := s.exec(data)
 	if crashed {
-		s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{data, output, extractSuppression(output), hanged})
+		s.noteCrasher(data, output, hanged)
 		return
 	}
 	newCover, newCount := compareCover(ro.maxCover, cover)
@@ -347,6 +347,15 @@ func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, cra
 		}
 		return
 	}
+}
+
+func (s *Slave) noteCrasher(data, output []byte, hanged bool) {
+	s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{
+		Data:        data,
+		Error:       output,
+		Suppression: extractSuppression(output),
+		Hanging:     hanged,
+	})
 }
 
 func (s *Slave) periodicCheck() {

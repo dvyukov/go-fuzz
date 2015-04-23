@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
 	"log"
 	"net"
 	"net/rpc"
@@ -164,7 +166,22 @@ func (m *Master) NewCrasher(a *NewCrasherArgs, r *int) error {
 	if !m.suppressions.add(Artifact{a.Suppression, 0}) || !m.crashers.add(Artifact{a.Data, 0}) {
 		return nil
 	}
+
+	var buf bytes.Buffer
+	for i := 0; i < len(a.Data); i += 20 {
+		e := i + 20
+		if e > len(a.Data) {
+			e = len(a.Data)
+		}
+		fmt.Fprintf(&buf, "\t%q", a.Data[i:e])
+		if e != len(a.Data) {
+			fmt.Printf(" +")
+		}
+		fmt.Printf("\n")
+	}
+	m.crashers.addDescription(a.Data, buf.Bytes(), "quoted")
 	m.crashers.addDescription(a.Data, a.Error, "output")
+
 	return nil
 }
 
