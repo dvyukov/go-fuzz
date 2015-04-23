@@ -1,4 +1,4 @@
-# go-fuzz: randomized testing solution for Go
+# go-fuzz: randomized testing for Go
 
 ## Usage Instructions
 
