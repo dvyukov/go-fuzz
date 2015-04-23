@@ -40,9 +40,9 @@ type Hub struct {
 }
 
 type ROData struct {
-	corpus        []Input
-	maxCover      []byte
-	hangingInputs map[Sig]struct{}
+	corpus    []Input
+	maxCover  []byte
+	badInputs map[Sig]struct{}
 }
 
 type Stats struct {
@@ -73,8 +73,8 @@ func newHub() *Hub {
 	}
 
 	ro := &ROData{
-		maxCover:      make([]byte, coverSize),
-		hangingInputs: make(map[Sig]struct{}),
+		maxCover:  make([]byte, coverSize),
+		badInputs: make(map[Sig]struct{}),
 	}
 	hub.ro.Store(ro)
 
@@ -154,9 +154,9 @@ func (hub *Hub) loop() {
 			// Passed deduplication, taking it.
 			hub.corpusSigs[sig] = struct{}{}
 			ro1 := &ROData{
-				corpus:        ro.corpus,
-				maxCover:      make([]byte, coverSize),
-				hangingInputs: ro.hangingInputs,
+				corpus:    ro.corpus,
+				maxCover:  make([]byte, coverSize),
+				badInputs: ro.badInputs,
 			}
 			// Assign it the default score, but mark corpus for score recalculation.
 			hub.corpusStale = true
@@ -182,14 +182,14 @@ func (hub *Hub) loop() {
 			if crash.Hanging {
 				ro := hub.ro.Load().(*ROData)
 				ro1 := &ROData{
-					corpus:        ro.corpus,
-					maxCover:      ro.maxCover,
-					hangingInputs: make(map[Sig]struct{}),
+					corpus:    ro.corpus,
+					maxCover:  ro.maxCover,
+					badInputs: make(map[Sig]struct{}),
 				}
-				for k, v := range ro.hangingInputs {
-					ro1.hangingInputs[k] = v
+				for k, v := range ro.badInputs {
+					ro1.badInputs[k] = v
 				}
-				ro1.hangingInputs[hash(crash.Data)] = struct{}{}
+				ro1.badInputs[hash(crash.Data)] = struct{}{}
 				hub.ro.Store(ro1)
 			}
 			if err := hub.master.Call("Master.NewCrasher", crash, nil); err != nil {
@@ -202,9 +202,9 @@ func (hub *Hub) loop() {
 func (hub *Hub) updateScores() {
 	ro := hub.ro.Load().(*ROData)
 	ro1 := &ROData{
-		corpus:        make([]Input, len(ro.corpus)),
-		maxCover:      ro.maxCover,
-		hangingInputs: ro.hangingInputs,
+		corpus:    make([]Input, len(ro.corpus)),
+		maxCover:  ro.maxCover,
+		badInputs: ro.badInputs,
 	}
 	corpus := ro1.corpus
 	copy(corpus, ro.corpus)
