@@ -190,7 +190,7 @@ func copyDir(dir, newDir string, src, rec bool) {
 
 func goListList(pkg, what string) []string {
 	templ := fmt.Sprintf("{{range .%v}}{{.}}|{{end}}", what)
-	out, err := exec.Command("go", "list", "-f", templ, pkg).CombinedOutput()
+	out, err := exec.Command("go", "list", "-tags", "gofuzz", "-f", templ, pkg).CombinedOutput()
 	if err != nil {
 		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
@@ -206,7 +206,7 @@ func goListProps(pkg string, props ...string) []string {
 	for _, p := range props {
 		templ += fmt.Sprintf("{{.%v}}|", p)
 	}
-	out, err := exec.Command("go", "list", "-f", templ, pkg).CombinedOutput()
+	out, err := exec.Command("go", "list", "-tags", "gofuzz", "-f", templ, pkg).CombinedOutput()
 	if err != nil {
 		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}

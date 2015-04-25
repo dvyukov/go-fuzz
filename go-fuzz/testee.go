@@ -113,7 +113,7 @@ retry:
 	}()
 	// Hang watcher goroutine.
 	go func() {
-		timeout := time.Duration(*flagTimeout) * time.Millisecond
+		timeout := time.Duration(*flagTimeout) * time.Second
 		ticker := time.NewTicker(timeout / 2)
 		for {
 			select {
@@ -201,7 +201,9 @@ func (t *Testee) shutdown() (output []byte) {
 	t.cmd.Process.Kill() // it is probably already dead, but kill it again to be sure
 	close(t.downC)       // wakeup stdout reader
 	out := <-t.outputC
-	t.cmd.Wait()
+	if err := t.cmd.Wait(); err != nil {
+		out = append(out, err.Error()...)
+	}
 	t.inPipe.Close()
 	t.outPipe.Close()
 	t.stdoutPipe.Close()
