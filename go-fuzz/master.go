@@ -199,9 +199,9 @@ func (m *Master) NewCrasher(a *NewCrasherArgs, r *int) error {
 		}
 		fmt.Fprintf(&buf, "\t%q", a.Data[i:e])
 		if e != len(a.Data) {
-			fmt.Printf(" +")
+			fmt.Fprintf(&buf, " +")
 		}
-		fmt.Printf("\n")
+		fmt.Fprintf(&buf, "\n")
 	}
 	m.crashers.addDescription(a.Data, buf.Bytes(), "quoted")
 	m.crashers.addDescription(a.Data, a.Error, "output")
