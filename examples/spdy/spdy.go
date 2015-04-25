@@ -1,3 +1,6 @@
+// golang.org/x/net/spdy package was deleted (in part due to a pile of bugs discovered by go-fuzz)
+// +build never
+
 package spdy
 
 import (
