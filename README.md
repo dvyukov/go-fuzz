@@ -164,8 +164,8 @@ $ go-fuzz -bin=./png-fuzz -slave=127.0.0.1:8745 -procs=10
 ## Credits and technical details
 
 Go-fuzz fuzzing logic is heavily based on [american fuzzy lop](http://lcamtuf.coredump.cx/afl/),
-so refer to (AFL readme)[http://lcamtuf.coredump.cx/afl/README.txt] if you are
+so refer to [AFL readme](http://lcamtuf.coredump.cx/afl/README.txt) if you are
 interesting in technical details. AFL is written and maintained by
-(Michal Zalewski)[http://lcamtuf.coredump.cx/]. Some of the mutations employed
+[Michal Zalewski](http://lcamtuf.coredump.cx/). Some of the mutations employed
 by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
-(Felix Gröbert)[https://twitter.com/fel1x].
+[Felix Gröbert](https://twitter.com/fel1x).
