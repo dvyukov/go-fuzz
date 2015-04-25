@@ -16,6 +16,7 @@ const (
 	maxInputSize = 1 << 20
 )
 
+// Slave manages one testee.
 type Slave struct {
 	hub     *Hub
 	mutator *Mutator
@@ -94,6 +95,9 @@ func (s *Slave) loop() {
 	}
 }
 
+// triageInput processes every new input.
+// It calculates per-input metrics like execution time, coverage mask,
+// and minimizes the input to the minimal input with the same coverage.
 func (s *Slave) triageInput(input MasterInput) {
 	inp := Input{
 		data:     input.Data,
@@ -151,7 +155,9 @@ func (s *Slave) triageInput(input MasterInput) {
 	s.hub.newInputC <- inp
 }
 
+// processCrasher minimizes new crashers and sends them to the hub.
 func (s *Slave) processCrasher(crash NewCrasherArgs) {
+	// Hanging inputs can take very long time to minimize.
 	if !crash.Hanging {
 		crash.Data = s.minimizeInput(crash.Data, true, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if !crashed {
@@ -168,6 +174,8 @@ func (s *Slave) processCrasher(crash NewCrasherArgs) {
 	s.hub.newCrasherC <- crash
 }
 
+// minimizeInput applies series of minimizing transformations to data
+// and asks pred whether the input is equivalent to the original one or not.
 func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidate, cover, output []byte, result int, crashed, hanged bool) bool) []byte {
 	res := make([]byte, len(data))
 	copy(res, data)
@@ -217,6 +225,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 	return res
 }
 
+// smash gives some minimal attention to every new input.
 func (s *Slave) smash(data []byte, depth int) {
 	ro := s.hub.ro.Load().(*ROData)
 

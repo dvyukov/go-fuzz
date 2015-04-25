@@ -4,11 +4,10 @@
 TEXT ·compareCoverBody(SB), NOSPLIT, $0-18
 	MOVQ	base+0(FP), SI
 	MOVQ	cur+8(FP), DI
-	MOVQ	$65535, AX   // loop counter
-	MOVQ	$0, R10  // newCounter
-	MOVQ	$0, R11  // newCover
-	MOVQ	$1, R12  // const 1
-	BYTE	$0x90	 // nop
+	MOVQ	$65535, AX	// loop counter
+	MOVQ	$0, R10		// newCounter
+	MOVQ	$0, R11		// newCover
+	BYTE	$0x90		// nop
 	BYTE	$0x90
 loop:
 	MOVBQZX 0(DI)(AX*1), R9
@@ -26,7 +25,7 @@ non_zero:
 interesting:
 	TESTB	R8, R8
 	JZ	new_cover
-	MOVQ	R12, R10
+	MOVQ	$1, R10
 	JMP	continue
 new_cover:
 	MOVB	$1, R10

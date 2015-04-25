@@ -10,6 +10,8 @@ import (
 	"time"
 )
 
+// Testee is a wrapper around one testee subprocess.
+// It manages communication with the testee, timeouts and output collection.
 type Testee struct {
 	coverRegion []byte
 	inputRegion []byte
@@ -143,6 +145,7 @@ retry:
 	return t
 }
 
+// test passes data for testing.
 func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, hanged, retry bool) {
 	if t.down {
 		log.Fatalf("cannot test: testee is already shutdown")
