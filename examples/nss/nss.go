@@ -1,9 +1,11 @@
 package nss
 
+/*
 import (
 	"bytes"
 	"net"
 )
+*/
 
 func Fuzz(data []byte) int {
 	// This example won't build as is, because ParseNSSConf function is not exported
