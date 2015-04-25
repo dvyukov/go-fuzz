@@ -27,7 +27,7 @@ function can feed the input into two different implementations (e.g. dumb and
 optimized) and check that the output is equal. To communicate application-level
 bugs Fuzz function should panic (os.Exit(1) will work too, but panic message
 contains more info). Note that Fuzz function should not output to stdout/stderr,
-it will slow down fuzzing and nobody will see the output anyway. The exection
+it will slow down fuzzing and nobody will see the output anyway. The exception
 is printing info about a bug just before panicing.
 
 Here is an example of a simple Fuzz function for image/png package:
@@ -90,41 +90,82 @@ Now we are ready to go:
 ```
 $ go-fuzz -bin=./png-fuzz -corpus=examples/png/corpus -workdir=~/png-fuzz
 ```
-Go-fuzz will generate and test various inputs in an infinite loop. Every few
-seconds it prints logs of the form:
+Go-fuzz will generate and test various inputs in an infinite loop. Workdir is
+used to store persistent data like current corpus and crashers, it allows fuzzer
+to continue after restart. Discovered bad inputs are stored in workdir/crashers
+dir; where file without a suffix contains binary input, file with .quoted suffix
+contains quoted input that can be directly copied into a reproducer program or a
+test, file with .output suffix contains output of the test on this input. Every
+few seconds go-fuzz prints logs of the form:
 ```
-2015/04/22 21:39:11 slaves: 1/32, corpus: 123 (45.019565484s ago), crashers: 1, restarts: 1/9999, execs: 123123123 (200000/sec), cover: 0.38%, uptime: 10m45.019565765s
+2015/04/25 12:39:53 slaves: 500, corpus: 186 (42s ago), crashers: 3,
+     restarts: 1/8027, execs: 12009519 (121224/sec), cover: 0.31%, uptime: 1m39s
 ```
+Where ```slaves``` means number of tests running in parallel (set with -procs
+flag). ```corpus``` is current number of interesting inputs the fuzzer has
+discovered, time in brackets says when the last interesting input was
+discovered. ```crashers``` is number of discovered bugs (check out
+workdir/crashers dir). ```restarts``` is the rate with which the fuzzer restarts
+test processes. The rate should be close to 1/10000 (which is the planned
+restart rate); if it is considerably lower than 1/10000, consider fixing already
+discovered bugs which lead to frequent restarts. ```execs``` is total number of
+test executions, and the number in brackets is the average speed of test
+executions. ```cover``` is density of hashed coverage bitmap, ideally this value
+should be smaller than 5%, otherwise fuzzer can miss new interesting inputs.
+And finally ```uptime``` is uptime of the process.
 
+Some additional notes. go-fuzz-build builds the program with gofuzz build tag,
+this allows to put the Fuzz function implementation directly into the tested
+package, but exclude it from normal builds with ```// +build gofuzz```
+directive.
+Go-fuzz can utilize several machines. To do this, start master process
+separately:
+```
+$ go-fuzz -corpus=examples/png/corpus -workdir=~/png-fuzz -master=127.0.0.1:8745
+```
+It will manage persistent corpus and crashers and coordinate work of slave
+processes. Then run one or more slave processes as:
+```
+$ go-fuzz -bin=./png-fuzz -slave=127.0.0.1:8745 -procs=10
+```
 
 ## Trophies
 
-- encoding/gob: panic: drop (https://github.com/golang/go/issues/10272)
-- encoding/gob: makeslice: len out of range [3 bugs] (https://github.com/golang/go/issues/10273)
-- encoding/gob: stack overflow (https://github.com/golang/go/issues/10415)
-- encoding/gob: excessive memory consumption (https://github.com/golang/go/issues/10490)
-- encoding/gob: decoding hangs (https://github.com/golang/go/issues/10491)
-- image/jpeg: unreadByteStuffedByte call cannot be fulfilled (https://github.com/golang/go/issues/10387)
-- image/jpeg: index out of range (https://github.com/golang/go/issues/10388)
-- image/jpeg: invalid memory address or nil pointer dereference (https://github.com/golang/go/issues/10389)
-- image/jpeg: Decode hangs (https://github.com/golang/go/issues/10413)
-- image/jpeg: excessive memory usage (https://github.com/golang/go/issues/10532)
-- image/png: slice bounds out of range (https://github.com/golang/go/issues/10414)
-- image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA (https://github.com/golang/go/issues/10423)
-- image/png: nil deref (https://github.com/golang/go/issues/10493)
-- compress/flate: hang (https://github.com/golang/go/issues/10426)
-- x/image/webp: index out of range (https://github.com/golang/go/issues/10383)
-- x/image/webp: invalid memory address or nil pointer dereference (https://github.com/golang/go/issues/10384)
-- x/image/tiff: integer divide by zero (https://github.com/golang/go/issues/10393)
-- x/image/tiff: index out of range (https://github.com/golang/go/issues/10394)
-- x/image/tiff: slice bounds out of range (https://github.com/golang/go/issues/10395)
-- x/image/bmp: makeslice: len out of range (https://github.com/golang/go/issues/10396)
-- x/image/bmp: out of memory (https://github.com/golang/go/issues/10399)
-- x/net/html: void element <link> has child nodes (https://github.com/golang/go/issues/10535)
-- x/net/spdy: unexpected EOF (https://github.com/golang/go/issues/10539)
-- x/net/spdy: EOF (https://github.com/golang/go/issues/10540)
-- x/net/spdy: fatal error: runtime: out of memory (https://github.com/golang/go/issues/10542)
-- x/net/spdy: stream id zero is disallowed (https://github.com/golang/go/issues/10543)
-- x/net/spdy: processing of 35 bytes takes 7 seconds (https://github.com/golang/go/issues/10544)
-- x/net/spdy: makemap: size out of range (https://github.com/golang/go/issues/10545)
-- x/net/spdy: makeslice: len out of range (https://github.com/golang/go/issues/10547)
+- [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272)
+- [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273)
+- [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415)
+- [encoding/gob: excessive memory consumption](https://github.com/golang/go/issues/10490)
+- [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491)
+- [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387)
+- [image/jpeg: index out of range](https://github.com/golang/go/issues/10388)
+- [image/jpeg: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10389)
+- [image/jpeg: Decode hangs](https://github.com/golang/go/issues/10413)
+- [image/jpeg: excessive memory usage](https://github.com/golang/go/issues/10532)
+- [image/png: slice bounds out of range](https://github.com/golang/go/issues/10414)
+- [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423)
+- [image/png: nil deref](https://github.com/golang/go/issues/10493)
+- [compress/flate: hang](https://github.com/golang/go/issues/10426)
+- [x/image/webp: index out of range](https://github.com/golang/go/issues/10383)
+- [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384)
+- [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10393)
+- [x/image/tiff: index out of range](https://github.com/golang/go/issues/10394)
+- [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10395)
+- [x/image/bmp: makeslice: len out of range](https://github.com/golang/go/issues/10396)
+- [x/image/bmp: out of memory](https://github.com/golang/go/issues/10399)
+- [x/net/html: void element <link> has child nodes](https://github.com/golang/go/issues/10535)
+- [x/net/spdy: unexpected EOF](https://github.com/golang/go/issues/10539)
+- [x/net/spdy: EOF](https://github.com/golang/go/issues/10540)
+- [x/net/spdy: fatal error: runtime: out of memory](https://github.com/golang/go/issues/10542)
+- [x/net/spdy: stream id zero is disallowed](https://github.com/golang/go/issues/10543)
+- [x/net/spdy: processing of 35 bytes takes 7 seconds](https://github.com/golang/go/issues/10544)
+- [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545)
+- [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547)
+
+## Credits and technical details
+
+Go-fuzz fuzzing logic is heavily based on [american fuzzy lop](http://lcamtuf.coredump.cx/afl/),
+so refer to (AFL readme)[http://lcamtuf.coredump.cx/afl/README.txt] if you are
+interesting in technical details. AFL is written and maintained by
+(Michal Zalewski)[http://lcamtuf.coredump.cx/]. Some of the mutations employed
+by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
+(Felix Gröbert)[https://twitter.com/fel1x].
