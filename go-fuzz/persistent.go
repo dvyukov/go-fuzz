@@ -11,6 +11,7 @@ import (
 	"strconv"
 )
 
+// PersistentSet is a set of binary blobs with a persistent mirror on disk.
 type PersistentSet struct {
 	dir string
 	m   map[Sig]Artifact
@@ -18,7 +19,7 @@ type PersistentSet struct {
 
 type Artifact struct {
 	data []byte
-	meta uint64
+	meta uint64 // arbitrary user payload
 }
 
 type Sig [sha1.Size]byte
@@ -90,6 +91,7 @@ func (ps *PersistentSet) add(a Artifact) bool {
 	return true
 }
 
+// addDescription creates a complementary to data file on disk.
 func (ps *PersistentSet) addDescription(data []byte, desc []byte, typ string) {
 	sig := hash(data)
 	fname := filepath.Join(ps.dir, fmt.Sprintf("%v.%v", hex.EncodeToString(sig[:]), typ))

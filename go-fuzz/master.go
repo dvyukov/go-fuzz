@@ -13,6 +13,7 @@ import (
 	"time"
 )
 
+// Master manages persistent fuzzer state like input corpus and crashers.
 type Master struct {
 	mu           sync.Mutex
 	idSeq        int
@@ -29,6 +30,7 @@ type Master struct {
 	coverFullness float64
 }
 
+// MasterSlave represents master's view of a slave.
 type MasterSlave struct {
 	id       int
 	procs    int
@@ -36,9 +38,9 @@ type MasterSlave struct {
 	lastSync time.Time
 }
 
+// masterMain is entry function for master.
 func masterMain(ln net.Listener) {
 	m := &Master{}
-
 	m.startTime = time.Now()
 	m.lastInput = time.Now()
 	m.suppressions = newPersistentSet(filepath.Join(*flagWorkdir, "suppressions"))
@@ -63,6 +65,16 @@ func masterLoop(m *Master) {
 			return
 		}
 		m.mu.Lock()
+		// Nuke dead slaves.
+		for id, s := range m.slaves {
+			if time.Since(s.lastSync) < syncDeadline {
+				continue
+			}
+			log.Printf("slave %v died", s.id)
+			delete(m.slaves, id)
+		}
+
+		// Print stats line.
 		uptime := time.Since(m.startTime)
 		lastInput := time.Since(m.lastInput)
 		restarts := uint64(0)
@@ -73,18 +85,22 @@ func masterLoop(m *Master) {
 		for _, s := range m.slaves {
 			procs += s.procs
 		}
-		log.Printf("slaves: %v/%v, corpus: %v (%v ago), crashers: %v, suppressions: %v,"+
+		log.Printf("slaves: %v, corpus: %v (%v ago), crashers: %v,"+
 			" restarts: 1/%v, execs: %v (%.0f/sec), cover: %.2f%%, uptime: %v",
-			len(m.slaves), procs, len(m.corpus.m), lastInput, len(m.crashers.m), len(m.suppressions.m),
-			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime), m.coverFullness*100, uptime)
-		for id, s := range m.slaves {
-			if time.Since(s.lastSync) < syncDeadline {
-				continue
-			}
-			log.Printf("slave %v died", s.id)
-			delete(m.slaves, id)
-		}
+			procs, len(m.corpus.m), fmtDuration(lastInput), len(m.crashers.m),
+			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime),
+			m.coverFullness*100, fmtDuration(uptime))
 		m.mu.Unlock()
+	}
+}
+
+func fmtDuration(d time.Duration) string {
+	if d.Hours() >= 1 {
+		return fmt.Sprintf("%vh%vm", int(d.Hours()), int(d.Minutes())%60)
+	} else if d.Minutes() >= 1 {
+		return fmt.Sprintf("%vm%vs", int(d.Minutes()), int(d.Seconds())%60)
+	} else {
+		return fmt.Sprintf("%vs", int(d.Seconds()))
 	}
 }
 
@@ -97,6 +113,7 @@ type ConnectRes struct {
 	Corpus []MasterInput
 }
 
+// MasterInput is description of input that is passed between master and slave.
 type MasterInput struct {
 	Data      []byte
 	Prio      uint64
@@ -104,6 +121,7 @@ type MasterInput struct {
 	Smashed   bool
 }
 
+// Connect attaches new slave to master.
 func (m *Master) Connect(a *ConnectArgs, r *ConnectRes) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -116,6 +134,7 @@ func (m *Master) Connect(a *ConnectArgs, r *ConnectRes) error {
 	}
 	m.slaves[s.id] = s
 	r.ID = s.id
+	// Give the slave initial corpus.
 	for _, a := range m.bootstrap.m {
 		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, false, false})
 	}
@@ -131,6 +150,7 @@ type NewInputArgs struct {
 	Prio uint64
 }
 
+// NewInput saves new interesting input on master.
 func (m *Master) NewInput(a *NewInputArgs, r *int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -145,6 +165,7 @@ func (m *Master) NewInput(a *NewInputArgs, r *int) error {
 		return nil
 	}
 	m.lastInput = time.Now()
+	// Queue the input for sending to every slave.
 	for _, s1 := range m.slaves {
 		s1.pending = append(s1.pending, MasterInput{a.Data, a.Prio, true, s1 != s})
 	}
@@ -159,14 +180,17 @@ type NewCrasherArgs struct {
 	Hanging     bool
 }
 
+// NewCrasher saves new crasher input on master.
 func (m *Master) NewCrasher(a *NewCrasherArgs, r *int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	if !m.suppressions.add(Artifact{a.Suppression, 0}) || !m.crashers.add(Artifact{a.Data, 0}) {
+		// Already have this.
 		return nil
 	}
 
+	// Prepare quoted version of input to simplify creation of standalone reproducers.
 	var buf bytes.Buffer
 	for i := 0; i < len(a.Data); i += 20 {
 		e := i + 20
@@ -193,9 +217,11 @@ type SyncArgs struct {
 }
 
 type SyncRes struct {
-	Inputs []MasterInput
+	Inputs []MasterInput // new interesting inputs
 }
 
+// Sync is a periodic sync with a slave.
+// Slave sends statitstics. Master returns new inputs.
 func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

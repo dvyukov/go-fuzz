@@ -21,6 +21,8 @@ const (
 	mainPkg = "go-fuzz-main"
 )
 
+// Copies the package with all dependent packages into a temp dir,
+// instruments Go source files there and builds setting GOROOT to the temp dir.
 func main() {
 	flag.Parse()
 	if len(flag.Args()) != 1 {
@@ -29,6 +31,7 @@ func main() {
 
 	pkg := flag.Arg(0)
 
+	// To produce error messages (this is much faster and gives correct line numbers).
 	testNormalBuild(pkg)
 
 	deps := make(map[string]bool)
@@ -120,16 +123,16 @@ func clonePackage(workdir, pkg string) {
 	newDir := filepath.Join(workdir, "src", pkg)
 	copyDir(dir, newDir, true, false)
 	ignore := []string{
-		"runtime",
-		"unsafe",
-		"errors",
-		"syscall",
-		"sync",
-		"sync/atomic",
-		"time",
-		"runtime/cgo",
-		"runtime/pprof",
-		"runtime/race",
+		"runtime",       // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
+		"unsafe",        // nothing to see here (also creates import cycle with go-fuzz-dep)
+		"errors",        // nothing to see here (also creates import cycle with go-fuzz-dep)
+		"syscall",       // creates import cycle with go-fuzz-dep (and probably nothing to see here)
+		"sync",          // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
+		"sync/atomic",   // not interesting (also creates import cycle with go-fuzz-dep)
+		"time",          // creates import cycle with go-fuzz-dep
+		"runtime/cgo",   // why would we instrument it?
+		"runtime/pprof", // why would we instrument it?
+		"runtime/race",  // why would we instrument it?
 	}
 	for _, p := range ignore {
 		if pkg == p {
