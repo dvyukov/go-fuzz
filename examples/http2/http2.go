@@ -63,6 +63,3 @@ func Fuzz(data []byte) int {
 		}
 	}
 }
-
-/*
- */
