@@ -129,6 +129,15 @@ processes. Then run one or more slave processes as:
 $ go-fuzz -bin=./png-fuzz -slave=127.0.0.1:8745 -procs=10
 ```
 
+## Credits and technical details
+
+Go-fuzz fuzzing logic is heavily based on [american fuzzy lop](http://lcamtuf.coredump.cx/afl/),
+so refer to [AFL readme](http://lcamtuf.coredump.cx/afl/README.txt) if you are
+interesting in technical details. AFL is written and maintained by
+[Michal Zalewski](http://lcamtuf.coredump.cx/). Some of the mutations employed
+by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
+[Felix Gröbert](https://twitter.com/fel1x).
+
 ## Trophies
 
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272)
@@ -160,12 +169,5 @@ $ go-fuzz -bin=./png-fuzz -slave=127.0.0.1:8745 -procs=10
 - [x/net/spdy: processing of 35 bytes takes 7 seconds](https://github.com/golang/go/issues/10544)
 - [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545)
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547)
-
-## Credits and technical details
-
-Go-fuzz fuzzing logic is heavily based on [american fuzzy lop](http://lcamtuf.coredump.cx/afl/),
-so refer to [AFL readme](http://lcamtuf.coredump.cx/afl/README.txt) if you are
-interesting in technical details. AFL is written and maintained by
-[Michal Zalewski](http://lcamtuf.coredump.cx/). Some of the mutations employed
-by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
-[Felix Gröbert](https://twitter.com/fel1x).
+- [github.com/bradfitz/http2: ReadFrame returns frame with invalid streamid](https://github.com/bradfitz/http2/issues/49)
+- [github.com/bradfitz/http2: ReadFrame returns frame with invalid dependent stream id](https://github.com/bradfitz/http2/issues/50)
