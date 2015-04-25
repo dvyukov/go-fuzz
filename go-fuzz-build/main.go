@@ -28,6 +28,9 @@ func main() {
 	if len(flag.Args()) != 1 {
 		failf("usage: go-fuzz-build pkg")
 	}
+	if os.Getenv("GOROOT") == "" {
+		failf("GOROOT env var is not set, set it to Go installation dir")
+	}
 
 	pkg := flag.Arg(0)
 
