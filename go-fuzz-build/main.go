@@ -25,14 +25,16 @@ const (
 // instruments Go source files there and builds setting GOROOT to the temp dir.
 func main() {
 	flag.Parse()
-	if len(flag.Args()) != 1 {
+	if len(flag.Args()) != 1 || len(flag.Arg(0)) == 0 {
 		failf("usage: go-fuzz-build pkg")
 	}
 	if os.Getenv("GOROOT") == "" {
 		failf("GOROOT env var is not set, set it to Go installation dir")
 	}
-
 	pkg := flag.Arg(0)
+	if pkg[0] == '.' {
+		failf("relative import paths are not supported, please specify full package name")
+	}
 
 	// To produce error messages (this is much faster and gives correct line numbers).
 	testNormalBuild(pkg)
