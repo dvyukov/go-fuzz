@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
 
@@ -29,7 +30,12 @@ func main() {
 		failf("usage: go-fuzz-build pkg")
 	}
 	if os.Getenv("GOROOT") == "" {
-		failf("GOROOT env var is not set, set it to Go installation dir")
+		// Figure out GOROOT from go command location.
+		out, err := exec.Command("which", "go").CombinedOutput()
+		if err != nil || len(out) == 0 {
+			failf("GOROOT is not set and failed to locate go command: 'which go' returned '%s' (%v)", out, err)
+		}
+		os.Setenv("GOROOT", filepath.Dir(filepath.Dir(string(out))))
 	}
 	pkg := flag.Arg(0)
 	if pkg[0] == '.' {
@@ -72,8 +78,13 @@ func main() {
 			failf("failed to write temp file: %v", err)
 		}
 	}
-	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), false, true)
-	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "include"), filepath.Join(workdir, "pkg", "include"), false, true)
+	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), true, nil)
+	if _, err := os.Stat(filepath.Join(os.Getenv("GOROOT"), "pkg", "include")); err == nil {
+		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "include"), filepath.Join(workdir, "pkg", "include"), true, nil)
+	} else {
+		// Cross-compilation is not implemented.
+		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
+	}
 	for p := range deps {
 		clonePackage(workdir, p)
 	}
@@ -126,7 +137,7 @@ func clonePackage(workdir, pkg string) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
 	}
 	newDir := filepath.Join(workdir, "src", pkg)
-	copyDir(dir, newDir, true, false)
+	copyDir(dir, newDir, false, isSourceFile)
 	ignore := []string{
 		"runtime",       // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
 		"unsafe",        // nothing to see here (also creates import cycle with go-fuzz-dep)
@@ -165,7 +176,7 @@ func clonePackage(workdir, pkg string) {
 	}
 }
 
-func copyDir(dir, newDir string, src, rec bool) {
+func copyDir(dir, newDir string, rec bool, pred func(string) bool) {
 	if err := os.MkdirAll(newDir, 0700); err != nil {
 		failf("failed to create temp dir: %v", err)
 	}
@@ -176,11 +187,11 @@ func copyDir(dir, newDir string, src, rec bool) {
 	for _, f := range files {
 		if f.IsDir() {
 			if rec {
-				copyDir(filepath.Join(dir, f.Name()), filepath.Join(newDir, f.Name()), src, rec)
+				copyDir(filepath.Join(dir, f.Name()), filepath.Join(newDir, f.Name()), rec, pred)
 			}
 			continue
 		}
-		if src && !isSourceFile(f.Name()) {
+		if pred != nil && !pred(f.Name()) {
 			continue
 		}
 		data, err := ioutil.ReadFile(filepath.Join(dir, f.Name()))
@@ -240,6 +251,10 @@ func isSourceFile(f string) bool {
 		strings.HasSuffix(f, ".cpp") ||
 		strings.HasSuffix(f, ".c++") ||
 		strings.HasSuffix(f, ".cc")
+}
+
+func isHeaderFile(f string) bool {
+	return strings.HasSuffix(f, ".h")
 }
 
 var mainSrc = `
