@@ -10,6 +10,7 @@ import (
 func Fuzz(data []byte) int {
 	framer := http2.NewFramer(ioutil.Discard, bytes.NewReader(data))
 	framer.SetMaxReadFrameSize(64 << 10)
+	framer.AllowIllegalWrites = true
 	for score := 0; ; score++ {
 		f, err := framer.ReadFrame()
 		if err != nil {
@@ -54,11 +55,6 @@ func Fuzz(data []byte) int {
 			panic(fmt.Sprintf("unknown frame type %+v", ff))
 		}
 		if err != nil {
-			if str := err.Error(); str == "invalid streamid" || str == "invalid dependent stream id" {
-				// Already know about them, and then happen too frequently.
-				// Remove when these bugs are fixed.
-				continue
-			}
 			panic(fmt.Sprintf("WriteFrame failed with '%v'", err))
 		}
 	}
