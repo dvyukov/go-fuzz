@@ -1,0 +1,132 @@
+// regenerate with:
+// $ protoc --go_out=. examples/protobuf/pb/gen.proto
+
+syntax = "proto2";
+
+package example;
+
+message M0 {
+  required int32 f = 1;
+}
+
+message M1 {
+  required int64 f = 1 [default=-123123123123];
+}
+
+message M2 {
+  optional uint32 f = 1;
+}
+
+message M3 {
+  optional uint64 f = 1 [default=123123123123];
+}
+
+message M4 {
+  optional sint32 f = 1;
+}
+
+message M5 {
+  optional sint64 f = 1;
+}
+
+message M6 {
+  optional fixed32 f = 1;
+}
+
+message M7 {
+  optional fixed64 f = 1;
+}
+
+message M8 {
+  optional sfixed32 f = 1;
+}
+
+message M9 {
+  optional sfixed64 f = 1;
+}
+
+message M10 {
+  optional double f = 1;
+}
+
+message M11 {
+  optional float f = 1;
+}
+
+message M12 {
+  optional bool f = 1;
+}
+
+message M13 {
+  optional string f = 1;
+}
+
+message M14 {
+  optional bytes f = 1;
+}
+
+message M15 {
+  required int32 f0 = 1;
+  optional string f1 = 2;
+  optional bytes f2 = 3;
+  optional double f3 = 4;
+  optional bool f4 = 5;
+}
+
+enum Corpus {
+  UNIVERSAL = 0;
+  WEB = 1;
+  IMAGES = 2;
+  LOCAL = 42;
+  NEWS = 155;
+  PRODUCTS = 123123;
+}
+
+message M16 {
+  optional Corpus f = 1 [default = UNIVERSAL];
+}
+
+message M17 {
+  required M15 f = 1;
+}
+
+message M18 {
+  optional string f0 = 1;
+  extensions 100 to 199;
+}
+
+extend M18 {
+  optional int32 f1 = 126;
+}
+
+message M19 {
+  repeated int32 f = 1;
+}
+
+message M20 {
+  repeated string f = 1;
+}
+
+message M21 {
+  repeated M15 f = 1;
+}
+
+message M22 {
+  repeated M2 f = 1;
+}
+
+message M23 {
+  map<int32, string> f = 1;
+}
+
+message M24 {
+  map<string, M2> f = 1;
+}
+
+message M25 {
+  oneof f {
+     string f0 = 4;
+     M2 f1 = 9;
+     Corpus f2 = 127;
+  }
+}
