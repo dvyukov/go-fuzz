@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
+	"encoding/binary"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -37,13 +38,8 @@ func instrument(in, out string, lits map[string]bool) {
 	file.addImport("github.com/dvyukov/go-fuzz/go-fuzz-dep", fuzzdepPkg, "Main")
 
 	if lits != nil {
-		var lc LiteralCollector
-		lc.lits = make(map[string]bool)
-		ast.Walk(&lc, file.astFile)
-		fmt.Printf("FOUND LITERALS %s:\n", in)
-		for lit := range lc.lits {
-			fmt.Printf("\t'%v'\n", lit)
-		}
+		lc := &LiteralCollector{lits}
+		ast.Walk(lc, file.astFile)
 	}
 
 	ast.Walk(file, file.astFile)
@@ -67,6 +63,8 @@ func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
 		return lc // recurse
 	case *ast.ImportSpec:
 		return nil
+	case *ast.Field:
+		return nil // ignore field tags
 	case *ast.CallExpr:
 		switch fn := nn.Fun.(type) {
 		case *ast.Ident:
@@ -80,9 +78,27 @@ func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
 		}
 		return lc
 	case *ast.BasicLit:
+		lit := nn.Value
 		switch nn.Kind {
-		case token.INT, token.CHAR, token.STRING:
-			lc.lits[nn.Value] = true
+		case token.STRING:
+			lc.lits[lit] = true
+		case token.CHAR:
+			lc.lits[fmt.Sprintf("string(%v)", lit)] = true
+		case token.INT:
+			if lit[0] < '0' || lit[0] > '9' {
+				failf("unsupported literal '%v'", lit)
+			}
+			v, err := strconv.ParseUint(lit, 0, 64)
+			if err != nil {
+				i, err := strconv.ParseInt(lit, 0, 64)
+				if err != nil {
+					failf("failed to parse int literal '%v': %v", lit, err)
+				}
+				v = uint64(i)
+			}
+			buf := new(bytes.Buffer)
+			binary.Write(buf, binary.LittleEndian, v)
+			lc.lits[fmt.Sprintf("%q", buf.String())] = true
 		}
 		return nil
 	}

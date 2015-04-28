@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"index/suffixarray"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -20,6 +21,7 @@ const (
 type Slave struct {
 	hub     *Hub
 	mutator *Mutator
+	id      int
 
 	coverRegion []byte
 	inputRegion []byte
@@ -52,6 +54,7 @@ func slaveMain() {
 		s := &Slave{
 			hub:     hub,
 			mutator: newMutator(),
+			id:      i,
 		}
 		s.setupCommFile()
 		go s.loop()
@@ -65,6 +68,9 @@ func (s *Slave) loop() {
 			crash := s.crasherQueue[n]
 			s.crasherQueue[n] = NewCrasherArgs{}
 			s.crasherQueue = s.crasherQueue[:n]
+			if *flagV >= 2 {
+				log.Printf("slave %v processes crasher [%v]%v", s.id, len(crash.Data), hash(crash.Data))
+			}
 			s.processCrasher(crash)
 			continue
 		}
@@ -74,12 +80,18 @@ func (s *Slave) loop() {
 			input := s.triageQueue[n]
 			s.triageQueue[n] = MasterInput{}
 			s.triageQueue = s.triageQueue[:n]
+			if *flagV >= 2 {
+				log.Printf("slave %v triages local input [%v]%v minimized=%v smashed=%v", s.id, len(input.Data), hash(input.Data), input.Minimized, input.Smashed)
+			}
 			s.triageInput(input)
 			continue
 		}
 
 		select {
 		case input := <-s.hub.triageC:
+			if *flagV >= 2 {
+				log.Printf("slave %v triages master input [%v]%v minimized=%v smashed=%v", s.id, len(input.Data), hash(input.Data), input.Minimized, input.Smashed)
+			}
 			s.triageInput(input)
 			continue
 		default:
@@ -90,7 +102,7 @@ func (s *Slave) loop() {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		data, depth := s.mutator.generate(ro.corpus)
+		data, depth := s.mutator.generate(ro)
 		s.testInput(data, depth)
 	}
 }
@@ -118,7 +130,7 @@ func (s *Slave) triageInput(input MasterInput) {
 		} else {
 			for i, v := range cover {
 				x := inp.cover[i]
-				if v < x {
+				if v > x {
 					inp.cover[i] = v
 				}
 			}
@@ -229,6 +241,60 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 func (s *Slave) smash(data []byte, depth int) {
 	ro := s.hub.ro.Load().(*ROData)
 
+	// TODO: some of the mutations are disabled, because they take too long
+	// at least during experimentation (but most likely ok for real runs).
+	// Figure out what to do here.
+
+	suffix := suffixarray.New(data)
+	/*
+		for i0, lit := range ro.strLits {
+			for _, pos := range suffix.Lookup(lit, -1) {
+				for i1, lit1 := range ro.strLits {
+					if i0 == i1 {
+						continue
+					}
+					tmp := make([]byte, len(data)-len(lit)+len(lit1))
+					copy(tmp, data[:pos])
+					copy(tmp[pos:], lit1)
+					copy(tmp[pos+len(lit1):], data[pos+len(lit):])
+					s.testInput(tmp, depth)
+				}
+			}
+		}
+	*/
+	for i0, lit := range ro.intLits {
+		for _, pos := range suffix.Lookup(lit, -1) {
+			for i1, lit1 := range ro.intLits {
+				if i0 == i1 || len(lit) != len(lit1) {
+					continue
+				}
+				tmp := make([]byte, len(lit))
+				copy(tmp, data[pos:])
+				copy(data[pos:], lit1)
+				s.testInput(data, depth)
+				copy(data[pos:], tmp)
+			}
+		}
+
+		if len(lit) == 1 {
+			continue
+		}
+		lit = reverse(lit)
+		for _, pos := range suffix.Lookup(lit, -1) {
+			for i1, lit1 := range ro.intLits {
+				if i0 == i1 || len(lit) != len(lit1) {
+					continue
+				}
+				lit1 = reverse(lit1)
+				tmp := make([]byte, len(lit))
+				copy(tmp, data[pos:])
+				copy(data[pos:], lit1)
+				s.testInput(data, depth)
+				copy(data[pos:], tmp)
+			}
+		}
+	}
+
 	// Stage 0: flip each bit one-by-one.
 	for i := 0; i < len(data)*8; i++ {
 		data[i/8] ^= 1 << uint(i%8)
@@ -304,9 +370,20 @@ func (s *Slave) smash(data []byte, depth int) {
 		s.testInput(tmp, depth)
 	}
 
+	// Insert a byte after every byte.
+	tmp := make([]byte, len(data)+1)
+	for i := 0; i <= len(data); i++ {
+		copy(tmp, data[:i])
+		copy(tmp[i+1:], data[i:])
+		tmp[i] = 0
+		s.testInput(tmp, depth)
+		tmp[i] = 'a'
+		s.testInput(tmp, depth)
+	}
+
 	// Do a bunch of random mutations so that this input catches up with the rest.
 	for i := 0; i < 1e4; i++ {
-		tmp := s.mutator.mutate(data, ro.corpus)
+		tmp := s.mutator.mutate(data, ro)
 		s.testInput(tmp, depth+1)
 	}
 }
@@ -472,4 +549,12 @@ func extractSuppression(out []byte) []byte {
 		supp = out
 	}
 	return supp
+}
+
+func reverse(data []byte) []byte {
+	tmp := make([]byte, len(data))
+	for i, v := range data {
+		tmp[len(data)-i-1] = v
+	}
+	return tmp
 }

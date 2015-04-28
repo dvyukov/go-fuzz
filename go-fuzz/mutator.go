@@ -20,17 +20,19 @@ func (m *Mutator) rand(n int) int {
 	return m.r.Intn(n)
 }
 
-func (m *Mutator) generate(corpus []Input) ([]byte, int) {
+func (m *Mutator) generate(ro *ROData) ([]byte, int) {
+	corpus := ro.corpus
 	scoreSum := corpus[len(corpus)-1].runningScoreSum
 	weightedIdx := m.rand(scoreSum)
 	idx := sort.Search(len(corpus), func(i int) bool {
 		return corpus[i].runningScoreSum > weightedIdx
 	})
 	input := &corpus[idx]
-	return m.mutate(input.data, corpus), input.depth + 1
+	return m.mutate(input.data, ro), input.depth + 1
 }
 
-func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
+func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
+	corpus := ro.corpus
 	res := make([]byte, len(data))
 	copy(res, data)
 	nm := 1
@@ -38,7 +40,7 @@ func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
 		nm++
 	}
 	for iter := 0; iter < nm; iter++ {
-		switch m.rand(18) {
+		switch m.rand(20) {
 		case 0:
 			// Remove a range of bytes.
 			if len(res) <= 1 {
@@ -336,6 +338,48 @@ func (m *Mutator) mutate(data []byte, corpus []Input) []byte {
 			for i := 0; i < n; i++ {
 				res[pos0+i] = other[pos1+i]
 			}
+		case 18:
+			// Insert a literal.
+			if len(ro.intLits) == 0 && len(ro.strLits) == 0 {
+				iter--
+				continue
+			}
+			var lit []byte
+			if len(ro.intLits) == 0 || m.rand(2) == 0 {
+				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
+			} else {
+				lit = ro.intLits[m.rand(len(ro.intLits))]
+				if m.rand(3) == 0 {
+					lit = reverse(lit)
+				}
+			}
+			pos := m.rand(len(res) + 1)
+			for i := 0; i < len(lit); i++ {
+				res = append(res, 0)
+			}
+			copy(res[pos+len(lit):], res[pos:])
+			copy(res[pos:], lit)
+		case 19:
+			// Replace with literal.
+			if len(ro.intLits) == 0 && len(ro.strLits) == 0 {
+				iter--
+				continue
+			}
+			var lit []byte
+			if len(ro.intLits) == 0 || m.rand(2) == 0 {
+				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
+			} else {
+				lit = ro.intLits[m.rand(len(ro.intLits))]
+				if m.rand(3) == 0 {
+					lit = reverse(lit)
+				}
+			}
+			if len(lit) >= len(res) {
+				iter--
+				continue
+			}
+			pos := m.rand(len(res) - len(lit))
+			copy(res[pos:], lit)
 		}
 	}
 	if len(res) > maxInputSize {

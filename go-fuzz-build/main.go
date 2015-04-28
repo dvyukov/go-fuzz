@@ -15,6 +15,7 @@ import (
 var (
 	flagOut  = flag.String("o", "", "output file")
 	flagFunc = flag.String("func", "Fuzz", "entry function")
+	flagWork = flag.Bool("work", false, "don't remove working directory")
 
 	workdir string
 )
@@ -66,7 +67,11 @@ func main() {
 	if err != nil {
 		failf("failed to create temp dir: %v", err)
 	}
-	defer os.RemoveAll(workdir)
+	if *flagWork {
+		fmt.Printf("workdir: %v\n", workdir)
+	} else {
+		defer os.RemoveAll(workdir)
+	}
 
 	if deps["runtime/cgo"] {
 		// Trick go command into thinking that it has up-to-date sources for cmd/cgo.
@@ -111,8 +116,12 @@ func testNormalBuild(pkg string) {
 	if err != nil {
 		failf("failed to create temp dir: %v", err)
 	}
+	if *flagWork {
+		fmt.Printf("workdir: %v\n", workdir)
+	} else {
+		defer os.RemoveAll(workdir)
+	}
 	defer func() {
-		os.RemoveAll(workdir)
 		workdir = ""
 	}()
 	createFuzzMain(pkg, nil)
@@ -127,22 +136,9 @@ func createFuzzMain(pkg string, lits map[string]bool) {
 	if err := os.MkdirAll(filepath.Join(workdir, "src", mainPkg), 0700); err != nil {
 		failf("failed to create temp dir: %v", err)
 	}
-	var litBuf bytes.Buffer
+	litBuf := new(bytes.Buffer)
 	for lit := range lits {
-		/*
-			        '24'
-				'0xeb31d82e'
-				'0x07'
-				''\\''
-				''\U0010FFFF''
-				'"chan "'
-		*/
-		if lit[0] == '"' {
-			//litBuf.Write
-			//litBuf.WriteString(lit)
-
-		} else {
-		}
+		fmt.Fprintf(litBuf, "\t%v,\n", lit)
 	}
 	src := fmt.Sprintf(mainSrc, pkg, *flagFunc, litBuf.String())
 	if err := ioutil.WriteFile(filepath.Join(workdir, "src", mainPkg, "main.go"), []byte(src), 0600); err != nil {
@@ -259,7 +255,7 @@ func goListProps(pkg string, props ...string) []string {
 }
 
 func failf(str string, args ...interface{}) {
-	if workdir != "" {
+	if !*flagWork && workdir != "" {
 		os.RemoveAll(workdir)
 	}
 	fmt.Fprintf(os.Stderr, str+"\n", args...)
@@ -294,5 +290,7 @@ func main() {
 	dep.Main(target.%v, lits)
 }
 
-var lits = "%v"
+var lits = []string{
+%v
+}
 `

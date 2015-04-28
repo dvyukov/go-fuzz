@@ -22,6 +22,12 @@ var (
 )
 
 func init() {
+	if cmd, _ := syscall.Getenv("GO-FUZZ-CMD"); cmd != "" {
+		// The process is started to execute some driver command.
+		CoverTab = new([coverSize]byte)
+		return
+	}
+
 	mem, err := syscall.Mmap(commFD, 0, coverSize+maxInputSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
 		println("failed to mmap fd = 3 errno =", err.(syscall.Errno))
@@ -31,7 +37,22 @@ func init() {
 	input = mem[coverSize:]
 }
 
-func Main(f func([]byte) int, lits string) {
+func Main(f func([]byte) int, lits []string) {
+	if cmd, _ := syscall.Getenv("GO-FUZZ-CMD"); cmd != "" {
+		switch cmd {
+		case "literals":
+			write(commFD, uint64(len(lits)))
+			for _, lit := range lits {
+				write(commFD, uint64(len(lit)))
+				writeStr(commFD, lit)
+			}
+			syscall.Exit(0)
+		default:
+			println("unknown command")
+			syscall.Exit(1)
+		}
+	}
+
 	runtime.GOMAXPROCS(1) // makes coverage more deterministic, we parallelize on higher level
 	for {
 		n := read(inFD)
@@ -84,6 +105,23 @@ func write(fd int, vals ...uint64) {
 			v >>= 8
 		}
 	}
+	wr := 0
+	for wr != len(buf) {
+		n, err := syscall.Write(fd, buf[wr:])
+		if err == syscall.EINTR {
+			continue
+		}
+		if err != nil {
+			println("failed to read fd =", fd, "errno =", err.(syscall.Errno))
+			syscall.Exit(1)
+		}
+		wr += n
+	}
+}
+
+// writeStr writes strings s to fd.
+func writeStr(fd int, s string) {
+	buf := []byte(s)
 	wr := 0
 	for wr != len(buf) {
 		n, err := syscall.Write(fd, buf[wr:])

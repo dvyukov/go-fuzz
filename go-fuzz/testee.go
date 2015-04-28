@@ -2,9 +2,11 @@ package main
 
 import (
 	"encoding/binary"
+	"io"
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -208,4 +210,66 @@ func (t *Testee) shutdown() (output []byte) {
 	t.outPipe.Close()
 	t.stdoutPipe.Close()
 	return out
+}
+
+// fetchLiterals fetches list of source code literals from testee.
+func fetchLiterals() (strLits, intLits [][]byte) {
+	rComm, wComm, err := os.Pipe()
+	if err != nil {
+		log.Fatalf("failed to pipe: %v", err)
+	}
+	defer rComm.Close()
+	defer wComm.Close()
+	cmd := exec.Command(*flagBin)
+	cmd.Env = []string{"GO-FUZZ-CMD=literals"}
+	cmd.ExtraFiles = append(cmd.ExtraFiles, wComm)
+	if err := cmd.Start(); err != nil {
+		log.Fatalf("failed to start test binary: %v", err)
+	}
+	var n uint64
+	err = binary.Read(rComm, binary.LittleEndian, &n)
+	if err != nil || n > 1e6 {
+		log.Fatalf("failed to read literal count: %v (%v)", n, err)
+	}
+	lits := make(map[string]struct{})
+	for i := uint64(0); i < n; i++ {
+		var ln uint64
+		err = binary.Read(rComm, binary.LittleEndian, &ln)
+		if err != nil || ln > 1e6 {
+			log.Fatalf("failed to read literal length: %v (%v)", ln, err)
+		}
+		if ln == 0 {
+			continue
+		}
+		buf := make([]byte, ln)
+		if _, err := io.ReadFull(rComm, buf); err != nil {
+			log.Fatalf("failed to read literal: %v", err)
+		}
+		if ln > 20 {
+			continue
+		}
+		lits[string(buf)] = struct{}{} // deduplicate
+	}
+	cmd.Wait()
+	for lit := range lits {
+		if len(lit) == 8 {
+			var vv uint64
+			binary.Read(strings.NewReader(lit), binary.LittleEndian, &vv)
+			v := int64(vv)
+			var val []byte
+			if v >= -(1<<7) && v < 1<<8 {
+				val = append(val, byte(v))
+			} else if v >= -(1<<15) && v < 1<<16 {
+				val = append(val, byte(v), byte(v>>8))
+			} else if v >= -(1<<31) && v < 1<<32 {
+				val = append(val, byte(v), byte(v>>8), byte(v>>16), byte(v>>24))
+			} else {
+				val = append(val, byte(v), byte(v>>8), byte(v>>16), byte(v>>24), byte(v>>32), byte(v>>40), byte(v>>48), byte(v>>56))
+			}
+			intLits = append(intLits, val)
+		} else if len(lit) < 20 {
+			strLits = append(strLits, []byte(lit))
+		}
+	}
+	return
 }
