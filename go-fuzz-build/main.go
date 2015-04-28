@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -85,10 +86,11 @@ func main() {
 		// Cross-compilation is not implemented.
 		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
 	}
+	lits := make(map[string]bool)
 	for p := range deps {
-		clonePackage(workdir, p)
+		clonePackage(workdir, p, lits)
 	}
-	createFuzzMain(pkg)
+	createFuzzMain(pkg, lits)
 
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", *flagOut, mainPkg)
 	for _, v := range os.Environ() {
@@ -113,7 +115,7 @@ func testNormalBuild(pkg string) {
 		os.RemoveAll(workdir)
 		workdir = ""
 	}()
-	createFuzzMain(pkg)
+	createFuzzMain(pkg, nil)
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", filepath.Join(workdir, "bin"), mainPkg)
 	cmd.Env = append([]string{"GOPATH=" + workdir + ":" + os.Getenv("GOPATH")}, os.Environ()...)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -121,39 +123,62 @@ func testNormalBuild(pkg string) {
 	}
 }
 
-func createFuzzMain(pkg string) {
+func createFuzzMain(pkg string, lits map[string]bool) {
 	if err := os.MkdirAll(filepath.Join(workdir, "src", mainPkg), 0700); err != nil {
 		failf("failed to create temp dir: %v", err)
 	}
-	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
+	var litBuf bytes.Buffer
+	for lit := range lits {
+		/*
+			        '24'
+				'0xeb31d82e'
+				'0x07'
+				''\\''
+				''\U0010FFFF''
+				'"chan "'
+		*/
+		if lit[0] == '"' {
+			//litBuf.Write
+			//litBuf.WriteString(lit)
+
+		} else {
+		}
+	}
+	src := fmt.Sprintf(mainSrc, pkg, *flagFunc, litBuf.String())
 	if err := ioutil.WriteFile(filepath.Join(workdir, "src", mainPkg, "main.go"), []byte(src), 0600); err != nil {
 		failf("failed to write temp file: %v", err)
 	}
 }
 
-func clonePackage(workdir, pkg string) {
+func clonePackage(workdir, pkg string, lits map[string]bool) {
 	dir := goListProps(pkg, "Dir")[0]
 	if !strings.HasSuffix(dir, pkg) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
 	}
 	newDir := filepath.Join(workdir, "src", pkg)
 	copyDir(dir, newDir, false, isSourceFile)
-	ignore := []string{
-		"runtime",       // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
-		"unsafe",        // nothing to see here (also creates import cycle with go-fuzz-dep)
-		"errors",        // nothing to see here (also creates import cycle with go-fuzz-dep)
-		"syscall",       // creates import cycle with go-fuzz-dep (and probably nothing to see here)
-		"sync",          // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
-		"sync/atomic",   // not interesting (also creates import cycle with go-fuzz-dep)
-		"time",          // creates import cycle with go-fuzz-dep
-		"runtime/cgo",   // why would we instrument it?
-		"runtime/pprof", // why would we instrument it?
-		"runtime/race",  // why would we instrument it?
+	ignore := map[string]bool{
+		"runtime":       true, // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
+		"unsafe":        true, // nothing to see here (also creates import cycle with go-fuzz-dep)
+		"errors":        true, // nothing to see here (also creates import cycle with go-fuzz-dep)
+		"syscall":       true, // creates import cycle with go-fuzz-dep (and probably nothing to see here)
+		"sync":          true, // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
+		"sync/atomic":   true, // not interesting (also creates import cycle with go-fuzz-dep)
+		"time":          true, // creates import cycle with go-fuzz-dep
+		"runtime/cgo":   true, // why would we instrument it?
+		"runtime/pprof": true, // why would we instrument it?
+		"runtime/race":  true, // why would we instrument it?
 	}
-	for _, p := range ignore {
-		if pkg == p {
-			return
-		}
+	nolits := map[string]bool{
+		"math":    true,
+		"os":      true,
+		"unicode": true,
+	}
+	if ignore[pkg] {
+		return
+	}
+	if nolits[pkg] {
+		lits = nil
 	}
 	files, err := ioutil.ReadDir(newDir)
 	if err != nil {
@@ -168,7 +193,7 @@ func clonePackage(workdir, pkg string) {
 		}
 		fn := filepath.Join(newDir, f.Name())
 		newFn := fn + ".cover"
-		instrument(fn, newFn)
+		instrument(fn, newFn, lits)
 		err := os.Rename(newFn, fn)
 		if err != nil {
 			failf("failed to rename file: %v", err)
@@ -242,7 +267,7 @@ func failf(str string, args ...interface{}) {
 }
 
 func isSourceFile(f string) bool {
-	return strings.HasSuffix(f, ".go") ||
+	return (strings.HasSuffix(f, ".go") && !strings.HasSuffix(f, "_test.go")) ||
 		strings.HasSuffix(f, ".s") ||
 		strings.HasSuffix(f, ".S") ||
 		strings.HasSuffix(f, ".c") ||
@@ -266,6 +291,8 @@ import (
 )
 
 func main() {
-	dep.Main(target.%v)
+	dep.Main(target.%v, lits)
 }
+
+var lits = "%v"
 `
