@@ -17,7 +17,7 @@ import (
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(in, out string) {
+func instrument(in, out string, lits map[string]bool) {
 	fset := token.NewFileSet()
 	content, err := ioutil.ReadFile(in)
 	if err != nil {
@@ -36,6 +36,16 @@ func instrument(in, out string) {
 	}
 	file.addImport("github.com/dvyukov/go-fuzz/go-fuzz-dep", fuzzdepPkg, "Main")
 
+	if lits != nil {
+		var lc LiteralCollector
+		lc.lits = make(map[string]bool)
+		ast.Walk(&lc, file.astFile)
+		fmt.Printf("FOUND LITERALS %s:\n", in)
+		for lit := range lc.lits {
+			fmt.Printf("\t'%v'\n", lit)
+		}
+	}
+
 	ast.Walk(file, file.astFile)
 
 	fd, err := os.Create(out)
@@ -45,6 +55,37 @@ func instrument(in, out string) {
 	defer fd.Close()
 	fd.Write(initialComments(content)) // Retain '// +build' directives.
 	file.print(fd)
+}
+
+type LiteralCollector struct {
+	lits map[string]bool
+}
+
+func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
+	switch nn := n.(type) {
+	default:
+		return lc // recurse
+	case *ast.ImportSpec:
+		return nil
+	case *ast.CallExpr:
+		switch fn := nn.Fun.(type) {
+		case *ast.Ident:
+			if fn.Name == "panic" {
+				return nil
+			}
+		case *ast.SelectorExpr:
+			if id, ok := fn.X.(*ast.Ident); ok && (id.Name == "fmt" || id.Name == "errors") {
+				return nil
+			}
+		}
+		return lc
+	case *ast.BasicLit:
+		switch nn.Kind {
+		case token.INT, token.CHAR, token.STRING:
+			lc.lits[nn.Value] = true
+		}
+		return nil
+	}
 }
 
 func trimComments(file *ast.File, fset *token.FileSet) []*ast.CommentGroup {

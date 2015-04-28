@@ -31,7 +31,7 @@ func init() {
 	input = mem[coverSize:]
 }
 
-func Main(f func([]byte) int) {
+func Main(f func([]byte) int, lits string) {
 	runtime.GOMAXPROCS(1) // makes coverage more deterministic, we parallelize on higher level
 	for {
 		n := read(inFD)
