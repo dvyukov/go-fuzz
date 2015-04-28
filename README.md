@@ -169,6 +169,4 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/net/spdy: processing of 35 bytes takes 7 seconds](https://github.com/golang/go/issues/10544)
 - [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545)
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547)
-- [github.com/bradfitz/http2: ReadFrame returns frame with invalid streamid](https://github.com/bradfitz/http2/issues/49)
-- [github.com/bradfitz/http2: ReadFrame returns frame with invalid dependent stream id](https://github.com/bradfitz/http2/issues/50)
 - [github.com/golang/protobuf: Umarshal crashes with "call of reflect.Value.SetMapIndex on zero Value"](https://github.com/golang/protobuf/issues/27)
