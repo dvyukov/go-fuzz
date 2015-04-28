@@ -114,17 +114,22 @@ executions. ```cover``` is density of hashed coverage bitmap, ideally this value
 should be smaller than 5%, otherwise fuzzer can miss new interesting inputs.
 And finally ```uptime``` is uptime of the process.
 
-Some additional notes. go-fuzz-build builds the program with gofuzz build tag,
-this allows to put the Fuzz function implementation directly into the tested
-package, but exclude it from normal builds with ```// +build gofuzz```
-directive.
-Go-fuzz can utilize several machines. To do this, start master process
-separately:
+### Random Notes
+
+go-fuzz-build builds the program with gofuzz build tag, this allows to put the
+Fuzz function implementation directly into the tested package, but exclude it
+from normal builds with ```// +build gofuzz``` directive.
+
+If your inputs contain a checksum, it can make sense to append/update the checksum
+in the ```Fuzz``` function. The chances that go-fuzz will generate the correct
+checksum are very low, so most work will be in vain otherwise.
+
+Go-fuzz can utilize several machines. To do this, start master process separately:
 ```
 $ go-fuzz -corpus=examples/png/corpus -workdir=~/png-fuzz -master=127.0.0.1:8745
 ```
-It will manage persistent corpus and crashers and coordinate work of slave
-processes. Then run one or more slave processes as:
+It will manage persistent corpus and crashers and coordinate work of slave processes.
+Then run one or more slave processes as:
 ```
 $ go-fuzz -bin=./png-fuzz -slave=127.0.0.1:8745 -procs=10
 ```
@@ -171,4 +176,4 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547)
 - [github.com/golang/protobuf: Umarshal crashes with "call of reflect.Value.SetMapIndex on zero Value"](https://github.com/golang/protobuf/issues/27)
 
-*If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list. Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.*
+**If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
