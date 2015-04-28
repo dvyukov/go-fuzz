@@ -164,6 +164,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10393)
 - [x/image/tiff: index out of range](https://github.com/golang/go/issues/10394)
 - [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10395)
+- [x/image/tiff: index out of range](https://github.com/golang/go/issues/10597)
+- [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10596)
 - [x/image/bmp: makeslice: len out of range](https://github.com/golang/go/issues/10396)
 - [x/image/bmp: out of memory](https://github.com/golang/go/issues/10399)
 - [x/net/html: void element <link> has child nodes](https://github.com/golang/go/issues/10535)
