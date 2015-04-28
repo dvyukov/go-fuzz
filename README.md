@@ -170,3 +170,5 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545)
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547)
 - [github.com/golang/protobuf: Umarshal crashes with "call of reflect.Value.SetMapIndex on zero Value"](https://github.com/golang/protobuf/issues/27)
+
+*If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list. Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.*
