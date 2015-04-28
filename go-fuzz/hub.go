@@ -43,6 +43,8 @@ type ROData struct {
 	corpus    []Input
 	maxCover  []byte
 	badInputs map[Sig]struct{}
+	strLits   [][]byte // string literals in testee
+	intLits   [][]byte // int literals in testee
 }
 
 type Stats struct {
@@ -61,6 +63,9 @@ func newHub() *Hub {
 		log.Fatalf("failed to connect to master: %v", err)
 	}
 
+	// Fetch list of string and integer literals from testee.
+	strLits, intLits := fetchLiterals()
+
 	hub := &Hub{
 		id:          res.ID,
 		master:      c,
@@ -75,6 +80,8 @@ func newHub() *Hub {
 	ro := &ROData{
 		maxCover:  make([]byte, coverSize),
 		badInputs: make(map[Sig]struct{}),
+		strLits:   strLits,
+		intLits:   intLits,
 	}
 	hub.ro.Store(ro)
 
@@ -152,12 +159,12 @@ func (hub *Hub) loop() {
 			}
 
 			// Passed deduplication, taking it.
-			hub.corpusSigs[sig] = struct{}{}
-			ro1 := &ROData{
-				corpus:    ro.corpus,
-				maxCover:  make([]byte, coverSize),
-				badInputs: ro.badInputs,
+			if *flagV >= 2 {
+				log.Printf("hub received new input [%v]%v mine=%v", len(input.data), hash(input.data), input.mine)
 			}
+			hub.corpusSigs[sig] = struct{}{}
+			ro1 := new(ROData)
+			*ro1 = *ro
 			// Assign it the default score, but mark corpus for score recalculation.
 			hub.corpusStale = true
 			scoreSum := 0
@@ -167,6 +174,7 @@ func (hub *Hub) loop() {
 			input.score = defScore
 			input.runningScoreSum = scoreSum + defScore
 			ro1.corpus = append(ro1.corpus, input)
+			ro1.maxCover = make([]byte, coverSize)
 			copy(ro1.maxCover, ro.maxCover)
 			hub.maxCoverSize = updateMaxCover(ro1.maxCover, input.cover)
 			hub.ro.Store(ro1)
@@ -181,11 +189,9 @@ func (hub *Hub) loop() {
 			// New crasher from slaves. Woohoo!
 			if crash.Hanging {
 				ro := hub.ro.Load().(*ROData)
-				ro1 := &ROData{
-					corpus:    ro.corpus,
-					maxCover:  ro.maxCover,
-					badInputs: make(map[Sig]struct{}),
-				}
+				ro1 := new(ROData)
+				*ro1 = *ro
+				ro1.badInputs = make(map[Sig]struct{})
 				for k, v := range ro.badInputs {
 					ro1.badInputs[k] = v
 				}
@@ -201,13 +207,11 @@ func (hub *Hub) loop() {
 
 func (hub *Hub) updateScores() {
 	ro := hub.ro.Load().(*ROData)
-	ro1 := &ROData{
-		corpus:    make([]Input, len(ro.corpus)),
-		maxCover:  ro.maxCover,
-		badInputs: ro.badInputs,
-	}
-	corpus := ro1.corpus
+	ro1 := new(ROData)
+	*ro1 = *ro
+	corpus := make([]Input, len(ro.corpus))
 	copy(corpus, ro.corpus)
+	ro1.corpus = corpus
 
 	var sumExecTime, sumCoverSize uint64
 	for _, inp := range corpus {
