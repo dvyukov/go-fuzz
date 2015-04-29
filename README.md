@@ -161,6 +161,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [compress/flate: hang](https://github.com/golang/go/issues/10426)
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610)
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611)
+- [html/template: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10612)
 - [x/image/webp: index out of range](https://github.com/golang/go/issues/10383)
 - [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384)
 - [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10393)
