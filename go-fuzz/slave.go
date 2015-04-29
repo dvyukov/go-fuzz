@@ -191,6 +191,9 @@ func (s *Slave) processCrasher(crash NewCrasherArgs) {
 func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidate, cover, output []byte, result int, crashed, hanged bool) bool) []byte {
 	res := make([]byte, len(data))
 	copy(res, data)
+	if !*flagMinimize {
+		return res
+	}
 
 	// First, try to cut tail.
 	for n := 1024; n != 0; n /= 2 {
@@ -205,32 +208,35 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 	}
 
 	// Then, try to remove each individual byte.
+	tmp := make([]byte, len(res))
 	for i := 0; i < len(res); i++ {
-		candidate := make([]byte, len(res)-1)
+		candidate := tmp[:len(res)-1]
 		copy(candidate[:i], res[:i])
 		copy(candidate[i:], res[i+1:])
 		result, _, cover, output, crashed, hanged := s.exec(candidate)
 		if !pred(candidate, cover, output, result, crashed, hanged) {
 			continue
 		}
-		res = candidate
+		res = make([]byte, len(candidate))
+		copy(res, candidate)
 		i--
 	}
 
 	// Then, try to replace each individual byte with '0'.
 	if canonicalize {
 		for i := 0; i < len(res); i++ {
-			if res[i] == '0' {
+			if res[i] == '.' {
 				continue
 			}
-			candidate := make([]byte, len(res))
+			candidate := tmp[:len(res)]
 			copy(candidate, res)
 			candidate[i] = '0'
 			result, _, cover, output, crashed, hanged := s.exec(candidate)
 			if !pred(candidate, cover, output, result, crashed, hanged) {
 				continue
 			}
-			res = candidate
+			res = make([]byte, len(candidate))
+			copy(res, candidate)
 		}
 	}
 
@@ -530,7 +536,7 @@ func extractSuppression(out []byte) []byte {
 		if collect && len(line) > 0 && (line[0] >= 'a' && line[0] <= 'z' ||
 			line[0] >= 'A' && line[0] <= 'Z') {
 			// Function name line.
-			idx := strings.IndexByte(line, '(')
+			idx := strings.LastIndex(line, "(")
 			if idx != -1 {
 				supp = append(supp, line[:idx]...)
 				supp = append(supp, '\n')
