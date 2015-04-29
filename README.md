@@ -159,6 +159,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423)
 - [image/png: nil deref](https://github.com/golang/go/issues/10493)
 - [compress/flate: hang](https://github.com/golang/go/issues/10426)
+- [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610)
 - [x/image/webp: index out of range](https://github.com/golang/go/issues/10383)
 - [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384)
 - [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10393)
