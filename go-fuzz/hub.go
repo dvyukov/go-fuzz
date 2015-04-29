@@ -9,7 +9,7 @@ import (
 
 const (
 	syncPeriod   = 3 * time.Second
-	syncDeadline = 10 * syncPeriod
+	syncDeadline = 100 * syncPeriod
 
 	minScore = 1.0
 	maxScore = 1000.0
