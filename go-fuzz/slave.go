@@ -6,6 +6,7 @@ import (
 	"index/suffixarray"
 	"io/ioutil"
 	"log"
+	"os"
 	"strings"
 	"sync/atomic"
 	"syscall"
@@ -105,6 +106,7 @@ func (s *Slave) loop() {
 		data, depth := s.mutator.generate(ro)
 		s.testInput(data, depth)
 	}
+	s.shutdown()
 }
 
 // triageInput processes every new input.
@@ -452,6 +454,7 @@ func (s *Slave) noteCrasher(data, output []byte, hanged bool) {
 
 func (s *Slave) periodicCheck() {
 	if atomic.LoadUint32(&shutdown) != 0 {
+		s.shutdown()
 		select {}
 	}
 	if time.Since(s.lastSync) < syncPeriod {
@@ -461,6 +464,15 @@ func (s *Slave) periodicCheck() {
 	s.hub.syncC <- s.stats
 	s.stats.execs = 0
 	s.stats.restarts = 0
+}
+
+// shutdown cleanups after slave, it is not guaranteed to be called.
+func (s *Slave) shutdown() {
+	if s.testee != nil {
+		s.testee.shutdown()
+		s.testee = nil
+	}
+	os.Remove(s.commFile)
 }
 
 func (s *Slave) setupCommFile() {
