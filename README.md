@@ -146,7 +146,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 ## Trophies
 
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272)
-- [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273)
+- [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs]
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415)
 - [encoding/gob: excessive memory consumption](https://github.com/golang/go/issues/10490)
 - [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491)
@@ -177,5 +177,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545)
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547)
 - [github.com/golang/protobuf: Umarshal crashes with "call of reflect.Value.SetMapIndex on zero Value"](https://github.com/golang/protobuf/issues/27)
+- [code.google.com/p/freetype-go: 42 crashers](https://code.google.com/p/freetype-go/issues/detail?id=17) [42 bugs]
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
