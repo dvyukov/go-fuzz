@@ -1,0 +1,1 @@
+{{range $i, $v := .C}}{{call $v.W}}{{end}}
