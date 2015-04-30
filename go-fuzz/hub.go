@@ -5,6 +5,8 @@ import (
 	"net/rpc"
 	"sync/atomic"
 	"time"
+
+	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
 )
 
 const (
@@ -40,11 +42,12 @@ type Hub struct {
 }
 
 type ROData struct {
-	corpus    []Input
-	maxCover  []byte
-	badInputs map[Sig]struct{}
-	strLits   [][]byte // string literals in testee
-	intLits   [][]byte // int literals in testee
+	corpus       []Input
+	maxCover     []byte
+	badInputs    map[Sig]struct{}
+	suppressions map[Sig]struct{}
+	strLits      [][]byte // string literals in testee
+	intLits      [][]byte // int literals in testee
 }
 
 type Stats struct {
@@ -78,10 +81,11 @@ func newHub() *Hub {
 	}
 
 	ro := &ROData{
-		maxCover:  make([]byte, coverSize),
-		badInputs: make(map[Sig]struct{}),
-		strLits:   strLits,
-		intLits:   intLits,
+		maxCover:     make([]byte, dep.CoverSize),
+		badInputs:    make(map[Sig]struct{}),
+		suppressions: make(map[Sig]struct{}),
+		strLits:      strLits,
+		intLits:      intLits,
 	}
 	hub.ro.Store(ro)
 
@@ -112,7 +116,7 @@ func (hub *Hub) loop() {
 				ID:            hub.id,
 				Execs:         hub.stats.execs,
 				Restarts:      hub.stats.restarts,
-				CoverFullness: float64(hub.maxCoverSize) / coverSize,
+				CoverFullness: float64(hub.maxCoverSize) / dep.CoverSize,
 			}
 			hub.stats.execs = 0
 			hub.stats.restarts = 0
@@ -174,7 +178,7 @@ func (hub *Hub) loop() {
 			input.score = defScore
 			input.runningScoreSum = scoreSum + defScore
 			ro1.corpus = append(ro1.corpus, input)
-			ro1.maxCover = make([]byte, coverSize)
+			ro1.maxCover = make([]byte, dep.CoverSize)
 			copy(ro1.maxCover, ro.maxCover)
 			hub.maxCoverSize = updateMaxCover(ro1.maxCover, input.cover)
 			hub.ro.Store(ro1)
@@ -191,11 +195,18 @@ func (hub *Hub) loop() {
 				ro := hub.ro.Load().(*ROData)
 				ro1 := new(ROData)
 				*ro1 = *ro
-				ro1.badInputs = make(map[Sig]struct{})
-				for k, v := range ro.badInputs {
-					ro1.badInputs[k] = v
+				if crash.Hanging {
+					ro1.badInputs = make(map[Sig]struct{})
+					for k, v := range ro.badInputs {
+						ro1.badInputs[k] = v
+					}
+					ro1.badInputs[hash(crash.Data)] = struct{}{}
 				}
-				ro1.badInputs[hash(crash.Data)] = struct{}{}
+				ro1.suppressions = make(map[Sig]struct{})
+				for k, v := range ro.suppressions {
+					ro1.suppressions[k] = v
+				}
+				ro1.suppressions[hash(crash.Suppression)] = struct{}{}
 				hub.ro.Store(ro1)
 			}
 			if err := hub.master.Call("Master.NewCrasher", crash, nil); err != nil {
@@ -303,7 +314,7 @@ func (hub *Hub) updateScores() {
 }
 
 func updateMaxCover(base, cur []byte) int {
-	if len(base) != coverSize || len(cur) != coverSize {
+	if len(base) != dep.CoverSize || len(cur) != dep.CoverSize {
 		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
 	}
 	cnt := 0

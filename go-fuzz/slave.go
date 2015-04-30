@@ -11,12 +11,11 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
 )
 
-const (
-	coverSize    = 64 << 10
-	maxInputSize = 1 << 20
-)
+const sonarQueueSize = 10000
 
 // Slave manages one testee.
 type Slave struct {
@@ -26,8 +25,10 @@ type Slave struct {
 
 	coverRegion []byte
 	inputRegion []byte
+	sonarRegion []byte
 	commFile    string
 
+	sonarQueue   []MasterInput
 	triageQueue  []MasterInput
 	crasherQueue []NewCrasherArgs
 
@@ -63,7 +64,7 @@ func slaveMain() {
 }
 
 func (s *Slave) loop() {
-	for atomic.LoadUint32(&shutdown) == 0 {
+	for iter := 0; atomic.LoadUint32(&shutdown) == 0; iter++ {
 		if len(s.crasherQueue) > 0 {
 			n := len(s.crasherQueue) - 1
 			crash := s.crasherQueue[n]
@@ -98,13 +99,28 @@ func (s *Slave) loop() {
 		default:
 		}
 
+		if len(s.sonarQueue) > 0 {
+			n := len(s.sonarQueue) - 1
+			input := s.sonarQueue[n]
+			s.sonarQueue[n] = MasterInput{}
+			s.sonarQueue = s.sonarQueue[:n]
+			if *flagV >= 2 {
+				log.Printf("slave %v tests sonar input [%v]%v", s.id, len(input.Data), hash(input.Data))
+			}
+			s.testInput(input.Data, int(input.Prio))
+			continue
+		}
+
 		ro := s.hub.ro.Load().(*ROData)
 		if len(ro.corpus) == 0 {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
 		data, depth := s.mutator.generate(ro)
-		s.testInput(data, depth)
+		sonar := s.testInput(data, depth)
+		if iter%100 == 0 && len(s.sonarQueue) < sonarQueueSize/2 {
+			s.processSonarData(data, sonar, depth)
+		}
 	}
 	s.shutdown()
 }
@@ -120,14 +136,14 @@ func (s *Slave) triageInput(input MasterInput) {
 	}
 	// Calculate min exec time, min coverage and max result of 3 runs.
 	for i := 0; i < 3; i++ {
-		res, ns, cover, output, crashed, hanged := s.exec(inp.data)
+		res, ns, cover, _, output, crashed, hanged := s.exec(inp.data)
 		if crashed {
 			// Inputs in corpus should not crash.
 			s.noteCrasher(inp.data, output, hanged)
 			return
 		}
 		if inp.cover == nil {
-			inp.cover = make([]byte, coverSize)
+			inp.cover = make([]byte, dep.CoverSize)
 			copy(inp.cover, cover)
 		} else {
 			for i, v := range cover {
@@ -171,6 +187,10 @@ func (s *Slave) triageInput(input MasterInput) {
 
 // processCrasher minimizes new crashers and sends them to the hub.
 func (s *Slave) processCrasher(crash NewCrasherArgs) {
+	ro := s.hub.ro.Load().(*ROData)
+	if _, ok := ro.suppressions[hash(crash.Suppression)]; ok {
+		return
+	}
 	// Hanging inputs can take very long time to minimize.
 	if !crash.Hanging {
 		crash.Data = s.minimizeInput(crash.Data, true, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
@@ -193,15 +213,16 @@ func (s *Slave) processCrasher(crash NewCrasherArgs) {
 func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidate, cover, output []byte, result int, crashed, hanged bool) bool) []byte {
 	res := make([]byte, len(data))
 	copy(res, data)
-	if !*flagMinimize {
-		return res
-	}
+	start := time.Now()
 
 	// First, try to cut tail.
 	for n := 1024; n != 0; n /= 2 {
 		for len(res) > n {
+			if time.Since(start) > *flagMinimize {
+				return res
+			}
 			candidate := res[:len(res)-n]
-			result, _, cover, output, crashed, hanged := s.exec(candidate)
+			result, _, cover, _, output, crashed, hanged := s.exec(candidate)
 			if !pred(candidate, cover, output, result, crashed, hanged) {
 				break
 			}
@@ -215,12 +236,15 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 		candidate := tmp[:len(res)-1]
 		copy(candidate[:i], res[:i])
 		copy(candidate[i:], res[i+1:])
-		result, _, cover, output, crashed, hanged := s.exec(candidate)
+		result, _, cover, _, output, crashed, hanged := s.exec(candidate)
 		if !pred(candidate, cover, output, result, crashed, hanged) {
 			continue
 		}
 		res = make([]byte, len(candidate))
 		copy(res, candidate)
+		if time.Since(start) > *flagMinimize {
+			return res
+		}
 		i--
 	}
 
@@ -233,16 +257,126 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 			candidate := tmp[:len(res)]
 			copy(candidate, res)
 			candidate[i] = '0'
-			result, _, cover, output, crashed, hanged := s.exec(candidate)
+			result, _, cover, _, output, crashed, hanged := s.exec(candidate)
 			if !pred(candidate, cover, output, result, crashed, hanged) {
 				continue
 			}
 			res = make([]byte, len(candidate))
 			copy(res, candidate)
+			if time.Since(start) > *flagMinimize {
+				return res
+			}
 		}
 	}
 
 	return res
+}
+
+func (s *Slave) processSonarData(data, sonar []byte, depth int) {
+	if len(s.sonarQueue) >= sonarQueueSize {
+		return
+	}
+
+	//log.Printf("got %v bytes of sonar data\n", len(sonar))
+	//d := len(sonar)
+	//n := 0
+	q := 0
+	for len(sonar) > dep.SonarHdrLen {
+		flags := sonar[0]
+		n1 := sonar[1]
+		n2 := sonar[2]
+		sonar = sonar[dep.SonarHdrLen:]
+		if n1 == 0 || n1 > dep.SonarMaxLen || n2 == 0 || n2 > dep.SonarMaxLen || len(sonar) < int(n1)+int(n2) {
+			log.Fatalf("corrputed sonar data: hdr=[%v/%v/%v] data=%v", flags, n1, n2, len(sonar))
+		}
+		//n++
+		v1 := sonar[:n1]
+		v2 := sonar[n1 : n1+n2]
+		sonar = sonar[n1+n2:]
+		if flags&dep.SonarString == 0 {
+			//l1, l2 := len(v1), len(v2)
+			for len(v1) > 0 || len(v2) > 0 {
+				i := len(v1) - 1
+				if len(v2) > len(v1) {
+					i = len(v2) - 1
+				}
+				var c1, c2 byte
+				if i < len(v1) {
+					c1 = v1[i]
+				}
+				if i < len(v2) {
+					c2 = v2[i]
+				}
+				if (c1 == 0 || c1 == 0xff) && (c2 == 0 || c2 == 0xff) {
+					if i < len(v1) {
+						v1 = v1[:i]
+					}
+					if i < len(v2) {
+						v2 = v2[:i]
+					}
+					continue
+				}
+				break
+			}
+			/*
+				if l1 != len(v1) || l2 != len(v2) {
+					log.Printf("REDUCE: [%v]%q -> [%v]%q, [%v]%q -> [%v]%q", l1, v1[:l1], len(v1), v1, l2, v2[:l2], len(v2), v2)
+				} else {
+					log.Printf("NOT REDUCED: [%v]%q, [%v]%q", len(v1), v1, len(v2), v2)
+				}
+			*/
+		}
+		if bytes.Equal(v1, v2) {
+			continue
+		}
+		if len(v1) == 0 || len(v2) == 0 {
+			// TODO: it still can be interesting for string operations.
+			// E.g. for fld == "" we could find the string and remove it,
+			// (potentially altering preceeding length field).
+			continue
+		}
+		checked := make(map[string]struct{})
+		//log.Printf("  sonar: flags=%v %q vs %q\n", flags, v1, v2)
+		check := func(v1, v2 []byte) {
+			if len(v1) == 0 {
+				return
+			}
+			vv := string(v1) + "\t\t\t" + string(v2)
+			if _, ok := checked[vv]; ok {
+				return
+			}
+			checked[vv] = struct{}{}
+			pos := 0
+			for q < 1000 && len(s.sonarQueue) < sonarQueueSize {
+				i := bytes.Index(data[pos:], v1)
+				if i == -1 {
+					break
+				}
+				i += pos
+				pos = i + 1
+				tmp := make([]byte, len(data)-len(v1)+len(v2))
+				copy(tmp, data[:i])
+				copy(tmp[i:], v2)
+				copy(tmp[i+len(v2):], data[i+len(v1):])
+				//log.Printf("sonar(%q,%q): %q -> %q\n", v1, v2, data, tmp)
+				s.sonarQueue = append(s.sonarQueue, MasterInput{Data: tmp, Prio: uint64(depth + 1)})
+				q++
+			}
+		}
+		if flags&dep.SonarConst1 == 0 {
+			check(v1, v2)
+			if flags&dep.SonarString == 0 && len(v1) > 1 {
+				check(reverse(v1), reverse(v2))
+			}
+		}
+		if flags&dep.SonarConst2 == 0 {
+			check(v2, v1)
+			if flags&dep.SonarString == 0 && len(v2) > 1 {
+				check(reverse(v2), reverse(v1))
+			}
+		}
+	}
+	//log.Printf("sonar: data=%v n=%v q=%v\n", d, n, q)
 }
 
 // smash gives some minimal attention to every new input.
@@ -252,6 +386,9 @@ func (s *Slave) smash(data []byte, depth int) {
 	// TODO: some of the mutations are disabled, because they take too long
 	// at least during experimentation (but most likely ok for real runs).
 	// Figure out what to do here.
+
+	sonar := s.testInput(data, depth)
+	s.processSonarData(data, sonar, depth)
 
 	suffix := suffixarray.New(data)
 	/*
@@ -396,27 +533,28 @@ func (s *Slave) smash(data []byte, depth int) {
 	}
 }
 
-func (s *Slave) testInput(data []byte, depth int) {
+func (s *Slave) testInput(data []byte, depth int) (sonar []byte) {
 	ro := s.hub.ro.Load().(*ROData)
 	if len(ro.badInputs) > 0 {
 		if _, ok := ro.badInputs[hash(data)]; ok {
-			return // no, thanks
+			return nil // no, thanks
 		}
 	}
-	_, _, cover, output, crashed, hanged := s.exec(data)
+	_, _, cover, sonar, output, crashed, hanged := s.exec(data)
 	if crashed {
 		s.noteCrasher(data, output, hanged)
-		return
+		return nil
 	}
 	newCover, newCount := compareCover(ro.maxCover, cover)
 	if !newCover && !newCount {
-		return
+		return sonar
 	}
 	// TODO: give more priority for newCover
 	s.triageQueue = append(s.triageQueue, MasterInput{data, uint64(depth), false, false})
+	return sonar
 }
 
-func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, crashed, hanged bool) {
+func (s *Slave) exec(data []byte) (res int, ns uint64, cover, sonar, output []byte, crashed, hanged bool) {
 	for {
 		// This is the only function that is executed regularly,
 		// so we tie some periodic checks to it.
@@ -425,10 +563,10 @@ func (s *Slave) exec(data []byte) (res int, ns uint64, cover, output []byte, cra
 		s.stats.execs++
 		if s.testee == nil {
 			s.stats.restarts++
-			s.testee = newTestee(*flagBin, s.commFile, s.coverRegion, s.inputRegion)
+			s.testee = newTestee(*flagBin, s.commFile, s.coverRegion, s.inputRegion, s.sonarRegion)
 		}
 		var retry bool
-		res, ns, cover, crashed, hanged, retry = s.testee.test(data)
+		res, ns, cover, sonar, crashed, hanged, retry = s.testee.test(data)
 		if retry {
 			s.testee.shutdown()
 			s.testee = nil
@@ -480,23 +618,24 @@ func (s *Slave) setupCommFile() {
 	if err != nil {
 		log.Fatalf("failed to create comm file: %v", err)
 	}
-	comm.Truncate(coverSize + maxInputSize)
+	comm.Truncate(dep.CoverSize + dep.MaxInputSize + dep.SonarRegionSize)
 	comm.Close()
 	s.commFile = comm.Name()
 	fd, err := syscall.Open(comm.Name(), syscall.O_RDWR, 0)
 	if err != nil {
 		log.Fatalf("failed to open comm file: %v", err)
 	}
-	mem, err := syscall.Mmap(fd, 0, coverSize+maxInputSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	mem, err := syscall.Mmap(fd, 0, dep.CoverSize+dep.MaxInputSize+dep.SonarRegionSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
 		log.Fatalf("failed to mmap comm file: %v", err)
 	}
-	s.coverRegion = mem[:coverSize]
-	s.inputRegion = mem[coverSize:]
+	s.coverRegion = mem[:dep.CoverSize]
+	s.inputRegion = mem[dep.CoverSize : dep.CoverSize+dep.SonarRegionSize]
+	s.sonarRegion = mem[dep.CoverSize+dep.SonarRegionSize:]
 }
 
 func compareCover(base, cur []byte) (bool, bool) {
-	if len(base) != coverSize || len(cur) != coverSize {
+	if len(base) != dep.CoverSize || len(cur) != dep.CoverSize {
 		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
 	}
 	newCover, newCounter := compareCoverBody(&base[0], &cur[0])
@@ -531,6 +670,7 @@ func extractSuppression(out []byte) []byte {
 	collect := false
 	s := bufio.NewScanner(bytes.NewReader(out))
 	for s.Scan() {
+		// TODO: make clear when it is a timeout.
 		line := s.Text()
 		if !seenPanic && (strings.HasPrefix(line, "panic: ") ||
 			strings.HasPrefix(line, "fatal error: ") ||
