@@ -551,6 +551,7 @@ func (s *Slave) testInput(data []byte, depth int) (sonar []byte) {
 	}
 	// TODO: give more priority for newCover
 	s.triageQueue = append(s.triageQueue, MasterInput{append([]byte{}, data...), uint64(depth), false, false})
+	return sonar
 }
 
 func (s *Slave) exec(data []byte) (res int, ns uint64, cover, sonar, output []byte, crashed, hanged bool) {
