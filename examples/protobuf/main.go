@@ -6,22 +6,6 @@ import (
 )
 
 func Fuzz(data []byte) int {
-	defer func() {
-		v := recover()
-		if v != nil {
-			str := ""
-			switch vv := v.(type) {
-			case string:
-				str = vv
-			case error:
-				str = vv.Error()
-			}
-			if str == "reflect: call of reflect.Value.SetMapIndex on zero Value" {
-				return
-			}
-			panic(v)
-		}
-	}()
 	vars := []proto.Message{
 		new(pb.M0),
 		new(pb.M1),
