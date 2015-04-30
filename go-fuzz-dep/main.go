@@ -2,14 +2,16 @@ package gofuzzdep
 
 import (
 	"runtime"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
 )
 
 const (
-	coverSize    = 64 << 10
-	maxInputSize = 1 << 20
+	CoverSize       = 64 << 10
+	MaxInputSize    = 1 << 20
+	SonarRegionSize = 1 << 20
 
 	commFD = 3
 	inFD   = 4
@@ -17,24 +19,32 @@ const (
 )
 
 var (
-	CoverTab *[coverSize]byte
-	input    []byte
+	CoverTab    *[CoverSize]byte
+	input       []byte
+	sonarRegion []byte
+	sonarPos    uint32
 )
 
 func init() {
 	if cmd, _ := syscall.Getenv("GO-FUZZ-CMD"); cmd != "" {
 		// The process is started to execute some driver command.
-		CoverTab = new([coverSize]byte)
+		CoverTab = new([CoverSize]byte)
 		return
 	}
 
-	mem, err := syscall.Mmap(commFD, 0, coverSize+maxInputSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	if cmd, _ := syscall.Getenv("GO-FUZZ-TEST"); cmd == "" {
+		// Not a test binary.
+		return
+	}
+
+	mem, err := syscall.Mmap(commFD, 0, CoverSize+MaxInputSize+SonarRegionSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
 		println("failed to mmap fd = 3 errno =", err.(syscall.Errno))
 		syscall.Exit(1)
 	}
-	CoverTab = (*[coverSize]byte)(unsafe.Pointer(&mem[0]))
-	input = mem[coverSize:]
+	CoverTab = (*[CoverSize]byte)(unsafe.Pointer(&mem[0]))
+	input = mem[CoverSize : CoverSize+MaxInputSize]
+	sonarRegion = mem[CoverSize+MaxInputSize:]
 }
 
 func Main(f func([]byte) int, lits []string) {
@@ -60,10 +70,11 @@ func Main(f func([]byte) int, lits []string) {
 			println("invalid input length")
 			syscall.Exit(1)
 		}
+		atomic.StoreUint32(&sonarPos, 0)
 		t0 := time.Now()
 		res := f(input[:n])
 		ns := time.Since(t0)
-		write(outFD, uint64(res), uint64(ns))
+		write(outFD, uint64(res), uint64(ns), uint64(atomic.LoadUint32(&sonarPos)))
 	}
 }
 
@@ -97,7 +108,7 @@ func read(fd int) uint64 {
 
 // write writes little-endian-encoded vals... to fd.
 func write(fd int, vals ...uint64) {
-	var tmp [2 * 8]byte
+	var tmp [3 * 8]byte
 	buf := tmp[:len(vals)*8]
 	for i, v := range vals {
 		for j := 0; j < 8; j++ {

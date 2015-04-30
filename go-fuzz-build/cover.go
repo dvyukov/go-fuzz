@@ -14,11 +14,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
 )
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(in, out string, lits map[string]bool) {
+func instrument(pkg, in, out string, lits map[string]bool, sonar bool) {
 	fset := token.NewFileSet()
 	content, err := ioutil.ReadFile(in)
 	if err != nil {
@@ -44,6 +46,10 @@ func instrument(in, out string, lits map[string]bool) {
 
 	ast.Walk(file, file.astFile)
 
+	if sonar {
+		ast.Walk(&Sonar{pkg: pkg}, file.astFile)
+	}
+
 	fd, err := os.Create(out)
 	if err != nil {
 		failf("failed to create temp file: %v")
@@ -51,6 +57,145 @@ func instrument(in, out string, lits map[string]bool) {
 	defer fd.Close()
 	fd.Write(initialComments(content)) // Retain '// +build' directives.
 	file.print(fd)
+}
+
+type Sonar struct {
+	pkg string
+}
+
+func (s *Sonar) Visit(n ast.Node) ast.Visitor {
+	// TODO: handle switch statements.
+	switch nn := n.(type) {
+	case *ast.BinaryExpr:
+		break
+	case *ast.GenDecl:
+		if nn.Tok == token.VAR {
+			return s
+		} else {
+			return nil
+		}
+	case *ast.FuncDecl:
+		if s.pkg == "math" && (nn.Name.Name == "Y0" || nn.Name.Name == "Y1" || nn.Name.Name == "Yn" ||
+			nn.Name.Name == "J0" || nn.Name.Name == "J1" || nn.Name.Name == "Jn" ||
+			nn.Name.Name == "Pow") {
+			// Can't handle code there:
+			// math/j0.go:93: constant 680564733841876926926749214863536422912 overflows int
+			return nil
+		}
+		return s // recurse
+	default:
+		return s // recurse
+	}
+	nn := n.(*ast.BinaryExpr)
+	var flags uint8
+	switch nn.Op {
+	case token.EQL:
+		flags = dep.SonarEQL
+		break
+	case token.NEQ:
+		flags = dep.SonarNEQ
+		break
+	case token.LSS:
+		flags = dep.SonarLSS
+		break
+	case token.GTR:
+		flags = dep.SonarGTR
+		break
+	case token.LEQ:
+		flags = dep.SonarLEQ
+		break
+	case token.GEQ:
+		flags = dep.SonarGEQ
+		break
+	default:
+		return s // recurse
+	}
+	// Replace:
+	//	x != y
+	// with:
+	//	func() bool { v1 := x; v2 := y; go-fuzz-dep.SonarNEQ(v1, v2); return v1 != v2 }() == true
+	v1 := nn.X
+	v2 := nn.Y
+	if isUninterestingLiteral(v1) || isUninterestingLiteral(v2) {
+		return s
+	}
+	if isConstExpr(v1) {
+		flags |= dep.SonarConst1
+	}
+	if isConstExpr(v2) {
+		flags |= dep.SonarConst2
+	}
+	// TODO: walk v1 and v2 recursively
+	block := &ast.BlockStmt{}
+	if !isSimpleExpr(v1) {
+		tmp := ast.NewIdent("v1")
+		block.List = append(block.List, &ast.AssignStmt{Tok: token.DEFINE, Lhs: []ast.Expr{tmp}, Rhs: []ast.Expr{v1}})
+		v1 = tmp
+	}
+	if !isSimpleExpr(v2) {
+		tmp := ast.NewIdent("v2")
+		block.List = append(block.List, &ast.AssignStmt{Tok: token.DEFINE, Lhs: []ast.Expr{tmp}, Rhs: []ast.Expr{v2}})
+		v2 = tmp
+	}
+	block.List = append(block.List,
+		&ast.ExprStmt{
+			X: &ast.CallExpr{
+				Fun:  &ast.SelectorExpr{X: &ast.Ident{Name: fuzzdepPkg}, Sel: &ast.Ident{Name: "Sonar"}},
+				Args: []ast.Expr{v1, v2, &ast.BasicLit{Kind: token.INT, Value: strconv.Itoa(int(flags))}},
+			},
+		},
+		&ast.ReturnStmt{Results: []ast.Expr{&ast.BinaryExpr{Op: nn.Op, X: v1, Y: v2}}},
+	)
+	nn.X = &ast.CallExpr{
+		Fun: &ast.FuncLit{
+			Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "bool"}}}}},
+			Body: block,
+		},
+	}
+	nn.Y = &ast.BasicLit{Kind: token.INT, Value: "true"}
+	nn.Op = token.EQL
+	return nil
+}
+
+func isUninterestingLiteral(n ast.Expr) bool {
+	if id, ok := n.(*ast.Ident); ok {
+		return id.Name == "nil" || id.Name == "true" || id.Name == "false"
+	}
+	return false
+}
+
+func isSimpleExpr(n ast.Expr) bool {
+	switch nn := n.(type) {
+	case *ast.Ident:
+		return true
+	case *ast.BasicLit:
+		return true
+	case *ast.UnaryExpr:
+		return isSimpleExpr(nn.X)
+	case *ast.BinaryExpr:
+		return isSimpleExpr(nn.X) && isSimpleExpr(nn.Y)
+	case *ast.SelectorExpr:
+		return isSimpleExpr(nn.X) && isSimpleExpr(nn.Sel)
+	default:
+		return false
+	}
+}
+
+func isConstExpr(n ast.Expr) bool {
+	switch nn := n.(type) {
+	case *ast.Ident:
+		return nn.Obj != nil && nn.Obj.Kind == ast.Con
+	case *ast.BasicLit:
+		return true
+	case *ast.UnaryExpr:
+		return isConstExpr(nn.X)
+	case *ast.BinaryExpr:
+		return isConstExpr(nn.X) && isConstExpr(nn.Y)
+	case *ast.SelectorExpr:
+		return isConstExpr(nn.Sel)
+	default:
+		return false
+	}
 }
 
 type LiteralCollector struct {

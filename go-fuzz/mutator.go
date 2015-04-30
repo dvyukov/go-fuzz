@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 	"unsafe"
+
+	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
 )
 
 type Mutator struct {
@@ -382,8 +384,8 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			copy(res[pos:], lit)
 		}
 	}
-	if len(res) > maxInputSize {
-		res = res[:maxInputSize]
+	if len(res) > dep.MaxInputSize {
+		res = res[:dep.MaxInputSize]
 	}
 	return res
 }

@@ -189,7 +189,7 @@ func clonePackage(workdir, pkg string, lits map[string]bool) {
 		}
 		fn := filepath.Join(newDir, f.Name())
 		newFn := fn + ".cover"
-		instrument(fn, newFn, lits)
+		instrument(pkg, fn, newFn, lits, true)
 		err := os.Rename(newFn, fn)
 		if err != nil {
 			failf("failed to rename file: %v", err)

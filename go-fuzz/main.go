@@ -20,7 +20,7 @@ var (
 	flagWorkdir  = flag.String("workdir", "", "dir with persistent work data")
 	flagProcs    = flag.Int("procs", runtime.NumCPU(), "parallelism level")
 	flagTimeout  = flag.Int("timeout", 10, "test timeout, in seconds")
-	flagMinimize = flag.Bool("minimize", true, "minimize input corpus and crashers")
+	flagMinimize = flag.Duration("minimize", 10*time.Second, "time limit for input minimization")
 	flagMaster   = flag.String("master", "", "master mode (value is master address)")
 	flagSlave    = flag.String("slave", "", "slave mode (value is master address)")
 	flagBin      = flag.String("bin", "", "test binary built with go-fuzz-build")

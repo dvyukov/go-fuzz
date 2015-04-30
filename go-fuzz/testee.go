@@ -17,6 +17,7 @@ import (
 type Testee struct {
 	coverRegion []byte
 	inputRegion []byte
+	sonarRegion []byte
 	cmd         *exec.Cmd
 	inPipe      *os.File
 	outPipe     *os.File
@@ -28,7 +29,7 @@ type Testee struct {
 	down        bool
 }
 
-func newTestee(bin, commFile string, coverRegion, inputRegion []byte) *Testee {
+func newTestee(bin, commFile string, coverRegion, inputRegion, sonarRegion []byte) *Testee {
 retry:
 	rIn, wIn, err := os.Pipe()
 	if err != nil {
@@ -52,6 +53,8 @@ retry:
 	cmd.ExtraFiles = append(cmd.ExtraFiles, comm)
 	cmd.ExtraFiles = append(cmd.ExtraFiles, rOut)
 	cmd.ExtraFiles = append(cmd.ExtraFiles, wIn)
+	cmd.Env = append([]string{}, os.Environ()...)
+	cmd.Env = append(cmd.Env, "GO-FUZZ-TEST=1", "GOTRACEBACK=1")
 	if err = cmd.Start(); err != nil {
 		// This can be a transient failure like "cannot allocate memory" or "text file is busy".
 		log.Printf("failed to start test binary: %v", err)
@@ -72,6 +75,7 @@ retry:
 	t := &Testee{
 		coverRegion: coverRegion,
 		inputRegion: inputRegion,
+		sonarRegion: sonarRegion,
 		cmd:         cmd,
 		inPipe:      rIn,
 		outPipe:     wOut,
@@ -148,7 +152,7 @@ retry:
 }
 
 // test passes data for testing.
-func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, hanged, retry bool) {
+func (t *Testee) test(data []byte) (res int, ns uint64, cover, sonar []byte, crashed, hanged, retry bool) {
 	if t.down {
 		log.Fatalf("cannot test: testee is already shutdown")
 	}
@@ -177,8 +181,9 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, h
 	// Once we do the write, the test is running.
 	// Once we read the reply below, the test is done.
 	type Reply struct {
-		Res uint64
-		Ns  uint64
+		Res   uint64
+		Ns    uint64
+		Sonar uint64
 	}
 	var r Reply
 	err := binary.Read(t.inPipe, binary.LittleEndian, &r)
@@ -192,6 +197,7 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover []byte, crashed, h
 	res = int(r.Res)
 	ns = r.Ns
 	cover = t.coverRegion
+	sonar = t.sonarRegion[:r.Sonar]
 	return
 }
 
@@ -219,13 +225,15 @@ func fetchLiterals() (strLits, intLits [][]byte) {
 		log.Fatalf("failed to pipe: %v", err)
 	}
 	defer rComm.Close()
-	defer wComm.Close()
 	cmd := exec.Command(*flagBin)
 	cmd.Env = []string{"GO-FUZZ-CMD=literals"}
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
 	cmd.ExtraFiles = append(cmd.ExtraFiles, wComm)
 	if err := cmd.Start(); err != nil {
 		log.Fatalf("failed to start test binary: %v", err)
 	}
+	wComm.Close()
 	var n uint64
 	err = binary.Read(rComm, binary.LittleEndian, &n)
 	if err != nil || n > 1e6 {
