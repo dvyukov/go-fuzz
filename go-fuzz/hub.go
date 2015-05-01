@@ -1,8 +1,14 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
 	"log"
 	"net/rpc"
+	"os"
+	"path/filepath"
+	"strconv"
 	"sync/atomic"
 	"time"
 
@@ -189,6 +195,10 @@ func (hub *Hub) loop() {
 				}
 			}
 
+			if *flagDumpCover {
+				dumpCover(filepath.Join(*flagWorkdir, "coverprofile"), *flagBin+".cover", ro1.maxCover)
+			}
+
 		case crash := <-hub.newCrasherC:
 			// New crasher from slaves. Woohoo!
 			if crash.Hanging {
@@ -349,4 +359,35 @@ func updateMaxCover(base, cur []byte) int {
 		}
 	}
 	return cnt
+}
+
+func dumpCover(outf, metaf string, cover []byte) {
+	type Block struct {
+		File      string
+		StartLine int
+		StartCol  int
+		EndLine   int
+		EndCol    int
+		NumStmt   int
+	}
+	metadata, err := ioutil.ReadFile(metaf)
+	if err != nil {
+		log.Fatalf("failed to read coverage metadata: %v", err)
+	}
+	meta := make(map[string][]Block)
+	if err := json.Unmarshal(metadata, &meta); err != nil {
+		log.Fatalf("failed to unmarshal coverage metadata: %v", err)
+	}
+	out, err := os.Create(outf)
+	if err != nil {
+		log.Fatalf("failed to create coverage file: %v", err)
+	}
+	defer out.Close()
+	fmt.Fprintf(out, "mode: count\n")
+	for i, v := range cover {
+		for _, b := range meta[strconv.Itoa(i)] {
+			fmt.Fprintf(out, "%s:%v.%v,%v.%v %v %v\n",
+				b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol, b.NumStmt, v)
+		}
+	}
 }
