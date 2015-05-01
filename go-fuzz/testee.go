@@ -166,9 +166,6 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover, sonar []byte, cra
 		return
 	}
 
-	for i := range t.coverRegion {
-		t.coverRegion[i] = 0
-	}
 	copy(t.inputRegion[:], data)
 	atomic.StoreInt64(&t.startTime, time.Now().UnixNano())
 	if err := binary.Write(t.outPipe, binary.LittleEndian, uint64(len(data))); err != nil {
