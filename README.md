@@ -187,5 +187,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [code.google.com/p/freetype-go: 42 crashers](https://code.google.com/p/freetype-go/issues/detail?id=17) [42 bugs]
 - [github.com/cryptix/wav: 2 panics in header decoding](https://github.com/cryptix/wav/commit/2f49a0df0d213ee323f694e7bdee8b8a097dc698#diff-f86b763600291cbceee077a33133434a)
 - [github.com/spf13/hugo: 5 crashers](https://github.com/spf13/hugo/search?q=go-fuzz&type=Issues)
+- [github.com/Sereal/Sereal: 8 crashers](https://github.com/Sereal/Sereal/commit/c254cc3f2c48caffee6cd04ea8100a0150357a44)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
