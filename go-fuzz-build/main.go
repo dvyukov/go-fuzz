@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -92,8 +93,9 @@ func main() {
 		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
 	}
 	lits := make(map[string]bool)
+	blocks := make(map[string][]Block)
 	for p := range deps {
-		clonePackage(workdir, p, lits)
+		clonePackage(workdir, p, lits, blocks)
 	}
 	createFuzzMain(pkg, lits)
 
@@ -108,6 +110,15 @@ func main() {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
+
+	coverf, err := os.Create(*flagOut + ".cover")
+	if err != nil {
+		failf("failed to create output file: %v", err)
+	}
+	if err := json.NewEncoder(coverf).Encode(blocks); err != nil {
+		failf("failed to serialize coverage information: %v", err)
+	}
+	coverf.Close()
 }
 
 func testNormalBuild(pkg string) {
@@ -146,7 +157,7 @@ func createFuzzMain(pkg string, lits map[string]bool) {
 	}
 }
 
-func clonePackage(workdir, pkg string, lits map[string]bool) {
+func clonePackage(workdir, pkg string, lits map[string]bool, blocks map[string][]Block) {
 	dir := goListProps(pkg, "Dir")[0]
 	if !strings.HasSuffix(dir, pkg) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
@@ -189,7 +200,7 @@ func clonePackage(workdir, pkg string, lits map[string]bool) {
 		}
 		fn := filepath.Join(newDir, f.Name())
 		newFn := fn + ".cover"
-		instrument(pkg, fn, newFn, lits, true)
+		instrument(pkg, filepath.Join(pkg, f.Name()), fn, newFn, lits, blocks, true)
 		err := os.Rename(newFn, fn)
 		if err != nil {
 			failf("failed to rename file: %v", err)

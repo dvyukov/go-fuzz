@@ -20,7 +20,7 @@ import (
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(pkg, in, out string, lits map[string]bool, sonar bool) {
+func instrument(pkg, shortName, in, out string, lits map[string]bool, blocks map[string][]Block, sonar bool) {
 	fset := token.NewFileSet()
 	content, err := ioutil.ReadFile(in)
 	if err != nil {
@@ -33,9 +33,11 @@ func instrument(pkg, in, out string, lits map[string]bool, sonar bool) {
 	parsedFile.Comments = trimComments(parsedFile, fset)
 
 	file := &File{
-		fset:    fset,
-		name:    in,
-		astFile: parsedFile,
+		fset:      fset,
+		name:      in,
+		shortName: shortName,
+		astFile:   parsedFile,
+		blocks:    blocks,
 	}
 	file.addImport("github.com/dvyukov/go-fuzz/go-fuzz-dep", fuzzdepPkg, "Main")
 
@@ -289,16 +291,20 @@ func initialComments(content []byte) []byte {
 }
 
 type File struct {
-	fset    *token.FileSet
-	name    string // Name of file.
-	astFile *ast.File
-	blocks  []Block
+	fset      *token.FileSet
+	name      string // Name of file.
+	shortName string
+	astFile   *ast.File
+	blocks    map[string][]Block
 }
 
 type Block struct {
-	startByte token.Pos
-	endByte   token.Pos
-	numStmt   int
+	File      string
+	StartLine int
+	StartCol  int
+	EndLine   int
+	EndCol    int
+	NumStmt   int
 }
 
 var slashslash = []byte("//")
@@ -579,18 +585,24 @@ func (f *File) statementBoundary(s ast.Stmt) token.Pos {
 
 var counterGen uint32
 
-func genCounter() uint16 {
+func genCounter() int {
 	counterGen++
 	id := counterGen
 	buf := []byte{byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 	hash := sha1.Sum(buf)
-	return uint16(hash[0]) | uint16(hash[1])<<8
+	return int(uint16(hash[0]) | uint16(hash[1])<<8)
 }
 
 func (f *File) newCounter(start, end token.Pos, numStmt int) ast.Stmt {
+	cnt := strconv.Itoa(genCounter())
+
+	s := f.fset.Position(start)
+	e := f.fset.Position(end)
+	f.blocks[cnt] = append(f.blocks[cnt], Block{f.shortName, s.Line, s.Column, e.Line, e.Column, numStmt})
+
 	idx := &ast.BasicLit{
 		Kind:  token.INT,
-		Value: fmt.Sprint(genCounter()),
+		Value: cnt,
 	}
 	counter := &ast.IndexExpr{
 		X: &ast.SelectorExpr{

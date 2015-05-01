@@ -16,16 +16,17 @@ import (
 )
 
 var (
-	flagCorpus   = flag.String("corpus", "", "dir with input corpus (one file per input)")
-	flagWorkdir  = flag.String("workdir", "", "dir with persistent work data")
-	flagProcs    = flag.Int("procs", runtime.NumCPU(), "parallelism level")
-	flagTimeout  = flag.Int("timeout", 10, "test timeout, in seconds")
-	flagMinimize = flag.Duration("minimize", 10*time.Second, "time limit for input minimization")
-	flagMaster   = flag.String("master", "", "master mode (value is master address)")
-	flagSlave    = flag.String("slave", "", "slave mode (value is master address)")
-	flagBin      = flag.String("bin", "", "test binary built with go-fuzz-build")
-	flagPprof    = flag.String("pprof", "", "serve pprof handlers on that address")
-	flagV        = flag.Int("v", 0, "verbosity level")
+	flagCorpus    = flag.String("corpus", "", "dir with input corpus (one file per input)")
+	flagWorkdir   = flag.String("workdir", "", "dir with persistent work data")
+	flagProcs     = flag.Int("procs", runtime.NumCPU(), "parallelism level")
+	flagTimeout   = flag.Int("timeout", 10, "test timeout, in seconds")
+	flagMinimize  = flag.Duration("minimize", 10*time.Second, "time limit for input minimization")
+	flagMaster    = flag.String("master", "", "master mode (value is master address)")
+	flagSlave     = flag.String("slave", "", "slave mode (value is master address)")
+	flagBin       = flag.String("bin", "", "test binary built with go-fuzz-build")
+	flagPprof     = flag.String("pprof", "", "serve pprof handlers on that address")
+	flagDumpCover = flag.Bool("dumpcover", false, "dump coverage profile into workdir")
+	flagV         = flag.Int("v", 0, "verbosity level")
 
 	shutdown  uint32
 	shutdownC = make(chan struct{})

@@ -129,6 +129,7 @@ func (s *Slave) loop() {
 // It calculates per-input metrics like execution time, coverage mask,
 // and minimizes the input to the minimal input with the same coverage.
 func (s *Slave) triageInput(input MasterInput) {
+	ro := s.hub.ro.Load().(*ROData)
 	inp := Input{
 		data:     input.Data,
 		depth:    int(input.Prio),
@@ -160,13 +161,12 @@ func (s *Slave) triageInput(input MasterInput) {
 			inp.execTime = ns
 		}
 	}
-	inp.coverSize = 0
-	for _, v := range inp.cover {
-		if v != 0 {
-			inp.coverSize++
-		}
-	}
 	if !input.Minimized {
+		newCover, newCount := compareCover(ro.maxCover, inp.cover)
+		if !newCover && !newCount {
+			// Probably already covered this by another new input.
+			return
+		}
 		inp.mine = true
 		inp.data = s.minimizeInput(inp.data, false, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if crashed {
@@ -181,6 +181,12 @@ func (s *Slave) triageInput(input MasterInput) {
 		})
 	} else if !input.Smashed {
 		s.smash(inp.data, inp.depth)
+	}
+	inp.coverSize = 0
+	for _, v := range inp.cover {
+		if v != 0 {
+			inp.coverSize++
+		}
 	}
 	s.hub.newInputC <- inp
 }
