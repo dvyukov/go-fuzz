@@ -439,7 +439,7 @@ func genCounter() uint16 {
 	id := counterGen
 	buf := []byte{byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 	hash := sha1.Sum(buf)
-	return uint16(hash[0]) | uint16(hash[0])<<8
+	return uint16(hash[0]) | uint16(hash[1])<<8
 }
 
 func (f *File) newCounter(start, end token.Pos, numStmt int) ast.Stmt {

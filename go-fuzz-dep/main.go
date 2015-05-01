@@ -60,6 +60,9 @@ func Main(f func([]byte) int, lits []string) {
 			println("invalid input length")
 			syscall.Exit(1)
 		}
+		for i := range CoverTab {
+			CoverTab[i] = 0
+		}
 		t0 := time.Now()
 		res := f(input[:n])
 		ns := time.Since(t0)
