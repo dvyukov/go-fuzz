@@ -15,8 +15,6 @@ import (
 	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
 )
 
-const sonarQueueSize = 10000
-
 // Slave manages one testee.
 type Slave struct {
 	hub     *Hub
@@ -28,7 +26,6 @@ type Slave struct {
 	sonarRegion []byte
 	commFile    string
 
-	sonarQueue   []MasterInput
 	triageQueue  []MasterInput
 	crasherQueue []NewCrasherArgs
 
@@ -99,18 +96,6 @@ func (s *Slave) loop() {
 		default:
 		}
 
-		if len(s.sonarQueue) > 0 {
-			n := len(s.sonarQueue) - 1
-			input := s.sonarQueue[n]
-			s.sonarQueue[n] = MasterInput{}
-			s.sonarQueue = s.sonarQueue[:n]
-			if *flagV >= 2 {
-				log.Printf("slave %v tests sonar input [%v]%v", s.id, len(input.Data), hash(input.Data))
-			}
-			s.testInput(input.Data, int(input.Prio))
-			continue
-		}
-
 		ro := s.hub.ro.Load().(*ROData)
 		if len(ro.corpus) == 0 {
 			time.Sleep(100 * time.Millisecond)
@@ -118,7 +103,7 @@ func (s *Slave) loop() {
 		}
 		data, depth := s.mutator.generate(ro)
 		sonar := s.testInput(data, depth)
-		if iter%100 == 0 && len(s.sonarQueue) < sonarQueueSize/2 {
+		if iter%100 == 0 {
 			s.processSonarData(data, sonar, depth)
 		}
 	}
@@ -193,10 +178,6 @@ func (s *Slave) triageInput(input MasterInput) {
 
 // processCrasher minimizes new crashers and sends them to the hub.
 func (s *Slave) processCrasher(crash NewCrasherArgs) {
-	ro := s.hub.ro.Load().(*ROData)
-	if _, ok := ro.suppressions[hash(crash.Suppression)]; ok {
-		return
-	}
 	// Hanging inputs can take very long time to minimize.
 	if !crash.Hanging {
 		crash.Data = s.minimizeInput(crash.Data, true, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
@@ -279,15 +260,11 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 }
 
 func (s *Slave) processSonarData(data, sonar []byte, depth int) {
-	if len(s.sonarQueue) >= sonarQueueSize {
-		return
-	}
-
 	checked := make(map[string]struct{})
 	//log.Printf("got %v bytes of sonar data\n", len(sonar))
-	//d := len(sonar)
-	//n := 0
-	q := 0
+	//log.Printf("==========================\n")
+	//log.Printf("data [%v]%s", len(data), hex.EncodeToString(data))
+	sonar = append([]byte{}, sonar...)
 	for len(sonar) > dep.SonarHdrLen {
 		flags := sonar[0]
 		n1 := sonar[1]
@@ -299,6 +276,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 		//n++
 		v1 := sonar[:n1]
 		v2 := sonar[n1 : n1+n2]
+		//log.Printf("  flags=%v v1=[%v]%v v2=[%v]%v", flags, len(v1), hex.EncodeToString(v1), len(v2), hex.EncodeToString(v2))
 		sonar = sonar[n1+n2:]
 		if flags&dep.SonarString == 0 {
 			//l1, l2 := len(v1), len(v2)
@@ -325,25 +303,16 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 				}
 				break
 			}
-			/*
-				if l1 != len(v1) || l2 != len(v2) {
-					log.Printf("REDUCE: [%v]%q -> [%v]%q, [%v]%q -> [%v]%q", l1, v1[:l1], len(v1), v1, l2, v2[:l2], len(v2), v2)
-				} else {
-					log.Printf("NOT REDUCED: [%v]%q, [%v]%q", len(v1), v1, len(v2), v2)
-				}
-			*/
 		}
 		if bytes.Equal(v1, v2) {
 			continue
 		}
-		if len(v1) == 0 || len(v2) == 0 {
-			// TODO: it still can be interesting for string operations.
-			// E.g. for fld == "" we could find the string and remove it,
-			// (potentially altering preceeding length field).
+		if len(v1) == 0 {
 			continue
 		}
-		//log.Printf("  sonar: flags=%v %q vs %q\n", flags, v1, v2)
+		//log.Printf("  reduced v1=[%v]%v v2=[%v]%v", len(v1), hex.EncodeToString(v1), len(v2), hex.EncodeToString(v2))
 		check := func(v1, v2 []byte) {
+			//log.Printf("  checking v1=[%v]%v v2=[%v]%v", len(v1), hex.EncodeToString(v1), len(v2), hex.EncodeToString(v2))
 			if len(v1) == 0 {
 				return
 			}
@@ -353,7 +322,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 			}
 			checked[vv] = struct{}{}
 			pos := 0
-			for q < 1000 && len(s.sonarQueue) < sonarQueueSize {
+			for {
 				i := bytes.Index(data[pos:], v1)
 				if i == -1 {
 					break
@@ -364,21 +333,46 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 				copy(tmp, data[:i])
 				copy(tmp[i:], v2)
 				copy(tmp[i+len(v2):], data[i+len(v1):])
-				//log.Printf("sonar(%q,%q): %q -> %q\n", v1, v2, data, tmp)
-				s.sonarQueue = append(s.sonarQueue, MasterInput{Data: tmp, Prio: uint64(depth + 1)})
-				q++
+				//log.Printf("  new: [%v]%v", len(tmp), hex.EncodeToString(tmp))
+				s.testInput(tmp, depth+1)
+				if flags&dep.SonarString != 0 && len(v1) != len(v2) {
+					// Update length field.
+					// TODO: handle multi-byte/big-endian length fields.
+					diff := byte(len(v2) - len(v1))
+					for idx := i - 1; idx >= 0 && idx+5 >= i; idx-- {
+						//tmp1 := append([]byte{}, tmp...)
+						tmp[idx] += diff
+						s.testInput(tmp, depth+1)
+						tmp[idx] -= diff
+						//log.Printf("********* flags=%v v1=[%v]%v v2=[%v]%v [%v]%v -> [%v]%v", flags, len(v1), hex.EncodeToString(v1), len(v2), hex.EncodeToString(v2), len(data), hex.EncodeToString(data), len(tmp1), hex.EncodeToString(tmp1))
+					}
+				}
 			}
 		}
 		if flags&dep.SonarConst1 == 0 {
 			check(v1, v2)
-			if flags&dep.SonarString == 0 && len(v1) > 1 {
-				check(reverse(v1), reverse(v2))
+			if flags&dep.SonarString == 0 {
+				// Increment and decrement take care of less and greater comparison operators
+				// as well as of off-by-ones.
+				check(v1, increment(v2))
+				check(v1, decrement(v2))
+				if len(v1) > 1 {
+					check(reverse(v1), reverse(v2))
+					check(reverse(v1), reverse(increment(v2)))
+					check(reverse(v1), reverse(decrement(v2)))
+				}
 			}
 		}
 		if flags&dep.SonarConst2 == 0 {
 			check(v2, v1)
-			if flags&dep.SonarString == 0 && len(v2) > 1 {
-				check(reverse(v2), reverse(v1))
+			if flags&dep.SonarString == 0 {
+				check(v2, increment(v1))
+				check(v2, decrement(v1))
+				if len(v2) > 1 {
+					check(reverse(v2), reverse(v1))
+					check(reverse(v2), reverse(increment(v1)))
+					check(reverse(v2), reverse(decrement(v1)))
+				}
 			}
 		}
 	}
@@ -396,55 +390,56 @@ func (s *Slave) smash(data []byte, depth int) {
 	sonar := s.testInput(data, depth)
 	s.processSonarData(data, sonar, depth)
 
-	suffix := suffixarray.New(data)
+	_ = suffixarray.New
 	/*
-		for i0, lit := range ro.strLits {
+		suffix := suffixarray.New(data)
+			for i0, lit := range ro.strLits {
+				for _, pos := range suffix.Lookup(lit, -1) {
+					for i1, lit1 := range ro.strLits {
+						if i0 == i1 {
+							continue
+						}
+						tmp := make([]byte, len(data)-len(lit)+len(lit1))
+						copy(tmp, data[:pos])
+						copy(tmp[pos:], lit1)
+						copy(tmp[pos+len(lit1):], data[pos+len(lit):])
+						s.testInput(tmp, depth)
+					}
+				}
+			}
+		for i0, lit := range ro.intLits {
 			for _, pos := range suffix.Lookup(lit, -1) {
-				for i1, lit1 := range ro.strLits {
-					if i0 == i1 {
+				for i1, lit1 := range ro.intLits {
+					if i0 == i1 || len(lit) != len(lit1) {
 						continue
 					}
-					tmp := make([]byte, len(data)-len(lit)+len(lit1))
-					copy(tmp, data[:pos])
-					copy(tmp[pos:], lit1)
-					copy(tmp[pos+len(lit1):], data[pos+len(lit):])
-					s.testInput(tmp, depth)
+					tmp := make([]byte, len(lit))
+					copy(tmp, data[pos:])
+					copy(data[pos:], lit1)
+					s.testInput(data, depth)
+					copy(data[pos:], tmp)
+				}
+			}
+
+			if len(lit) == 1 {
+				continue
+			}
+			lit = reverse(lit)
+			for _, pos := range suffix.Lookup(lit, -1) {
+				for i1, lit1 := range ro.intLits {
+					if i0 == i1 || len(lit) != len(lit1) {
+						continue
+					}
+					lit1 = reverse(lit1)
+					tmp := make([]byte, len(lit))
+					copy(tmp, data[pos:])
+					copy(data[pos:], lit1)
+					s.testInput(data, depth)
+					copy(data[pos:], tmp)
 				}
 			}
 		}
 	*/
-	for i0, lit := range ro.intLits {
-		for _, pos := range suffix.Lookup(lit, -1) {
-			for i1, lit1 := range ro.intLits {
-				if i0 == i1 || len(lit) != len(lit1) {
-					continue
-				}
-				tmp := make([]byte, len(lit))
-				copy(tmp, data[pos:])
-				copy(data[pos:], lit1)
-				s.testInput(data, depth)
-				copy(data[pos:], tmp)
-			}
-		}
-
-		if len(lit) == 1 {
-			continue
-		}
-		lit = reverse(lit)
-		for _, pos := range suffix.Lookup(lit, -1) {
-			for i1, lit1 := range ro.intLits {
-				if i0 == i1 || len(lit) != len(lit1) {
-					continue
-				}
-				lit1 = reverse(lit1)
-				tmp := make([]byte, len(lit))
-				copy(tmp, data[pos:])
-				copy(data[pos:], lit1)
-				s.testInput(data, depth)
-				copy(data[pos:], tmp)
-			}
-		}
-	}
 
 	// Stage 0: flip each bit one-by-one.
 	for i := 0; i < len(data)*8; i++ {
@@ -588,10 +583,15 @@ func (s *Slave) exec(data []byte) (res int, ns uint64, cover, sonar, output []by
 }
 
 func (s *Slave) noteCrasher(data, output []byte, hanged bool) {
+	ro := s.hub.ro.Load().(*ROData)
+	supp := extractSuppression(output)
+	if _, ok := ro.suppressions[hash(supp)]; ok {
+		return
+	}
 	s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{
 		Data:        data,
 		Error:       output,
-		Suppression: extractSuppression(output),
+		Suppression: supp,
 		Hanging:     hanged,
 	})
 }
@@ -719,6 +719,28 @@ func reverse(data []byte) []byte {
 	tmp := make([]byte, len(data))
 	for i, v := range data {
 		tmp[len(data)-i-1] = v
+	}
+	return tmp
+}
+
+func increment(data []byte) []byte {
+	tmp := make([]byte, len(data))
+	for i, v := range data {
+		tmp[i] = v + 1
+		if v != 0xff {
+			break
+		}
+	}
+	return tmp
+}
+
+func decrement(data []byte) []byte {
+	tmp := make([]byte, len(data))
+	for i, v := range data {
+		tmp[i] = v - 1
+		if v != 0 {
+			break
+		}
 	}
 	return tmp
 }

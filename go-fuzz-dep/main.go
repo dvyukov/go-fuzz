@@ -99,14 +99,7 @@ func read(fd int) uint64 {
 		}
 		rd += n
 	}
-	return uint64(buf[0])<<0 |
-		uint64(buf[1])<<8 |
-		uint64(buf[2])<<16 |
-		uint64(buf[3])<<24 |
-		uint64(buf[4])<<32 |
-		uint64(buf[5])<<40 |
-		uint64(buf[6])<<48 |
-		uint64(buf[7])<<56
+	return deserialize64(buf[:])
 }
 
 // write writes little-endian-encoded vals... to fd.

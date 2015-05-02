@@ -67,15 +67,16 @@ type Sonar struct {
 
 func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	// TODO: handle switch statements.
+	// TODO: detect "x&mask==0", emit sonar(x, x&^mask)
 	switch nn := n.(type) {
 	case *ast.BinaryExpr:
 		break
 	case *ast.GenDecl:
-		if nn.Tok == token.VAR {
-			return s
-		} else {
-			return nil
+		if nn.Tok != token.VAR {
+			return nil // constants and types are not interesting
 		}
+		return s
+
 	case *ast.FuncDecl:
 		if s.pkg == "math" && (nn.Name.Name == "Y0" || nn.Name.Name == "Y1" || nn.Name.Name == "Yn" ||
 			nn.Name.Name == "J0" || nn.Name.Name == "J1" || nn.Name.Name == "Jn" ||
@@ -85,6 +86,49 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 			return nil
 		}
 		return s // recurse
+
+	case *ast.SwitchStmt:
+		if nn.Tag == nil || nn.Body == nil {
+			return s // recurse
+		}
+		// Replace:
+		//	switch a := foo(); bar(a) {
+		//	case x: ...
+		//	case y: ...
+		//	}
+		// with:
+		//	switch {
+		//	default:
+		//		a := foo()
+		//		__tmp := bar(a)
+		//		switch {
+		//		case __tmp == x: ...
+		//		case __tmp == y: ...
+		//		}
+		//	}
+		// The == comparisons will be instrumented later when we recurse.
+		sw := new(ast.SwitchStmt)
+		*sw = *nn
+		var stmts []ast.Stmt
+		if sw.Init != nil {
+			stmts = append(stmts, sw.Init)
+			sw.Init = nil
+		}
+		tag := ast.NewIdent("__go_fuzz_tmp")
+		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{tag}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
+		sw.Tag = nil
+		stmts = append(stmts, sw)
+		for _, cas1 := range sw.Body.List {
+			cas := cas1.(*ast.CaseClause)
+			for i, expr := range cas.List {
+				cas.List[i] = &ast.BinaryExpr{X: tag, Op: token.EQL, Y: expr}
+			}
+		}
+		nn.Tag = nil
+		nn.Init = nil
+		nn.Body = &ast.BlockStmt{List: []ast.Stmt{&ast.CaseClause{Body: stmts}}}
+		return s // recurse
+
 	default:
 		return s // recurse
 	}
@@ -311,6 +355,11 @@ var slashslash = []byte("//")
 
 func (f *File) Visit(node ast.Node) ast.Visitor {
 	switch n := node.(type) {
+	case *ast.GenDecl:
+		if n.Tok != token.VAR {
+			return nil // constants and types are not interesting
+		}
+
 	case *ast.BlockStmt:
 		// If it's a switch or select, the body is a list of case clauses; don't tag the block itself.
 		if len(n.List) > 0 {
@@ -331,6 +380,12 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 		}
 		n.List = f.addCounters(n.Lbrace, n.Rbrace+1, n.List, true) // +1 to step past closing brace.
 	case *ast.IfStmt:
+		if n.Init != nil {
+			ast.Walk(f, n.Init)
+		}
+		if n.Cond != nil {
+			ast.Walk(f, n.Cond)
+		}
 		ast.Walk(f, n.Body)
 		if n.Else == nil {
 			// Add else because we want coverage for "not taken".
@@ -392,11 +447,24 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 		if n.Body == nil || len(n.Body.List) == 0 {
 			return nil
 		}
-		// TODO: add default if it is not already there
 	case *ast.TypeSwitchStmt:
 		// Don't annotate an empty type switch - creates a syntax error.
+		// TODO: add default case
 		if n.Body == nil || len(n.Body.List) == 0 {
 			return nil
+		}
+	case *ast.BinaryExpr:
+		if n.Op == token.LAND || n.Op == token.LOR {
+			// Replace:
+			//	x && y
+			// with:
+			//	x && func() bool { return y }
+			n.Y = &ast.CallExpr{
+				Fun: &ast.FuncLit{
+					Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "bool"}}}}},
+					Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ReturnStmt{Results: []ast.Expr{n.Y}}}},
+				},
+			}
 		}
 	}
 	return f

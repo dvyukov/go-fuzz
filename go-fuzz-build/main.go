@@ -14,9 +14,10 @@ import (
 )
 
 var (
-	flagOut  = flag.String("o", "", "output file")
-	flagFunc = flag.String("func", "Fuzz", "entry function")
-	flagWork = flag.Bool("work", false, "don't remove working directory")
+	flagOut        = flag.String("o", "", "output file")
+	flagFunc       = flag.String("func", "Fuzz", "entry function")
+	flagWork       = flag.Bool("work", false, "don't remove working directory")
+	flagInstrument = flag.String("instrument", "", "instrument a single file (for debugging)")
 
 	workdir string
 )
@@ -29,6 +30,20 @@ const (
 // instruments Go source files there and builds setting GOROOT to the temp dir.
 func main() {
 	flag.Parse()
+	if *flagInstrument != "" {
+		f, err := ioutil.TempFile("", "go-fuzz-instrument-")
+		if err != nil {
+			failf("failed to create temp file: %v", err)
+		}
+		f.Close()
+		instrument("pkg", "pkg/file.go", *flagInstrument, f.Name(), make(map[string]bool), make(map[string][]Block), false)
+		data, err := ioutil.ReadFile(f.Name())
+		if err != nil {
+			failf("failed to read temp file: %v", err)
+		}
+		fmt.Println(string(data))
+		os.Exit(0)
+	}
 	if len(flag.Args()) != 1 || len(flag.Arg(0)) == 0 {
 		failf("usage: go-fuzz-build pkg")
 	}

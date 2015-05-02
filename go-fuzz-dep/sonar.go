@@ -2,6 +2,7 @@ package gofuzzdep
 
 import (
 	"sync/atomic"
+	"unsafe"
 )
 
 const (
@@ -58,45 +59,29 @@ func serialize(v interface{}, buf []byte) uint8 {
 		buf[0] = byte(vv)
 		return 1
 	case int16:
-		buf[0] = byte(vv >> 0)
-		buf[1] = byte(vv >> 8)
-		return 2
+		return serialize16(buf, uint16(vv))
 	case uint16:
-		buf[0] = byte(vv >> 0)
-		buf[1] = byte(vv >> 8)
-		return 2
+		return serialize16(buf, vv)
 	case int32:
-		buf[0] = byte(vv >> 0)
-		buf[1] = byte(vv >> 8)
-		buf[2] = byte(vv >> 16)
-		buf[3] = byte(vv >> 24)
-		return 4
+		return serialize32(buf, uint32(vv))
 	case uint32:
-		buf[0] = byte(vv >> 0)
-		buf[1] = byte(vv >> 8)
-		buf[2] = byte(vv >> 16)
-		buf[3] = byte(vv >> 24)
-		return 4
+		return serialize32(buf, vv)
 	case int64:
-		buf[0] = byte(vv >> 0)
-		buf[1] = byte(vv >> 8)
-		buf[2] = byte(vv >> 16)
-		buf[3] = byte(vv >> 24)
-		buf[4] = byte(vv >> 32)
-		buf[5] = byte(vv >> 40)
-		buf[6] = byte(vv >> 48)
-		buf[7] = byte(vv >> 56)
-		return 8
+		return serialize64(buf, uint64(vv))
 	case uint64:
-		buf[0] = byte(vv >> 0)
-		buf[1] = byte(vv >> 8)
-		buf[2] = byte(vv >> 16)
-		buf[3] = byte(vv >> 24)
-		buf[4] = byte(vv >> 32)
-		buf[5] = byte(vv >> 40)
-		buf[6] = byte(vv >> 48)
-		buf[7] = byte(vv >> 56)
-		return 8
+		return serialize64(buf, vv)
+	case int:
+		if unsafe.Sizeof(vv) == 4 {
+			return serialize32(buf, uint32(vv))
+		} else {
+			return serialize64(buf, uint64(vv))
+		}
+	case uint:
+		if unsafe.Sizeof(vv) == 4 {
+			return serialize32(buf, uint32(vv))
+		} else {
+			return serialize64(buf, uint64(vv))
+		}
 	case string:
 		if len(vv) > SonarMaxLen {
 			return 0
@@ -105,4 +90,41 @@ func serialize(v interface{}, buf []byte) uint8 {
 	default:
 		return 0
 	}
+}
+
+func serialize16(buf []byte, v uint16) uint8 {
+	buf[0] = byte(v >> 0)
+	buf[1] = byte(v >> 8)
+	return 2
+}
+
+func serialize32(buf []byte, v uint32) uint8 {
+	buf[0] = byte(v >> 0)
+	buf[1] = byte(v >> 8)
+	buf[2] = byte(v >> 16)
+	buf[3] = byte(v >> 24)
+	return 4
+}
+
+func serialize64(buf []byte, v uint64) uint8 {
+	buf[0] = byte(v >> 0)
+	buf[1] = byte(v >> 8)
+	buf[2] = byte(v >> 16)
+	buf[3] = byte(v >> 24)
+	buf[4] = byte(v >> 32)
+	buf[5] = byte(v >> 40)
+	buf[6] = byte(v >> 48)
+	buf[7] = byte(v >> 56)
+	return 8
+}
+
+func deserialize64(buf []byte) uint64 {
+	return uint64(buf[0])<<0 |
+		uint64(buf[1])<<8 |
+		uint64(buf[2])<<16 |
+		uint64(buf[3])<<24 |
+		uint64(buf[4])<<32 |
+		uint64(buf[5])<<40 |
+		uint64(buf[6])<<48 |
+		uint64(buf[7])<<56
 }
