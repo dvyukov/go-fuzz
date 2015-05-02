@@ -378,14 +378,37 @@ func dumpCover(outf, metaf string, cover []byte) {
 	if err := json.Unmarshal(metadata, &meta); err != nil {
 		log.Fatalf("failed to unmarshal coverage metadata: %v", err)
 	}
+
+	// Exclude files that have no coverage at all.
+	files := make(map[string]bool)
+	for i, v := range cover {
+		if v == 0 {
+			continue
+		}
+		for _, b := range meta[strconv.Itoa(i)] {
+			files[b.File] = true
+		}
+	}
+
 	out, err := os.Create(outf)
 	if err != nil {
 		log.Fatalf("failed to create coverage file: %v", err)
 	}
 	defer out.Close()
-	fmt.Fprintf(out, "mode: count\n")
+	const showCounters = false
+	if showCounters {
+		fmt.Fprintf(out, "mode: count\n")
+	} else {
+		fmt.Fprintf(out, "mode: set\n")
+	}
 	for i, v := range cover {
 		for _, b := range meta[strconv.Itoa(i)] {
+			if !files[b.File] {
+				continue
+			}
+			if !showCounters && v != 0 {
+				v = 1
+			}
 			fmt.Fprintf(out, "%s:%v.%v,%v.%v %v %v\n",
 				b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol, b.NumStmt, v)
 		}
