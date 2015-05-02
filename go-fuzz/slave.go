@@ -283,6 +283,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 		return
 	}
 
+	checked := make(map[string]struct{})
 	//log.Printf("got %v bytes of sonar data\n", len(sonar))
 	//d := len(sonar)
 	//n := 0
@@ -341,7 +342,6 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 			// (potentially altering preceeding length field).
 			continue
 		}
-		checked := make(map[string]struct{})
 		//log.Printf("  sonar: flags=%v %q vs %q\n", flags, v1, v2)
 		check := func(v1, v2 []byte) {
 			if len(v1) == 0 {
