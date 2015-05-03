@@ -160,6 +160,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/png: nil deref](https://github.com/golang/go/issues/10493)
 - [compress/flate: hang](https://github.com/golang/go/issues/10426)
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10614)
+- [text/template: hang on invalid input](https://github.com/golang/go/issues/10674)
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610)
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611)
 - [html/template: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10612)
