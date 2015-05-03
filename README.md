@@ -159,6 +159,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/png: slice bounds out of range](https://github.com/golang/go/issues/10414)
 - [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423)
 - [image/png: nil deref](https://github.com/golang/go/issues/10493)
+- [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676)
 - [compress/flate: hang](https://github.com/golang/go/issues/10426)
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10614)
 - [text/template: hang on invalid input](https://github.com/golang/go/issues/10674)
