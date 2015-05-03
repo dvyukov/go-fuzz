@@ -229,6 +229,16 @@ func isSimpleExpr(n ast.Expr) bool {
 		return isSimpleExpr(nn.X) && isSimpleExpr(nn.Y)
 	case *ast.SelectorExpr:
 		return isSimpleExpr(nn.X) && isSimpleExpr(nn.Sel)
+	case *ast.ParenExpr:
+		return isSimpleExpr(nn.X)
+	case *ast.CallExpr:
+		if arg := isConv(nn); arg != nil {
+			return isSimpleExpr(arg)
+		}
+		if isUnsafeOperator(nn) {
+			return true
+		}
+		return false
 	default:
 		return false
 	}
@@ -246,9 +256,57 @@ func isConstExpr(n ast.Expr) bool {
 		return isConstExpr(nn.X) && isConstExpr(nn.Y)
 	case *ast.SelectorExpr:
 		return isConstExpr(nn.Sel)
+	case *ast.ParenExpr:
+		return isConstExpr(nn.X)
+	case *ast.CallExpr:
+		if arg := isConv(nn); arg != nil {
+			return isConstExpr(arg)
+		}
+		if isUnsafeOperator(nn) {
+			return true
+		}
+		return false
 	default:
 		return false
 	}
+}
+
+func isConv(n *ast.CallExpr) ast.Expr {
+	if id, ok := n.Fun.(*ast.Ident); ok {
+		if knownTypes[id.Name] {
+			return n.Args[0]
+		}
+	}
+	return nil
+}
+
+var knownTypes = map[string]bool{
+	"rune":    true,
+	"byte":    true,
+	"int8":    true,
+	"uint8":   true,
+	"int16":   true,
+	"uint16":  true,
+	"int32":   true,
+	"uint32":  true,
+	"int64":   true,
+	"uint64":  true,
+	"string":  true,
+	"int":     true,
+	"uint":    true,
+	"intptr":  true,
+	"uintptr": true,
+	"float32": true,
+	"float64": true,
+}
+
+func isUnsafeOperator(n *ast.CallExpr) bool {
+	if sel, ok := n.Fun.(*ast.SelectorExpr); ok {
+		if id, ok := sel.X.(*ast.Ident); ok {
+			return id.Name == "unsafe"
+		}
+	}
+	return false
 }
 
 type LiteralCollector struct {
