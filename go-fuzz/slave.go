@@ -400,9 +400,11 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 		res := evaluate(flags, v1, v2)
 		if !res && site.taken&1 == 0 || res && site.taken&2 == 0 {
 			updated = true
-			log.Printf("SONAR %v %v%v %v %v%v %v%v %v[%v]",
-				res, hex.EncodeToString(v1), const1, op, hex.EncodeToString(v2), const2, sign, isstr,
-				site.loc, id)
+			if false {
+				log.Printf("SONAR %v %v%v %v %v%v %v%v %v[%v]",
+					res, hex.EncodeToString(v1), const1, op, hex.EncodeToString(v2), const2, sign, isstr,
+					site.loc, id)
+			}
 		}
 		if !res {
 			site.taken |= 1
