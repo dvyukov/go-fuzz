@@ -1,7 +1,7 @@
 package main
 
 import (
-	"bytes"
+	"archive/zip"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -11,6 +11,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 var (
@@ -31,17 +33,9 @@ const (
 func main() {
 	flag.Parse()
 	if *flagInstrument != "" {
-		f, err := ioutil.TempFile("", "go-fuzz-instrument-")
-		if err != nil {
-			failf("failed to create temp file: %v", err)
-		}
-		f.Close()
-		instrument("pkg", "pkg/file.go", *flagInstrument, f.Name(), make(map[string]bool), make(map[string][]Block), false)
-		data, err := ioutil.ReadFile(f.Name())
-		if err != nil {
-			failf("failed to read temp file: %v", err)
-		}
-		fmt.Println(string(data))
+		f := tempFile()
+		instrument("pkg", "pkg/file.go", *flagInstrument, f, nil, nil, nil)
+		fmt.Println(string(readFile(f)))
 		os.Exit(0)
 	}
 	if len(flag.Args()) != 1 || len(flag.Arg(0)) == 0 {
@@ -74,66 +68,43 @@ func main() {
 	deps["time"] = true
 	deps["unsafe"] = true
 
+	lits := make(map[Literal]struct{})
+	var blocks, sonar []CoverBlock
+	coverBin := buildInstrumentedBinary(pkg, deps, lits, &blocks, nil)
+	sonarBin := buildInstrumentedBinary(pkg, deps, nil, nil, &sonar)
+	metaData := createMeta(lits, blocks, sonar)
+	defer func() {
+		os.Remove(coverBin)
+		os.Remove(sonarBin)
+		os.Remove(metaData)
+	}()
+
 	if *flagOut == "" {
-		*flagOut = goListProps(pkg, "Name")[0] + "-fuzz"
+		*flagOut = goListProps(pkg, "Name")[0] + "-fuzz.zip"
 	}
-
-	var err error
-	workdir, err = ioutil.TempDir("", "go-fuzz-build")
-	if err != nil {
-		failf("failed to create temp dir: %v", err)
-	}
-	if *flagWork {
-		fmt.Printf("workdir: %v\n", workdir)
-	} else {
-		defer os.RemoveAll(workdir)
-	}
-
-	if deps["runtime/cgo"] {
-		// Trick go command into thinking that it has up-to-date sources for cmd/cgo.
-		cgoDir := filepath.Join(workdir, "src", "cmd", "cgo")
-		if err := os.MkdirAll(cgoDir, 0700); err != nil {
-			failf("failed to create temp dir: %v", err)
-		}
-		src := "// +build never\npackage main\n"
-		if err := ioutil.WriteFile(filepath.Join(cgoDir, "fake.go"), []byte(src), 0600); err != nil {
-			failf("failed to write temp file: %v", err)
-		}
-	}
-	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), true, nil)
-	if _, err := os.Stat(filepath.Join(os.Getenv("GOROOT"), "pkg", "include")); err == nil {
-		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "include"), filepath.Join(workdir, "pkg", "include"), true, nil)
-	} else {
-		// Cross-compilation is not implemented.
-		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
-	}
-	lits := make(map[string]bool)
-	blocks := make(map[string][]Block)
-	for p := range deps {
-		clonePackage(workdir, p, lits, blocks)
-	}
-	createFuzzMain(pkg, lits)
-
-	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", *flagOut, mainPkg)
-	for _, v := range os.Environ() {
-		if strings.HasPrefix(v, "GOROOT") {
-			continue
-		}
-		cmd.Env = append(cmd.Env, v)
-	}
-	cmd.Env = append(cmd.Env, "GOROOT="+workdir)
-	if out, err := cmd.CombinedOutput(); err != nil {
-		failf("failed to execute go build: %v\n%v", err, string(out))
-	}
-
-	coverf, err := os.Create(*flagOut + ".cover")
+	outf, err := os.Create(*flagOut)
 	if err != nil {
 		failf("failed to create output file: %v", err)
 	}
-	if err := json.NewEncoder(coverf).Encode(blocks); err != nil {
-		failf("failed to serialize coverage information: %v", err)
+	zipw := zip.NewWriter(outf)
+	zipFile := func(name, datafile string) {
+		w, err := zipw.Create(name)
+		if err != nil {
+			failf("failed to create zip file: %v", err)
+		}
+		if _, err := w.Write(readFile(datafile)); err != nil {
+			failf("failed to write to zip file: %v", err)
+		}
 	}
-	coverf.Close()
+	zipFile("cover.bin", coverBin)
+	zipFile("sonar.bin", sonarBin)
+	zipFile("metadata", metaData)
+	if err := zipw.Close(); err != nil {
+		failf("failed to close zip file: %v", err)
+	}
+	if err := outf.Close(); err != nil {
+		failf("failed to close out file: %v", err)
+	}
 }
 
 func testNormalBuild(pkg string) {
@@ -150,7 +121,7 @@ func testNormalBuild(pkg string) {
 	defer func() {
 		workdir = ""
 	}()
-	createFuzzMain(pkg, nil)
+	createFuzzMain(pkg)
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", filepath.Join(workdir, "bin"), mainPkg)
 	cmd.Env = append([]string{"GOPATH=" + workdir + ":" + os.Getenv("GOPATH")}, os.Environ()...)
 	if out, err := cmd.CombinedOutput(); err != nil {
@@ -158,21 +129,80 @@ func testNormalBuild(pkg string) {
 	}
 }
 
-func createFuzzMain(pkg string, lits map[string]bool) {
+func createMeta(lits map[Literal]struct{}, blocks []CoverBlock, sonar []CoverBlock) string {
+	meta := MetaData{Blocks: blocks, Sonar: sonar}
+	for k := range lits {
+		meta.Literals = append(meta.Literals, k)
+	}
+	data, err := json.Marshal(meta)
+	if err != nil {
+		failf("failed to serialize meta information: %v", err)
+	}
+	f := tempFile()
+	writeFile(f, data)
+	return f
+}
+
+func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) string {
+	var err error
+	workdir, err = ioutil.TempDir("", "go-fuzz-build")
+	if err != nil {
+		failf("failed to create temp dir: %v", err)
+	}
+	if *flagWork {
+		fmt.Printf("workdir: %v\n", workdir)
+	} else {
+		defer func() {
+			os.RemoveAll(workdir)
+			workdir = ""
+		}()
+	}
+
+	if deps["runtime/cgo"] {
+		// Trick go command into thinking that it has up-to-date sources for cmd/cgo.
+		cgoDir := filepath.Join(workdir, "src", "cmd", "cgo")
+		if err := os.MkdirAll(cgoDir, 0700); err != nil {
+			failf("failed to create temp dir: %v", err)
+		}
+		src := "// +build never\npackage main\n"
+		writeFile(filepath.Join(cgoDir, "fake.go"), []byte(src))
+	}
+	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), true, nil)
+	if _, err := os.Stat(filepath.Join(os.Getenv("GOROOT"), "pkg", "include")); err == nil {
+		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "include"), filepath.Join(workdir, "pkg", "include"), true, nil)
+	} else {
+		// Cross-compilation is not implemented.
+		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
+	}
+	for p := range deps {
+		clonePackage(workdir, p, lits, blocks, sonar)
+	}
+	createFuzzMain(pkg)
+
+	outf := tempFile()
+	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", outf, mainPkg)
+	for _, v := range os.Environ() {
+		if strings.HasPrefix(v, "GOROOT") {
+			continue
+		}
+		cmd.Env = append(cmd.Env, v)
+	}
+	cmd.Env = append(cmd.Env, "GOROOT="+workdir)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		failf("failed to execute go build: %v\n%v", err, string(out))
+	}
+	return outf
+}
+
+func createFuzzMain(pkg string) {
 	if err := os.MkdirAll(filepath.Join(workdir, "src", mainPkg), 0700); err != nil {
 		failf("failed to create temp dir: %v", err)
 	}
-	litBuf := new(bytes.Buffer)
-	for lit := range lits {
-		fmt.Fprintf(litBuf, "\t%v,\n", lit)
-	}
-	src := fmt.Sprintf(mainSrc, pkg, *flagFunc, litBuf.String())
-	if err := ioutil.WriteFile(filepath.Join(workdir, "src", mainPkg, "main.go"), []byte(src), 0600); err != nil {
-		failf("failed to write temp file: %v", err)
-	}
+	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
+	writeFile(filepath.Join(workdir, "src", mainPkg, "main.go"), []byte(src))
 }
 
-func clonePackage(workdir, pkg string, lits map[string]bool, blocks map[string][]Block) {
+func clonePackage(workdir, pkg string, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	dir := goListProps(pkg, "Dir")[0]
 	if !strings.HasSuffix(dir, pkg) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
@@ -215,7 +245,7 @@ func clonePackage(workdir, pkg string, lits map[string]bool, blocks map[string][
 		}
 		fn := filepath.Join(newDir, f.Name())
 		newFn := fn + ".cover"
-		instrument(pkg, filepath.Join(pkg, f.Name()), fn, newFn, lits, blocks, true)
+		instrument(pkg, filepath.Join(pkg, f.Name()), fn, newFn, lits, blocks, sonar)
 		err := os.Rename(newFn, fn)
 		if err != nil {
 			failf("failed to rename file: %v", err)
@@ -241,13 +271,8 @@ func copyDir(dir, newDir string, rec bool, pred func(string) bool) {
 		if pred != nil && !pred(f.Name()) {
 			continue
 		}
-		data, err := ioutil.ReadFile(filepath.Join(dir, f.Name()))
-		if err != nil {
-			failf("failed to read file: %v", err)
-		}
-		if err := ioutil.WriteFile(filepath.Join(newDir, f.Name()), data, 0700); err != nil {
-			failf("failed to write temp file: %v", err)
-		}
+		data := readFile(filepath.Join(dir, f.Name()))
+		writeFile(filepath.Join(newDir, f.Name()), data)
 	}
 }
 
@@ -288,6 +313,29 @@ func failf(str string, args ...interface{}) {
 	os.Exit(1)
 }
 
+func tempFile() string {
+	outf, err := ioutil.TempFile("", "go-fuzz")
+	if err != nil {
+		failf("failed to create temp file: %v", err)
+	}
+	outf.Close()
+	return outf.Name()
+}
+
+func readFile(name string) []byte {
+	data, err := ioutil.ReadFile(name)
+	if err != nil {
+		failf("failed to read temp file: %v", err)
+	}
+	return data
+}
+
+func writeFile(name string, data []byte) {
+	if err := ioutil.WriteFile(name, data, 0700); err != nil {
+		failf("failed to write temp file: %v", err)
+	}
+}
+
 func isSourceFile(f string) bool {
 	return (strings.HasSuffix(f, ".go") && !strings.HasSuffix(f, "_test.go")) ||
 		strings.HasSuffix(f, ".s") ||
@@ -313,10 +361,6 @@ import (
 )
 
 func main() {
-	dep.Main(target.%v, lits)
-}
-
-var lits = []string{
-%v
+	dep.Main(target.%v)
 }
 `

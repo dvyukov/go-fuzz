@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
-	"encoding/binary"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -15,12 +14,12 @@ import (
 	"strconv"
 	"strings"
 
-	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(pkg, shortName, in, out string, lits map[string]bool, blocks map[string][]Block, sonar bool) {
+func instrument(pkg, shortName, in, out string, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	fset := token.NewFileSet()
 	content, err := ioutil.ReadFile(in)
 	if err != nil {
@@ -42,14 +41,14 @@ func instrument(pkg, shortName, in, out string, lits map[string]bool, blocks map
 	file.addImport("github.com/dvyukov/go-fuzz/go-fuzz-dep", fuzzdepPkg, "Main")
 
 	if lits != nil {
-		lc := &LiteralCollector{lits}
-		ast.Walk(lc, file.astFile)
+		ast.Walk(&LiteralCollector{lits}, file.astFile)
 	}
 
 	ast.Walk(file, file.astFile)
 
-	if sonar {
-		ast.Walk(&Sonar{pkg: pkg}, file.astFile)
+	if sonar != nil {
+		s := &Sonar{fset: fset, name: shortName, pkg: pkg, blocks: sonar}
+		ast.Walk(s, file.astFile)
 	}
 
 	fd, err := os.Create(out)
@@ -62,11 +61,15 @@ func instrument(pkg, shortName, in, out string, lits map[string]bool, blocks map
 }
 
 type Sonar struct {
-	pkg string
+	fset   *token.FileSet
+	name   string
+	pkg    string
+	blocks *[]CoverBlock
 }
 
+var sonarSeq = 0
+
 func (s *Sonar) Visit(n ast.Node) ast.Visitor {
-	// TODO: handle switch statements.
 	// TODO: detect "x&mask==0", emit sonar(x, x&^mask)
 	switch nn := n.(type) {
 	case *ast.BinaryExpr:
@@ -114,14 +117,13 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 			stmts = append(stmts, sw.Init)
 			sw.Init = nil
 		}
-		tag := ast.NewIdent("__go_fuzz_tmp")
-		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{tag}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
+		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: "__go_fuzz_tmp"}}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
 		sw.Tag = nil
 		stmts = append(stmts, sw)
 		for _, cas1 := range sw.Body.List {
 			cas := cas1.(*ast.CaseClause)
 			for i, expr := range cas.List {
-				cas.List[i] = &ast.BinaryExpr{X: tag, Op: token.EQL, Y: expr}
+				cas.List[i] = &ast.BinaryExpr{X: &ast.Ident{Name: "__go_fuzz_tmp", NamePos: expr.Pos()}, Op: token.EQL, Y: expr}
 			}
 		}
 		nn.Tag = nil
@@ -136,22 +138,22 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	var flags uint8
 	switch nn.Op {
 	case token.EQL:
-		flags = dep.SonarEQL
+		flags = SonarEQL
 		break
 	case token.NEQ:
-		flags = dep.SonarNEQ
+		flags = SonarNEQ
 		break
 	case token.LSS:
-		flags = dep.SonarLSS
+		flags = SonarLSS
 		break
 	case token.GTR:
-		flags = dep.SonarGTR
+		flags = SonarGTR
 		break
 	case token.LEQ:
-		flags = dep.SonarLEQ
+		flags = SonarLEQ
 		break
 	case token.GEQ:
-		flags = dep.SonarGEQ
+		flags = SonarGEQ
 		break
 	default:
 		return s // recurse
@@ -159,18 +161,23 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	// Replace:
 	//	x != y
 	// with:
-	//	func() bool { v1 := x; v2 := y; go-fuzz-dep.SonarNEQ(v1, v2); return v1 != v2 }() == true
+	//	func() bool { v1 := x; v2 := y; go-fuzz-dep.Sonar(v1, v2, flags); return v1 != v2 }() == true
 	v1 := nn.X
 	v2 := nn.Y
 	if isUninterestingLiteral(v1) || isUninterestingLiteral(v2) {
 		return s
 	}
 	if isConstExpr(v1) {
-		flags |= dep.SonarConst1
+		flags |= SonarConst1
 	}
 	if isConstExpr(v2) {
-		flags |= dep.SonarConst2
+		flags |= SonarConst2
 	}
+	id := int(flags) | sonarSeq<<8
+	startPos := s.fset.Position(nn.Pos())
+	endPos := s.fset.Position(nn.End())
+	*s.blocks = append(*s.blocks, CoverBlock{sonarSeq, s.name, startPos.Line, startPos.Column, endPos.Line, endPos.Column, int(flags)})
+	sonarSeq++
 	// TODO: walk v1 and v2 recursively
 	block := &ast.BlockStmt{}
 	if !isSimpleExpr(v1) {
@@ -187,7 +194,7 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 		&ast.ExprStmt{
 			X: &ast.CallExpr{
 				Fun:  &ast.SelectorExpr{X: &ast.Ident{Name: fuzzdepPkg}, Sel: &ast.Ident{Name: "Sonar"}},
-				Args: []ast.Expr{v1, v2, &ast.BasicLit{Kind: token.INT, Value: strconv.Itoa(int(flags))}},
+				Args: []ast.Expr{v1, v2, &ast.BasicLit{Kind: token.INT, Value: strconv.Itoa(id)}},
 			},
 		},
 		&ast.ReturnStmt{Results: []ast.Expr{&ast.BinaryExpr{Op: nn.Op, X: v1, Y: v2}}},
@@ -245,7 +252,7 @@ func isConstExpr(n ast.Expr) bool {
 }
 
 type LiteralCollector struct {
-	lits map[string]bool
+	lits map[Literal]struct{}
 }
 
 func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
@@ -272,24 +279,32 @@ func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
 		lit := nn.Value
 		switch nn.Kind {
 		case token.STRING:
-			lc.lits[lit] = true
+			lc.lits[Literal{unquote(lit), true}] = struct{}{}
 		case token.CHAR:
-			lc.lits[fmt.Sprintf("string(%v)", lit)] = true
+			lc.lits[Literal{unquote(lit), false}] = struct{}{}
 		case token.INT:
 			if lit[0] < '0' || lit[0] > '9' {
 				failf("unsupported literal '%v'", lit)
 			}
-			v, err := strconv.ParseUint(lit, 0, 64)
+			v, err := strconv.ParseInt(lit, 0, 64)
 			if err != nil {
-				i, err := strconv.ParseInt(lit, 0, 64)
+				u, err := strconv.ParseUint(lit, 0, 64)
 				if err != nil {
 					failf("failed to parse int literal '%v': %v", lit, err)
 				}
-				v = uint64(i)
+				v = int64(u)
 			}
-			buf := new(bytes.Buffer)
-			binary.Write(buf, binary.LittleEndian, v)
-			lc.lits[fmt.Sprintf("%q", buf.String())] = true
+			var val []byte
+			if v >= -(1<<7) && v < 1<<8 {
+				val = append(val, byte(v))
+			} else if v >= -(1<<15) && v < 1<<16 {
+				val = append(val, byte(v), byte(v>>8))
+			} else if v >= -(1<<31) && v < 1<<32 {
+				val = append(val, byte(v), byte(v>>8), byte(v>>16), byte(v>>24))
+			} else {
+				val = append(val, byte(v), byte(v>>8), byte(v>>16), byte(v>>24), byte(v>>32), byte(v>>40), byte(v>>48), byte(v>>56))
+			}
+			lc.lits[Literal{string(val), false}] = struct{}{}
 		}
 		return nil
 	}
@@ -339,16 +354,7 @@ type File struct {
 	name      string // Name of file.
 	shortName string
 	astFile   *ast.File
-	blocks    map[string][]Block
-}
-
-type Block struct {
-	File      string
-	StartLine int
-	StartCol  int
-	EndLine   int
-	EndCol    int
-	NumStmt   int
+	blocks    *[]CoverBlock
 }
 
 var slashslash = []byte("//")
@@ -662,15 +668,17 @@ func genCounter() int {
 }
 
 func (f *File) newCounter(start, end token.Pos, numStmt int) ast.Stmt {
-	cnt := strconv.Itoa(genCounter())
+	cnt := genCounter()
 
-	s := f.fset.Position(start)
-	e := f.fset.Position(end)
-	f.blocks[cnt] = append(f.blocks[cnt], Block{f.shortName, s.Line, s.Column, e.Line, e.Column, numStmt})
+	if f.blocks != nil {
+		s := f.fset.Position(start)
+		e := f.fset.Position(end)
+		*f.blocks = append(*f.blocks, CoverBlock{cnt, f.shortName, s.Line, s.Column, e.Line, e.Column, numStmt})
+	}
 
 	idx := &ast.BasicLit{
 		Kind:  token.INT,
-		Value: cnt,
+		Value: strconv.Itoa(cnt),
 	}
 	counter := &ast.IndexExpr{
 		X: &ast.SelectorExpr{

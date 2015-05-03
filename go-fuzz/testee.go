@@ -2,14 +2,15 @@ package main
 
 import (
 	"encoding/binary"
-	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"os/exec"
-	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 // Testee is a wrapper around one testee subprocess.
@@ -27,6 +28,82 @@ type Testee struct {
 	outputC     chan []byte
 	downC       chan bool
 	down        bool
+}
+
+// TestBinary handles communication with and restring of testee subprocesses.
+type TestBinary struct {
+	fileName      string
+	commFile      string
+	periodicCheck func()
+
+	coverRegion []byte
+	inputRegion []byte
+	sonarRegion []byte
+
+	testee *Testee
+
+	stats *Stats
+}
+
+func newTestBinary(fileName string, periodicCheck func(), stats *Stats) *TestBinary {
+	comm, err := ioutil.TempFile("", "go-fuzz-comm")
+	if err != nil {
+		log.Fatalf("failed to create comm file: %v", err)
+	}
+	comm.Truncate(CoverSize + MaxInputSize + SonarRegionSize)
+	comm.Close()
+	fd, err := syscall.Open(comm.Name(), syscall.O_RDWR, 0)
+	if err != nil {
+		log.Fatalf("failed to open comm file: %v", err)
+	}
+	mem, err := syscall.Mmap(fd, 0, CoverSize+MaxInputSize+SonarRegionSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	if err != nil {
+		log.Fatalf("failed to mmap comm file: %v", err)
+	}
+	return &TestBinary{
+		fileName:      fileName,
+		commFile:      comm.Name(),
+		periodicCheck: periodicCheck,
+		coverRegion:   mem[:CoverSize],
+		inputRegion:   mem[CoverSize : CoverSize+SonarRegionSize],
+		sonarRegion:   mem[CoverSize+SonarRegionSize:],
+		stats:         stats,
+	}
+}
+
+func (bin *TestBinary) close() {
+	if bin.testee != nil {
+		bin.testee.shutdown()
+		bin.testee = nil
+	}
+	os.Remove(bin.commFile)
+}
+
+func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, output []byte, crashed, hanged bool) {
+	for {
+		// This is the only function that is executed regularly,
+		// so we tie some periodic checks to it.
+		bin.periodicCheck()
+
+		bin.stats.execs++
+		if bin.testee == nil {
+			bin.stats.restarts++
+			bin.testee = newTestee(bin.fileName, bin.commFile, bin.coverRegion, bin.inputRegion, bin.sonarRegion)
+		}
+		var retry bool
+		res, ns, cover, sonar, crashed, hanged, retry = bin.testee.test(data)
+		if retry {
+			bin.testee.shutdown()
+			bin.testee = nil
+			continue
+		}
+		if crashed {
+			output = bin.testee.shutdown()
+			bin.testee = nil
+			return
+		}
+		return
+	}
 }
 
 func newTestee(bin, commFile string, coverRegion, inputRegion, sonarRegion []byte) *Testee {
@@ -54,7 +131,7 @@ retry:
 	cmd.ExtraFiles = append(cmd.ExtraFiles, rOut)
 	cmd.ExtraFiles = append(cmd.ExtraFiles, wIn)
 	cmd.Env = append([]string{}, os.Environ()...)
-	cmd.Env = append(cmd.Env, "GO-FUZZ-TEST=1", "GOTRACEBACK=1")
+	cmd.Env = append(cmd.Env, "GOTRACEBACK=1")
 	if err = cmd.Start(); err != nil {
 		// This can be a transient failure like "cannot allocate memory" or "text file is busy".
 		log.Printf("failed to start test binary: %v", err)
@@ -213,68 +290,4 @@ func (t *Testee) shutdown() (output []byte) {
 	t.outPipe.Close()
 	t.stdoutPipe.Close()
 	return out
-}
-
-// fetchLiterals fetches list of source code literals from testee.
-func fetchLiterals() (strLits, intLits [][]byte) {
-	rComm, wComm, err := os.Pipe()
-	if err != nil {
-		log.Fatalf("failed to pipe: %v", err)
-	}
-	defer rComm.Close()
-	cmd := exec.Command(*flagBin)
-	cmd.Env = []string{"GO-FUZZ-CMD=literals"}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.ExtraFiles = append(cmd.ExtraFiles, wComm)
-	if err := cmd.Start(); err != nil {
-		log.Fatalf("failed to start test binary: %v", err)
-	}
-	wComm.Close()
-	var n uint64
-	err = binary.Read(rComm, binary.LittleEndian, &n)
-	if err != nil || n > 1e6 {
-		log.Fatalf("failed to read literal count: %v (%v)", n, err)
-	}
-	lits := make(map[string]struct{})
-	for i := uint64(0); i < n; i++ {
-		var ln uint64
-		err = binary.Read(rComm, binary.LittleEndian, &ln)
-		if err != nil || ln > 1e6 {
-			log.Fatalf("failed to read literal length: %v (%v)", ln, err)
-		}
-		if ln == 0 {
-			continue
-		}
-		buf := make([]byte, ln)
-		if _, err := io.ReadFull(rComm, buf); err != nil {
-			log.Fatalf("failed to read literal: %v", err)
-		}
-		if ln > 20 {
-			continue
-		}
-		lits[string(buf)] = struct{}{} // deduplicate
-	}
-	cmd.Wait()
-	for lit := range lits {
-		if len(lit) == 8 {
-			var vv uint64
-			binary.Read(strings.NewReader(lit), binary.LittleEndian, &vv)
-			v := int64(vv)
-			var val []byte
-			if v >= -(1<<7) && v < 1<<8 {
-				val = append(val, byte(v))
-			} else if v >= -(1<<15) && v < 1<<16 {
-				val = append(val, byte(v), byte(v>>8))
-			} else if v >= -(1<<31) && v < 1<<32 {
-				val = append(val, byte(v), byte(v>>8), byte(v>>16), byte(v>>24))
-			} else {
-				val = append(val, byte(v), byte(v>>8), byte(v>>16), byte(v>>24), byte(v>>32), byte(v>>40), byte(v>>48), byte(v>>56))
-			}
-			intLits = append(intLits, val)
-		} else if len(lit) < 20 {
-			strLits = append(strLits, []byte(lit))
-		}
-	}
-	return
 }

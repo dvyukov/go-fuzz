@@ -1,18 +1,14 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/rpc"
-	"os"
 	"path/filepath"
-	"strconv"
 	"sync/atomic"
 	"time"
 
-	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 const (
@@ -54,6 +50,13 @@ type ROData struct {
 	suppressions map[Sig]struct{}
 	strLits      [][]byte // string literals in testee
 	intLits      [][]byte // int literals in testee
+	coverBlocks  map[int][]CoverBlock
+	sonarSites   []SonarSite
+}
+
+type SonarSite struct {
+	loc   string
+	taken uint32
 }
 
 type Stats struct {
@@ -61,7 +64,7 @@ type Stats struct {
 	restarts uint64
 }
 
-func newHub() *Hub {
+func newHub(metadata MetaData) *Hub {
 	procs := *flagProcs
 	c, err := rpc.Dial("tcp", *flagSlave)
 	if err != nil {
@@ -72,8 +75,17 @@ func newHub() *Hub {
 		log.Fatalf("failed to connect to master: %v", err)
 	}
 
-	// Fetch list of string and integer literals from testee.
-	strLits, intLits := fetchLiterals()
+	coverBlocks := make(map[int][]CoverBlock)
+	for _, b := range metadata.Blocks {
+		coverBlocks[b.ID] = append(coverBlocks[b.ID], b)
+	}
+	sonarSites := make([]SonarSite, len(metadata.Sonar))
+	for i, b := range metadata.Sonar {
+		if i != b.ID {
+			log.Fatalf("corrputed sonar metadata")
+		}
+		sonarSites[i].loc = fmt.Sprintf("%v:%v.%v,%v.%v", b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol)
+	}
 
 	hub := &Hub{
 		id:          res.ID,
@@ -87,11 +99,19 @@ func newHub() *Hub {
 	}
 
 	ro := &ROData{
-		maxCover:     make([]byte, dep.CoverSize),
+		maxCover:     make([]byte, CoverSize),
 		badInputs:    make(map[Sig]struct{}),
 		suppressions: make(map[Sig]struct{}),
-		strLits:      strLits,
-		intLits:      intLits,
+		coverBlocks:  coverBlocks,
+		sonarSites:   sonarSites,
+	}
+	// Prepare list of string and integer literals.
+	for _, lit := range metadata.Literals {
+		if lit.IsStr {
+			ro.strLits = append(ro.strLits, []byte(lit.Val))
+		} else {
+			ro.intLits = append(ro.intLits, []byte(lit.Val))
+		}
 	}
 	hub.ro.Store(ro)
 
@@ -122,7 +142,7 @@ func (hub *Hub) loop() {
 				ID:            hub.id,
 				Execs:         hub.stats.execs,
 				Restarts:      hub.stats.restarts,
-				CoverFullness: float64(hub.maxCoverSize) / dep.CoverSize,
+				CoverFullness: float64(hub.maxCoverSize) / CoverSize,
 			}
 			hub.stats.execs = 0
 			hub.stats.restarts = 0
@@ -184,7 +204,7 @@ func (hub *Hub) loop() {
 			input.score = defScore
 			input.runningScoreSum = scoreSum + defScore
 			ro1.corpus = append(ro1.corpus, input)
-			ro1.maxCover = make([]byte, dep.CoverSize)
+			ro1.maxCover = make([]byte, CoverSize)
 			copy(ro1.maxCover, ro.maxCover)
 			hub.maxCoverSize = updateMaxCover(ro1.maxCover, input.cover)
 			hub.ro.Store(ro1)
@@ -196,7 +216,7 @@ func (hub *Hub) loop() {
 			}
 
 			if *flagDumpCover {
-				dumpCover(filepath.Join(*flagWorkdir, "coverprofile"), *flagBin+".cover", ro1.maxCover)
+				dumpCover(filepath.Join(*flagWorkdir, "coverprofile"), ro.coverBlocks, ro1.maxCover)
 			}
 
 		case crash := <-hub.newCrasherC:
@@ -321,96 +341,4 @@ func (hub *Hub) updateScores() {
 		corpus[i].runningScoreSum = scoreSum
 	}
 	hub.ro.Store(ro1)
-}
-
-func updateMaxCover(base, cur []byte) int {
-	if len(base) != dep.CoverSize || len(cur) != dep.CoverSize {
-		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
-	}
-	cnt := 0
-	for i, x := range cur {
-		// Quantize the counters.
-		// Otherwise we get too inflated corpus.
-		if x == 0 {
-			x = 0
-		} else if x <= 1 {
-			x = 1
-		} else if x <= 2 {
-			x = 2
-		} else if x <= 4 {
-			x = 4
-		} else if x <= 8 {
-			x = 8
-		} else if x <= 16 {
-			x = 16
-		} else if x <= 32 {
-			x = 32
-		} else if x <= 64 {
-			x = 64
-		} else {
-			x = 255
-		}
-		v := base[i]
-		if v != 0 || x > 0 {
-			cnt++
-		}
-		if v < x {
-			base[i] = x
-		}
-	}
-	return cnt
-}
-
-func dumpCover(outf, metaf string, cover []byte) {
-	type Block struct {
-		File      string
-		StartLine int
-		StartCol  int
-		EndLine   int
-		EndCol    int
-		NumStmt   int
-	}
-	metadata, err := ioutil.ReadFile(metaf)
-	if err != nil {
-		log.Fatalf("failed to read coverage metadata: %v", err)
-	}
-	meta := make(map[string][]Block)
-	if err := json.Unmarshal(metadata, &meta); err != nil {
-		log.Fatalf("failed to unmarshal coverage metadata: %v", err)
-	}
-
-	// Exclude files that have no coverage at all.
-	files := make(map[string]bool)
-	for i, v := range cover {
-		if v == 0 {
-			continue
-		}
-		for _, b := range meta[strconv.Itoa(i)] {
-			files[b.File] = true
-		}
-	}
-
-	out, err := os.Create(outf)
-	if err != nil {
-		log.Fatalf("failed to create coverage file: %v", err)
-	}
-	defer out.Close()
-	const showCounters = false
-	if showCounters {
-		fmt.Fprintf(out, "mode: count\n")
-	} else {
-		fmt.Fprintf(out, "mode: set\n")
-	}
-	for i, v := range cover {
-		for _, b := range meta[strconv.Itoa(i)] {
-			if !files[b.File] {
-				continue
-			}
-			if !showCounters && v != 0 {
-				v = 1
-			}
-			fmt.Fprintf(out, "%s:%v.%v,%v.%v %v %v\n",
-				b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol, b.NumStmt, v)
-		}
-	}
 }

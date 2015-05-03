@@ -7,7 +7,7 @@ import (
 	"time"
 	"unsafe"
 
-	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 type Mutator struct {
@@ -347,7 +347,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			var lit []byte
-			if len(ro.intLits) == 0 || m.rand(2) == 0 {
+			if len(ro.strLits) != 0 && m.rand(2) == 0 {
 				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
 			} else {
 				lit = ro.intLits[m.rand(len(ro.intLits))]
@@ -368,7 +368,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			var lit []byte
-			if len(ro.intLits) == 0 || m.rand(2) == 0 {
+			if len(ro.strLits) != 0 && m.rand(2) == 0 {
 				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
 			} else {
 				lit = ro.intLits[m.rand(len(ro.intLits))]
@@ -384,8 +384,8 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			copy(res[pos:], lit)
 		}
 	}
-	if len(res) > dep.MaxInputSize {
-		res = res[:dep.MaxInputSize]
+	if len(res) > MaxInputSize {
+		res = res[:MaxInputSize]
 	}
 	return res
 }
