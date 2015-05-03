@@ -3,40 +3,35 @@ package gofuzzdep
 import (
 	"sync/atomic"
 	"unsafe"
+
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
-const (
-	SonarEQL = iota
-	SonarNEQ
-	SonarLSS
-	SonarGTR
-	SonarLEQ
-	SonarGEQ
+const failure = ^uint8(0)
 
-	SonarString = 1 << 5
-	SonarConst1 = 1 << 6
-	SonarConst2 = 1 << 7
-
-	SonarHdrLen = 3
-	SonarMaxLen = 20
-)
-
-func Sonar(v1, v2 interface{}, flags uint8) {
+// Sonar is called by instrumentation code to notify go-fuzz about comparisons.
+// Low 8 bits of id are flags, the rest is unique id of a comparison.
+func Sonar(v1, v2 interface{}, id uint32) {
 	var buf [SonarHdrLen + 2*SonarMaxLen]byte
-	if buf[1] = serialize(v1, buf[SonarHdrLen:]); buf[1] == 0 {
+	n1, f1 := serialize(v1, buf[SonarHdrLen:])
+	if n1 == failure {
 		return
 	}
-	if buf[2] = serialize(v2, buf[SonarHdrLen+buf[1]:]); buf[2] == 0 {
+	n2, f2 := serialize(v2, buf[SonarHdrLen+n1:])
+	if n2 == failure {
 		return
 	}
-	if _, ok := v1.(string); ok {
-		flags |= SonarString
+	if id&SonarConst1 != 0 {
+		f1 &^= SonarSigned
 	}
-	if _, ok := v2.(string); ok {
-		flags |= SonarString
+	if id&SonarConst2 != 0 {
+		f2 &^= SonarSigned
 	}
-	buf[0] = flags
-	n := uint32(SonarHdrLen + buf[1] + buf[2])
+	id |= uint32(f1 | f2)
+	serialize32(buf[:], id)
+	buf[4] = n1
+	buf[5] = n2
+	n := uint32(SonarHdrLen + n1 + n2)
 	pos := atomic.LoadUint32(&sonarPos)
 	for {
 		if pos+n > uint32(len(sonarRegion)) {
@@ -50,45 +45,45 @@ func Sonar(v1, v2 interface{}, flags uint8) {
 	copy(sonarRegion[pos:pos+n], buf[:])
 }
 
-func serialize(v interface{}, buf []byte) uint8 {
+func serialize(v interface{}, buf []byte) (n, flags uint8) {
 	switch vv := v.(type) {
 	case int8:
 		buf[0] = byte(vv)
-		return 1
+		return 1, SonarSigned
 	case uint8:
 		buf[0] = byte(vv)
-		return 1
+		return 1, 0
 	case int16:
-		return serialize16(buf, uint16(vv))
+		return serialize16(buf, uint16(vv)), SonarSigned
 	case uint16:
-		return serialize16(buf, vv)
+		return serialize16(buf, vv), 0
 	case int32:
-		return serialize32(buf, uint32(vv))
+		return serialize32(buf, uint32(vv)), SonarSigned
 	case uint32:
-		return serialize32(buf, vv)
+		return serialize32(buf, vv), 0
 	case int64:
-		return serialize64(buf, uint64(vv))
+		return serialize64(buf, uint64(vv)), SonarSigned
 	case uint64:
-		return serialize64(buf, vv)
+		return serialize64(buf, vv), 0
 	case int:
 		if unsafe.Sizeof(vv) == 4 {
-			return serialize32(buf, uint32(vv))
+			return serialize32(buf, uint32(vv)), SonarSigned
 		} else {
-			return serialize64(buf, uint64(vv))
+			return serialize64(buf, uint64(vv)), SonarSigned
 		}
 	case uint:
 		if unsafe.Sizeof(vv) == 4 {
-			return serialize32(buf, uint32(vv))
+			return serialize32(buf, uint32(vv)), 0
 		} else {
-			return serialize64(buf, uint64(vv))
+			return serialize64(buf, uint64(vv)), 0
 		}
 	case string:
 		if len(vv) > SonarMaxLen {
-			return 0
+			return failure, 0
 		}
-		return uint8(copy(buf, vv))
+		return uint8(copy(buf, vv)), SonarString
 	default:
-		return 0
+		return failure, 0
 	}
 }
 

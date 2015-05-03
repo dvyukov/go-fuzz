@@ -6,13 +6,11 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 const (
-	CoverSize       = 64 << 10
-	MaxInputSize    = 1 << 20
-	SonarRegionSize = 1 << 20
-
 	commFD = 3
 	inFD   = 4
 	outFD  = 5
@@ -26,17 +24,6 @@ var (
 )
 
 func init() {
-	if cmd, _ := syscall.Getenv("GO-FUZZ-CMD"); cmd != "" {
-		// The process is started to execute some driver command.
-		CoverTab = new([CoverSize]byte)
-		return
-	}
-
-	if cmd, _ := syscall.Getenv("GO-FUZZ-TEST"); cmd == "" {
-		// Not a test binary.
-		return
-	}
-
 	mem, err := syscall.Mmap(commFD, 0, CoverSize+MaxInputSize+SonarRegionSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
 		println("failed to mmap fd = 3 errno =", err.(syscall.Errno))
@@ -47,22 +34,7 @@ func init() {
 	sonarRegion = mem[CoverSize+MaxInputSize:]
 }
 
-func Main(f func([]byte) int, lits []string) {
-	if cmd, _ := syscall.Getenv("GO-FUZZ-CMD"); cmd != "" {
-		switch cmd {
-		case "literals":
-			write(commFD, uint64(len(lits)))
-			for _, lit := range lits {
-				write(commFD, uint64(len(lit)))
-				writeStr(commFD, lit)
-			}
-			syscall.Exit(0)
-		default:
-			println("unknown command")
-			syscall.Exit(1)
-		}
-	}
-
+func Main(f func([]byte) int) {
 	runtime.GOMAXPROCS(1) // makes coverage more deterministic, we parallelize on higher level
 	for {
 		n := read(inFD)
