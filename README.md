@@ -194,5 +194,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/Sereal/Sereal: 8 crashers](https://github.com/Sereal/Sereal/commit/c254cc3f2c48caffee6cd04ea8100a0150357a44)
 - [github.com/bradfitz/http2: Server.handleConn hangs](https://github.com/bradfitz/http2/issues/53)
 - [github.com/bradfitz/http2: nil pointer dereference in hpack.HuffmanDecode](https://github.com/bradfitz/http2/issues/56)
+- [github.com/bkaradzic/go-lz4: slice bounds out of range](https://github.com/bkaradzic/go-lz4/commit/b8d4dc7b31511bf5f39dfdb02d2ea7662eb8407c)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
