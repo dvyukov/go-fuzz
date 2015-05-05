@@ -348,15 +348,12 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 
 		// TODO: demote taken sites.
 		site := &ro.sonarSites[id]
-		if site.taken[0] > 1 && site.taken[1] > 1 || site.taken[0]+site.taken[1] > 5 {
+		if site.taken[0] > 10 && site.taken[1] > 10 || site.taken[0]+site.taken[1] > 100 {
 			// Already taken both ways enough times or tried enough times.
-			_ = rand.Intn
-			//if rand.Intn(100) != 0 {
-			//log.Printf("[%v] xxx smash=%v taken=%v/%v", id, smash, site.taken[0], site.taken[1])
-			continue
-			//}
+			if rand.Intn(1000) != 0 {
+				continue
+			}
 		}
-		//log.Printf("[%v] OOO smash=%v taken=%v/%v", id, smash, site.taken[0], site.taken[1])
 		if false {
 			// Debug output.
 			op := ""
