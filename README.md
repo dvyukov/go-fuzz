@@ -148,55 +148,55 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [fmt: index out of range](https://github.com/golang/go/issues/10675)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674)
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695)
-- [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272)
-- [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs]
+- [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
+- [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs] **fixed**
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415)
 - [encoding/gob: excessive memory consumption](https://github.com/golang/go/issues/10490)
-- [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491)
-- [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387)
-- [image/jpeg: index out of range](https://github.com/golang/go/issues/10388)
-- [image/jpeg: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10389)
-- [image/jpeg: Decode hangs](https://github.com/golang/go/issues/10413)
-- [image/jpeg: excessive memory usage](https://github.com/golang/go/issues/10532)
-- [image/png: slice bounds out of range](https://github.com/golang/go/issues/10414)
-- [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423)
-- [image/png: nil deref](https://github.com/golang/go/issues/10493)
+- [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491) **fixed**
+- [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387) **fixed**
+- [image/jpeg: index out of range](https://github.com/golang/go/issues/10388) **fixed**
+- [image/jpeg: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10389) **fixed**
+- [image/jpeg: Decode hangs](https://github.com/golang/go/issues/10413) **fixed**
+- [image/jpeg: excessive memory usage](https://github.com/golang/go/issues/10532) **fixed**
+- [image/png: slice bounds out of range](https://github.com/golang/go/issues/10414) **fixed**
+- [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423) **fixed**
+- [image/png: nil deref](https://github.com/golang/go/issues/10493) **fixed**
 - [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676)
-- [compress/flate: hang](https://github.com/golang/go/issues/10426)
-- [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10614)
+- [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
+- [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610)
-- [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611)
-- [html/template: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10612)
-- [html/template: runtime error: slice bounds out of range (2)](https://github.com/golang/go/issues/10613)
-- [html/template: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10615)
-- [html/template: panic: Call using zero Value argument](https://github.com/golang/go/issues/10634)
+- [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611) **fixed**
+- [html/template: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10612) **fixed**
+- [html/template: runtime error: slice bounds out of range (2)](https://github.com/golang/go/issues/10613) **fixed**
+- [html/template: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10615) **fixed**
+- [html/template: panic: Call using zero Value argument](https://github.com/golang/go/issues/10634) **fixed**
 - [html/template: nil pointer dereference](https://github.com/golang/go/issues/10673)
 - [x/image/webp: index out of range](https://github.com/golang/go/issues/10383)
 - [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384)
-- [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10393)
-- [x/image/tiff: index out of range](https://github.com/golang/go/issues/10394)
-- [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10395)
-- [x/image/tiff: index out of range](https://github.com/golang/go/issues/10597)
-- [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10596)
+- [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10393) **fixed**
+- [x/image/tiff: index out of range](https://github.com/golang/go/issues/10394) **fixed**
+- [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10395) **fixed**
+- [x/image/tiff: index out of range](https://github.com/golang/go/issues/10597) **fixed**
+- [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10596) **fixed**
 - [x/image/bmp: makeslice: len out of range](https://github.com/golang/go/issues/10396)
 - [x/image/bmp: out of memory](https://github.com/golang/go/issues/10399)
 - [x/net/html: void element <link> has child nodes](https://github.com/golang/go/issues/10535)
-- [x/net/spdy: unexpected EOF](https://github.com/golang/go/issues/10539)
-- [x/net/spdy: EOF](https://github.com/golang/go/issues/10540)
-- [x/net/spdy: fatal error: runtime: out of memory](https://github.com/golang/go/issues/10542)
-- [x/net/spdy: stream id zero is disallowed](https://github.com/golang/go/issues/10543)
-- [x/net/spdy: processing of 35 bytes takes 7 seconds](https://github.com/golang/go/issues/10544)
-- [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545)
-- [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547)
-- [github.com/golang/protobuf: Umarshal crashes with "call of reflect.Value.SetMapIndex on zero Value"](https://github.com/golang/protobuf/issues/27)
+- [x/net/spdy: unexpected EOF](https://github.com/golang/go/issues/10539) **fixed**
+- [x/net/spdy: EOF](https://github.com/golang/go/issues/10540) **fixed**
+- [x/net/spdy: fatal error: runtime: out of memory](https://github.com/golang/go/issues/10542) **fixed**
+- [x/net/spdy: stream id zero is disallowed](https://github.com/golang/go/issues/10543) **fixed**
+- [x/net/spdy: processing of 35 bytes takes 7 seconds](https://github.com/golang/go/issues/10544) **fixed**
+- [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545) **fixed**
+- [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547) **fixed**
+- [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [code.google.com/p/freetype-go: 42 crashers](https://code.google.com/p/freetype-go/issues/detail?id=17) [42 bugs]
 - [github.com/cryptix/wav: 2 panics in header decoding](https://github.com/cryptix/wav/commit/2f49a0df0d213ee323f694e7bdee8b8a097dc698#diff-f86b763600291cbceee077a33133434a)
-- [github.com/spf13/hugo: 5 crashers](https://github.com/spf13/hugo/search?q=go-fuzz&type=Issues)
+- [github.com/spf13/hugo: 7 crashers](https://github.com/spf13/hugo/search?q=go-fuzz&type=Issues) **7 fixed**
 - [github.com/Sereal/Sereal: 8 crashers](https://github.com/Sereal/Sereal/commit/c254cc3f2c48caffee6cd04ea8100a0150357a44)
 - [github.com/bradfitz/http2: Server.handleConn hangs](https://github.com/bradfitz/http2/issues/53)
 - [github.com/bradfitz/http2: nil pointer dereference in hpack.HuffmanDecode](https://github.com/bradfitz/http2/issues/56)
-- [github.com/bkaradzic/go-lz4: slice bounds out of range](https://github.com/bkaradzic/go-lz4/commit/b8d4dc7b31511bf5f39dfdb02d2ea7662eb8407c)
-- [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/332853ab7b3c719dd67c657394139491c1f6deb7)
-- [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72)
+- [github.com/bkaradzic/go-lz4: slice bounds out of range](https://github.com/bkaradzic/go-lz4/commit/b8d4dc7b31511bf5f39dfdb02d2ea7662eb8407c) **fixed**
+- [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/332853ab7b3c719dd67c657394139491c1f6deb7) **fixed**
+- [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
