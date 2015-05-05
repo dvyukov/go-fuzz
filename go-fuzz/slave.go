@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"strings"
@@ -19,6 +20,18 @@ import (
 	"time"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+)
+
+const (
+	execMinimizeInput = iota
+	execMinimizeCrasher
+	execTriageInput
+	execFuzz
+	execSmash
+	execSonar
+	execSonarHint
+	execTotal
+	execCount
 )
 
 // Slave manages one testee.
@@ -35,6 +48,7 @@ type Slave struct {
 
 	lastSync time.Time
 	stats    Stats
+	execs    [execCount]uint64
 }
 
 type Input struct {
@@ -151,12 +165,12 @@ func (s *Slave) loop() {
 			continue
 		}
 		data, depth := s.mutator.generate(ro)
-		if iter%100 != 0 {
-			s.testInput(data, depth)
+		if iter%1000 != 0 {
+			s.testInput(data, depth, execFuzz)
 		} else {
 			// TODO: ensure that generated inputs does not actually take 99% of time.
 			sonar := s.testInputSonar(data, depth)
-			s.processSonarData(data, sonar, depth)
+			s.processSonarData(data, sonar, depth, false)
 		}
 	}
 	s.shutdown()
@@ -166,7 +180,6 @@ func (s *Slave) loop() {
 // It calculates per-input metrics like execution time, coverage mask,
 // and minimizes the input to the minimal input with the same coverage.
 func (s *Slave) triageInput(input MasterInput) {
-	ro := s.hub.ro.Load().(*ROData)
 	inp := Input{
 		data:     input.Data,
 		depth:    int(input.Prio),
@@ -174,6 +187,7 @@ func (s *Slave) triageInput(input MasterInput) {
 	}
 	// Calculate min exec time, min coverage and max result of 3 runs.
 	for i := 0; i < 3; i++ {
+		s.execs[execTriageInput]++
 		res, ns, cover, _, output, crashed, hanged := s.coverBin.test(inp.data)
 		if crashed {
 			// Inputs in corpus should not crash.
@@ -199,11 +213,6 @@ func (s *Slave) triageInput(input MasterInput) {
 		}
 	}
 	if !input.Minimized {
-		newCover, newCount := compareCover(ro.maxCover, inp.cover)
-		if !newCover && !newCount {
-			// Probably already covered this by another new input.
-			return
-		}
 		inp.mine = true
 		inp.data = s.minimizeInput(inp.data, false, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if crashed {
@@ -253,6 +262,10 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 	res := make([]byte, len(data))
 	copy(res, data)
 	start := time.Now()
+	stat := &s.execs[execMinimizeInput]
+	if canonicalize {
+		stat = &s.execs[execMinimizeCrasher]
+	}
 
 	// First, try to cut tail.
 	for n := 1024; n != 0; n /= 2 {
@@ -261,6 +274,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 				return res
 			}
 			candidate := res[:len(res)-n]
+			*stat++
 			result, _, cover, _, output, crashed, hanged := s.coverBin.test(candidate)
 			if !pred(candidate, cover, output, result, crashed, hanged) {
 				break
@@ -275,6 +289,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 		candidate := tmp[:len(res)-1]
 		copy(candidate[:i], res[:i])
 		copy(candidate[i:], res[i+1:])
+		*stat++
 		result, _, cover, _, output, crashed, hanged := s.coverBin.test(candidate)
 		if !pred(candidate, cover, output, result, crashed, hanged) {
 			continue
@@ -296,6 +311,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 			candidate := tmp[:len(res)]
 			copy(candidate, res)
 			candidate[i] = '0'
+			*stat++
 			result, _, cover, _, output, crashed, hanged := s.coverBin.test(candidate)
 			if !pred(candidate, cover, output, result, crashed, hanged) {
 				continue
@@ -311,7 +327,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 	return res
 }
 
-func (s *Slave) processSonarData(data, sonar []byte, depth int) {
+func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 	ro := s.hub.ro.Load().(*ROData)
 	updated := false
 	checked := make(map[string]struct{})
@@ -332,47 +348,57 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 
 		// TODO: demote taken sites.
 		site := &ro.sonarSites[id]
-		op := ""
-		switch flags & 7 {
-		case SonarEQL:
-			op = "=="
-		case SonarNEQ:
-			op = "!="
-		case SonarLSS:
-			op = "<"
-		case SonarGTR:
-			op = ">"
-		case SonarLEQ:
-			op = "<="
-		case SonarGEQ:
-			op = ">="
-		default:
-			log.Fatalf("bad")
+		if site.taken[0] > 1 && site.taken[1] > 1 || site.taken[0]+site.taken[1] > 5 {
+			// Already taken both ways enough times or tried enough times.
+			_ = rand.Intn
+			//if rand.Intn(100) != 0 {
+			//log.Printf("[%v] xxx smash=%v taken=%v/%v", id, smash, site.taken[0], site.taken[1])
+			continue
+			//}
 		}
-		sign := ""
-		if flags&SonarSigned != 0 {
-			sign = "(signed)"
-		}
-		isstr := ""
-		if flags&SonarString != 0 {
-			isstr = "(string)"
-		}
-		const1 := ""
-		if flags&SonarConst1 != 0 {
-			const1 = "c"
-		}
-		const2 := ""
-		if flags&SonarConst2 != 0 {
-			const2 = "c"
-		}
+		//log.Printf("[%v] OOO smash=%v taken=%v/%v", id, smash, site.taken[0], site.taken[1])
 		if false {
+			// Debug output.
+			op := ""
+			switch flags & 7 {
+			case SonarEQL:
+				op = "=="
+			case SonarNEQ:
+				op = "!="
+			case SonarLSS:
+				op = "<"
+			case SonarGTR:
+				op = ">"
+			case SonarLEQ:
+				op = "<="
+			case SonarGEQ:
+				op = ">="
+			default:
+				log.Fatalf("bad")
+			}
+			sign := ""
+			if flags&SonarSigned != 0 {
+				sign = "(signed)"
+			}
+			isstr := ""
+			if flags&SonarString != 0 {
+				isstr = "(string)"
+			}
+			const1 := ""
+			if flags&SonarConst1 != 0 {
+				const1 = "c"
+			}
+			const2 := ""
+			if flags&SonarConst2 != 0 {
+				const2 = "c"
+			}
 			log.Printf("SONAR %v%v %v %v%v %v%v %v[%v]",
 				hex.EncodeToString(v1), const1, op, hex.EncodeToString(v2), const2, sign, isstr,
 				site.loc, id)
 		}
 
 		if flags&SonarString == 0 {
-			//l1, l2 := len(v1), len(v2)
+			// Trim trailing 0x00 and 0xff bytes (we don't know exact size of operands).
 			for len(v1) > 0 || len(v2) > 0 {
 				i := len(v1) - 1
 				if len(v2) > len(v1) {
@@ -397,29 +423,23 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 				break
 			}
 		}
-		res := evaluate(flags, v1, v2)
-		if !res && site.taken&1 == 0 || res && site.taken&2 == 0 {
+		res := 0
+		if evaluate(flags, v1, v2) {
+			res = 1
+		}
+		if atomic.AddUint32(&site.taken[res], 1) == 1 {
 			updated = true
-			if false {
-				log.Printf("SONAR %v %v%v %v %v%v %v%v %v[%v]",
-					res, hex.EncodeToString(v1), const1, op, hex.EncodeToString(v2), const2, sign, isstr,
-					site.loc, id)
-			}
 		}
-		if !res {
-			site.taken |= 1
-		} else {
-			site.taken |= 2
-		}
-
-		if bytes.Equal(v1, v2) {
+		if smash && bytes.Equal(v1, v2) {
+			// We systematically mutate all bytes during smashing,
+			// no point in trying to break equality here.
 			continue
 		}
 		check := func(v1, v2 []byte) {
-			if len(v1) == 0 {
+			if len(v1) == 0 || bytes.Equal(v1, v2) {
 				return
 			}
-			vv := string(v1) + "\t\t\t" + string(v2)
+			vv := string(v1) + "\t|\t" + string(v2)
 			if _, ok := checked[vv]; ok {
 				return
 			}
@@ -436,7 +456,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 				copy(tmp, data[:i])
 				copy(tmp[i:], v2)
 				copy(tmp[i+len(v2):], data[i+len(v1):])
-				s.testInput(tmp, depth+1)
+				s.testInput(tmp, depth+1, execSonarHint)
 				if flags&SonarString != 0 && len(v1) != len(v2) {
 					// Update length field.
 					// TODO: handle multi-byte/big-endian length fields.
@@ -444,7 +464,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 					for idx := i - 1; idx >= 0 && idx+5 >= i; idx-- {
 						//tmp1 := append([]byte{}, tmp...)
 						tmp[idx] += diff
-						s.testInput(tmp, depth+1)
+						s.testInput(tmp, depth+1, execSonarHint)
 						tmp[idx] -= diff
 					}
 				}
@@ -454,7 +474,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 			check(v1, v2)
 			if flags&SonarString == 0 {
 				// Increment and decrement take care of less and greater comparison operators
-				// as well as of off-by-ones.
+				// as well as of off-by-one bugs.
 				check(v1, increment(v2))
 				check(v1, decrement(v2))
 				if len(v1) > 1 {
@@ -480,7 +500,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int) {
 	if updated && *flagDumpCover {
 		dumpMu.Lock()
 		defer dumpMu.Unlock()
-		dumpSonar(filepath.Join(*flagWorkdir, "sonarrofile"), ro.sonarSites)
+		dumpSonar(filepath.Join(*flagWorkdir, "sonarprofile"), ro.sonarSites)
 	}
 }
 
@@ -577,7 +597,7 @@ func (s *Slave) smash(data []byte, depth int) {
 	// Figure out what to do here.
 
 	sonar := s.testInputSonar(data, depth)
-	s.processSonarData(data, sonar, depth)
+	s.processSonarData(data, sonar, depth, true)
 
 	_ = suffixarray.New
 	/*
@@ -592,7 +612,7 @@ func (s *Slave) smash(data []byte, depth int) {
 						copy(tmp, data[:pos])
 						copy(tmp[pos:], lit1)
 						copy(tmp[pos+len(lit1):], data[pos+len(lit):])
-						s.testInput(tmp, depth)
+						s.testInput(tmp, depth, execSmash)
 					}
 				}
 			}
@@ -605,7 +625,7 @@ func (s *Slave) smash(data []byte, depth int) {
 					tmp := make([]byte, len(lit))
 					copy(tmp, data[pos:])
 					copy(data[pos:], lit1)
-					s.testInput(data, depth)
+					s.testInput(data, depth, execSmash)
 					copy(data[pos:], tmp)
 				}
 			}
@@ -623,7 +643,7 @@ func (s *Slave) smash(data []byte, depth int) {
 					tmp := make([]byte, len(lit))
 					copy(tmp, data[pos:])
 					copy(data[pos:], lit1)
-					s.testInput(data, depth)
+					s.testInput(data, depth, execSmash)
 					copy(data[pos:], tmp)
 				}
 			}
@@ -633,7 +653,7 @@ func (s *Slave) smash(data []byte, depth int) {
 	// Stage 0: flip each bit one-by-one.
 	for i := 0; i < len(data)*8; i++ {
 		data[i/8] ^= 1 << uint(i%8)
-		s.testInput(data, depth)
+		s.testInput(data, depth, execSmash)
 		data[i/8] ^= 1 << uint(i%8)
 	}
 
@@ -642,7 +662,7 @@ func (s *Slave) smash(data []byte, depth int) {
 		for i := 0; i < len(data)*8-1; i++ {
 			data[i/8] ^= 1 << uint(i%8)
 			data[(i+1)/8] ^= 1 << uint((i+1)%8)
-			s.testInput(data, depth)
+			s.testInput(data, depth, execSmash)
 			data[i/8] ^= 1 << uint(i%8)
 			data[(i+1)/8] ^= 1 << uint((i+1)%8)
 		}
@@ -653,7 +673,7 @@ func (s *Slave) smash(data []byte, depth int) {
 			data[(i+1)/8] ^= 1 << uint((i+1)%8)
 			data[(i+2)/8] ^= 1 << uint((i+2)%8)
 			data[(i+3)/8] ^= 1 << uint((i+3)%8)
-			s.testInput(data, depth)
+			s.testInput(data, depth, execSmash)
 			data[i/8] ^= 1 << uint(i%8)
 			data[(i+1)/8] ^= 1 << uint((i+1)%8)
 			data[(i+2)/8] ^= 1 << uint((i+2)%8)
@@ -664,7 +684,7 @@ func (s *Slave) smash(data []byte, depth int) {
 	// Stage 3: byte flip.
 	for i := 0; i < len(data); i++ {
 		data[i] ^= 0xff
-		s.testInput(data, depth)
+		s.testInput(data, depth, execSmash)
 		data[i] ^= 0xff
 	}
 
@@ -673,7 +693,7 @@ func (s *Slave) smash(data []byte, depth int) {
 		for i := 0; i < len(data)-1; i++ {
 			data[i] ^= 0xff
 			data[i+1] ^= 0xff
-			s.testInput(data, depth)
+			s.testInput(data, depth, execSmash)
 			data[i] ^= 0xff
 			data[i+1] ^= 0xff
 		}
@@ -684,7 +704,7 @@ func (s *Slave) smash(data []byte, depth int) {
 			data[i+1] ^= 0xff
 			data[i+2] ^= 0xff
 			data[i+3] ^= 0xff
-			s.testInput(data, depth)
+			s.testInput(data, depth, execSmash)
 			data[i] ^= 0xff
 			data[i+1] ^= 0xff
 			data[i+2] ^= 0xff
@@ -702,7 +722,7 @@ func (s *Slave) smash(data []byte, depth int) {
 	// Trim after every byte.
 	for i := 1; i < len(data); i++ {
 		tmp := data[:i]
-		s.testInput(tmp, depth)
+		s.testInput(tmp, depth, execSmash)
 	}
 
 	// Insert a byte after every byte.
@@ -711,42 +731,48 @@ func (s *Slave) smash(data []byte, depth int) {
 		copy(tmp, data[:i])
 		copy(tmp[i+1:], data[i:])
 		tmp[i] = 0
-		s.testInput(tmp, depth)
+		s.testInput(tmp, depth, execSmash)
 		tmp[i] = 'a'
-		s.testInput(tmp, depth)
+		s.testInput(tmp, depth, execSmash)
 	}
 
 	// Do a bunch of random mutations so that this input catches up with the rest.
 	for i := 0; i < 1e4; i++ {
 		tmp := s.mutator.mutate(data, ro)
-		s.testInput(tmp, depth+1)
+		s.testInput(tmp, depth+1, execFuzz)
 	}
 }
 
-func (s *Slave) testInput(data []byte, depth int) {
-	s.testInputImpl(s.coverBin, data, depth)
+func (s *Slave) testInput(data []byte, depth, typ int) {
+	s.testInputImpl(s.coverBin, data, depth, typ)
 }
 
 func (s *Slave) testInputSonar(data []byte, depth int) (sonar []byte) {
-	return s.testInputImpl(s.sonarBin, data, depth)
+	return s.testInputImpl(s.sonarBin, data, depth, execSonar)
 }
 
-func (s *Slave) testInputImpl(bin *TestBinary, data []byte, depth int) (sonar []byte) {
+func (s *Slave) testInputImpl(bin *TestBinary, data []byte, depth, typ int) (sonar []byte) {
 	ro := s.hub.ro.Load().(*ROData)
 	if len(ro.badInputs) > 0 {
 		if _, ok := ro.badInputs[hash(data)]; ok {
 			return nil // no, thanks
 		}
 	}
+	s.execs[typ]++
 	_, _, cover, sonar, output, crashed, hanged := bin.test(data)
 	if crashed {
 		s.noteCrasher(data, output, hanged)
 		return nil
 	}
+	ro = s.hub.ro.Load().(*ROData)
 	newCover, newCount := compareCover(ro.maxCover, cover)
 	if !newCover && !newCount {
 		return sonar
 	}
+	// Preliminary coverage update, so that we don't rediscover the same new coverage
+	// over and over again in short succession.
+	s.hub.newCoverC <- append([]byte{}, cover...)
+
 	// TODO: give more priority for newCover
 	s.triageQueue = append(s.triageQueue, MasterInput{append([]byte{}, data...), uint64(depth), false, false})
 	return sonar
@@ -774,10 +800,18 @@ func (s *Slave) periodicCheck() {
 	if time.Since(s.lastSync) < syncPeriod {
 		return
 	}
+	s.execs[execTotal] += s.stats.execs
 	s.lastSync = time.Now()
 	s.hub.syncC <- s.stats
 	s.stats.execs = 0
 	s.stats.restarts = 0
+	if *flagV >= 1 {
+		log.Printf("slave %v: triageq=%v execs=%v mininp=%v mincrash=%v triage=%v fuzz=%v smash=%v sonar=%v hint=%v",
+			s.id, len(s.triageQueue),
+			s.execs[execTotal], s.execs[execMinimizeInput], s.execs[execMinimizeCrasher],
+			s.execs[execTriageInput], s.execs[execFuzz], s.execs[execSmash],
+			s.execs[execSonar], s.execs[execSonarHint])
+	}
 }
 
 // shutdown cleanups after slave, it is not guaranteed to be called.
