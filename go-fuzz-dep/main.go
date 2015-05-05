@@ -10,13 +10,10 @@ import (
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
-const (
-	commFD = 3
-	inFD   = 4
-	outFD  = 5
-)
-
 var (
+	inFD  FD
+	outFD FD
+
 	CoverTab    *[CoverSize]byte
 	input       []byte
 	sonarRegion []byte
@@ -24,11 +21,8 @@ var (
 )
 
 func init() {
-	mem, err := syscall.Mmap(commFD, 0, CoverSize+MaxInputSize+SonarRegionSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
-	if err != nil {
-		println("failed to mmap fd = 3 errno =", err.(syscall.Errno))
-		syscall.Exit(1)
-	}
+	var mem []byte
+	mem, inFD, outFD = setupCommFile()
 	CoverTab = (*[CoverSize]byte)(unsafe.Pointer(&mem[0]))
 	input = mem[CoverSize : CoverSize+MaxInputSize]
 	sonarRegion = mem[CoverSize+MaxInputSize:]
@@ -54,11 +48,11 @@ func Main(f func([]byte) int) {
 }
 
 // read reads little-endian-encoded uint64 from fd.
-func read(fd int) uint64 {
+func read(fd FD) uint64 {
 	rd := 0
 	var buf [8]byte
 	for rd != len(buf) {
-		n, err := syscall.Read(fd, buf[rd:])
+		n, err := fd.read(buf[rd:])
 		if err == syscall.EINTR {
 			continue
 		}
@@ -75,7 +69,7 @@ func read(fd int) uint64 {
 }
 
 // write writes little-endian-encoded vals... to fd.
-func write(fd int, vals ...uint64) {
+func write(fd FD, vals ...uint64) {
 	var tmp [3 * 8]byte
 	buf := tmp[:len(vals)*8]
 	for i, v := range vals {
@@ -86,7 +80,7 @@ func write(fd int, vals ...uint64) {
 	}
 	wr := 0
 	for wr != len(buf) {
-		n, err := syscall.Write(fd, buf[wr:])
+		n, err := fd.write(buf[wr:])
 		if err == syscall.EINTR {
 			continue
 		}
@@ -99,11 +93,11 @@ func write(fd int, vals ...uint64) {
 }
 
 // writeStr writes strings s to fd.
-func writeStr(fd int, s string) {
+func writeStr(fd FD, s string) {
 	buf := []byte(s)
 	wr := 0
 	for wr != len(buf) {
-		n, err := syscall.Write(fd, buf[wr:])
+		n, err := fd.write(buf[wr:])
 		if err == syscall.EINTR {
 			continue
 		}

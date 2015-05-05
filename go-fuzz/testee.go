@@ -34,6 +34,7 @@ type Testee struct {
 type TestBinary struct {
 	fileName      string
 	commFile      string
+	comm          *Mapping
 	periodicCheck func()
 
 	coverRegion []byte
@@ -52,17 +53,12 @@ func newTestBinary(fileName string, periodicCheck func(), stats *Stats) *TestBin
 	}
 	comm.Truncate(CoverSize + MaxInputSize + SonarRegionSize)
 	comm.Close()
-	fd, err := syscall.Open(comm.Name(), syscall.O_RDWR, 0)
-	if err != nil {
-		log.Fatalf("failed to open comm file: %v", err)
-	}
-	mem, err := syscall.Mmap(fd, 0, CoverSize+MaxInputSize+SonarRegionSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
-	if err != nil {
-		log.Fatalf("failed to mmap comm file: %v", err)
-	}
+	mapping := createMapping(comm.Name())
+	mem := mapping.mmap(CoverSize + MaxInputSize + SonarRegionSize)
 	return &TestBinary{
 		fileName:      fileName,
 		commFile:      comm.Name(),
+		comm:          mapping,
 		periodicCheck: periodicCheck,
 		coverRegion:   mem[:CoverSize],
 		inputRegion:   mem[CoverSize : CoverSize+SonarRegionSize],
@@ -76,6 +72,7 @@ func (bin *TestBinary) close() {
 		bin.testee.shutdown()
 		bin.testee = nil
 	}
+	bin.comm.destroy()
 	os.Remove(bin.commFile)
 }
 
@@ -88,7 +85,7 @@ func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, outp
 		bin.stats.execs++
 		if bin.testee == nil {
 			bin.stats.restarts++
-			bin.testee = newTestee(bin.fileName, bin.commFile, bin.coverRegion, bin.inputRegion, bin.sonarRegion)
+			bin.testee = newTestee(bin.fileName, bin.comm, bin.coverRegion, bin.inputRegion, bin.sonarRegion)
 		}
 		var retry bool
 		res, ns, cover, sonar, crashed, hanged, retry = bin.testee.test(data)
@@ -106,7 +103,7 @@ func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, outp
 	}
 }
 
-func newTestee(bin, commFile string, coverRegion, inputRegion, sonarRegion []byte) *Testee {
+func newTestee(bin string, comm *Mapping, coverRegion, inputRegion, sonarRegion []byte) *Testee {
 retry:
 	rIn, wIn, err := os.Pipe()
 	if err != nil {
@@ -120,18 +117,12 @@ retry:
 	if err != nil {
 		log.Fatalf("failed to pipe: %v", err)
 	}
-	comm, err := os.OpenFile(commFile, os.O_RDWR, 0)
-	if err != nil {
-		log.Fatalf("failed to open comm file: %v", err)
-	}
 	cmd := exec.Command(bin)
 	cmd.Stdout = wStdout
 	cmd.Stderr = wStdout
-	cmd.ExtraFiles = append(cmd.ExtraFiles, comm)
-	cmd.ExtraFiles = append(cmd.ExtraFiles, rOut)
-	cmd.ExtraFiles = append(cmd.ExtraFiles, wIn)
 	cmd.Env = append([]string{}, os.Environ()...)
 	cmd.Env = append(cmd.Env, "GOTRACEBACK=1")
+	setupCommMapping(cmd, comm, rOut, wIn)
 	if err = cmd.Start(); err != nil {
 		// This can be a transient failure like "cannot allocate memory" or "text file is busy".
 		log.Printf("failed to start test binary: %v", err)
@@ -141,14 +132,12 @@ retry:
 		wOut.Close()
 		rStdout.Close()
 		wStdout.Close()
-		comm.Close()
 		time.Sleep(time.Second)
 		goto retry
 	}
 	rOut.Close()
 	wIn.Close()
 	wStdout.Close()
-	comm.Close()
 	t := &Testee{
 		coverRegion: coverRegion,
 		inputRegion: inputRegion,
