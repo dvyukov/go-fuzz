@@ -146,6 +146,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 ## Trophies
 
 - [fmt: index out of range](https://github.com/golang/go/issues/10675)
+- [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674)
+- [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695)
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272)
 - [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs]
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415)
@@ -162,7 +164,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676)
 - [compress/flate: hang](https://github.com/golang/go/issues/10426)
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10614)
-- [text/template: hang on invalid input](https://github.com/golang/go/issues/10674)
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610)
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611)
 - [html/template: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10612)
