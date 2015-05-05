@@ -30,14 +30,15 @@ type Hub struct {
 	ro atomic.Value // *ROData
 
 	maxCoverSize int
-	corpus       []Input
 	corpusSigs   map[Sig]struct{}
+	corpusCover  []byte
 	corpusStale  bool
 	triageQueue  []MasterInput
 
 	triageC     chan MasterInput
 	newInputC   chan Input
 	newCrasherC chan NewCrasherArgs
+	newCoverC   chan []byte
 	syncC       chan Stats
 
 	stats Stats
@@ -55,8 +56,8 @@ type ROData struct {
 }
 
 type SonarSite struct {
-	loc   string
-	taken uint32
+	loc   string    // file:line.pos,line.pos
+	taken [2]uint32 // number of times condition evaluated to false/true
 }
 
 type Stats struct {
@@ -90,11 +91,13 @@ func newHub(metadata MetaData) *Hub {
 	hub := &Hub{
 		id:          res.ID,
 		master:      c,
+		corpusCover: make([]byte, CoverSize),
 		corpusSigs:  make(map[Sig]struct{}),
 		triageQueue: res.Corpus,
 		triageC:     make(chan MasterInput, procs),
 		newInputC:   make(chan Input, procs),
 		newCrasherC: make(chan NewCrasherArgs, procs),
+		newCoverC:   make(chan []byte, procs),
 		syncC:       make(chan Stats, procs),
 	}
 
@@ -179,7 +182,7 @@ func (hub *Hub) loop() {
 		case input := <-hub.newInputC:
 			// New interesting input from slaves.
 			ro := hub.ro.Load().(*ROData)
-			newCover, newCount := compareCover(ro.maxCover, input.cover)
+			newCover, newCount := compareCover(hub.corpusCover, input.cover)
 			if !newCover && !newCount {
 				break
 			}
@@ -204,9 +207,9 @@ func (hub *Hub) loop() {
 			input.score = defScore
 			input.runningScoreSum = scoreSum + defScore
 			ro1.corpus = append(ro1.corpus, input)
-			ro1.maxCover = make([]byte, CoverSize)
-			copy(ro1.maxCover, ro.maxCover)
-			hub.maxCoverSize = updateMaxCover(ro1.maxCover, input.cover)
+			ro1.maxCover = append([]byte{}, ro.maxCover...)
+			updateMaxCover(ro1.maxCover, input.cover)
+			hub.maxCoverSize = updateMaxCover(hub.corpusCover, input.cover)
 			hub.ro.Store(ro1)
 
 			if input.mine {
@@ -216,7 +219,7 @@ func (hub *Hub) loop() {
 			}
 
 			if *flagDumpCover {
-				dumpCover(filepath.Join(*flagWorkdir, "coverprofile"), ro.coverBlocks, ro1.maxCover)
+				dumpCover(filepath.Join(*flagWorkdir, "coverprofile"), ro.coverBlocks, hub.corpusCover)
 			}
 
 		case crash := <-hub.newCrasherC:
@@ -242,6 +245,19 @@ func (hub *Hub) loop() {
 			if err := hub.master.Call("Master.NewCrasher", crash, nil); err != nil {
 				log.Printf("new crasher call failed: %v", err)
 			}
+
+		case cover := <-hub.newCoverC:
+			// Preliminary cover update (to prevent new input thundering herd.
+			ro := hub.ro.Load().(*ROData)
+			newCover, newCount := compareCover(ro.maxCover, cover)
+			if !newCover && !newCount {
+				break
+			}
+			ro1 := new(ROData)
+			*ro1 = *ro
+			ro1.maxCover = append([]byte{}, ro.maxCover...)
+			updateMaxCover(ro1.maxCover, cover)
+			hub.ro.Store(ro1)
 		}
 	}
 }

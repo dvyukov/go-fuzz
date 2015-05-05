@@ -123,10 +123,10 @@ func dumpSonar(outf string, sites []SonarSite) {
 	for _, s := range sites {
 		cnt := 1
 		stmt := 1
-		if s.taken == 0 {
+		if s.taken[0] == 0 && s.taken[1] == 0 {
 			stmt = 0
 			cnt = 0
-		} else if s.taken == 3 {
+		} else if s.taken[0] > 0 && s.taken[1] > 0 {
 			cnt = 100
 		}
 		fmt.Fprintf(out, "%v %v %v\n", s.loc, stmt, cnt)
