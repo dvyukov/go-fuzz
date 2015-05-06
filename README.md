@@ -164,7 +164,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676)
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
-- [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610)
+- [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610) **fixed**
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611) **fixed**
 - [html/template: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10612) **fixed**
 - [html/template: runtime error: slice bounds out of range (2)](https://github.com/golang/go/issues/10613) **fixed**
