@@ -161,7 +161,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/png: slice bounds out of range](https://github.com/golang/go/issues/10414) **fixed**
 - [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423) **fixed**
 - [image/png: nil deref](https://github.com/golang/go/issues/10493) **fixed**
-- [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676)
+- [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676) **fixed**
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610) **fixed**
