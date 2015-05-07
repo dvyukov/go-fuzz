@@ -56,7 +56,7 @@ func main() {
 
 	runtime.GOMAXPROCS(min(*flagProcs, runtime.NumCPU()))
 	debug.SetGCPercent(50) // most memory is in large binary blobs
-	syscall.Setpriority(syscall.PRIO_PROCESS, 0, 19)
+	lowerProcessPrio()
 
 	if *flagMaster != "" || *flagSlave == "" {
 		if *flagCorpus == "" {

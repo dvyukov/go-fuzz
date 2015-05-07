@@ -9,24 +9,24 @@ import (
 	"syscall"
 )
 
+func lowerProcessPrio() {
+	syscall.Setpriority(syscall.PRIO_PROCESS, 0, 19)
+}
+
 type Mapping struct {
 	f *os.File
 }
 
-func createMapping(name string) *Mapping {
+func createMapping(name string, size int) (*Mapping, []byte) {
 	f, err := os.OpenFile(name, os.O_RDWR, 0)
 	if err != nil {
 		log.Fatalf("failed to open comm file: %v", err)
 	}
-	return &Mapping{f}
-}
-
-func (m *Mapping) mmap(size int) []byte {
-	mem, err := syscall.Mmap(int(m.f.Fd()), 0, size, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
+	mem, err := syscall.Mmap(int(f.Fd()), 0, size, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
 	if err != nil {
 		log.Fatalf("failed to mmap comm file: %v", err)
 	}
-	return mem
+	return &Mapping{f}, mem
 }
 
 func (m *Mapping) destroy() {

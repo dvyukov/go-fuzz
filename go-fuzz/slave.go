@@ -86,7 +86,7 @@ func slaveMain() {
 			}
 			f.Close()
 			os.Remove(f.Name())
-			f, err = os.OpenFile(f.Name(), os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0700)
+			f, err = os.OpenFile(f.Name()+".exe", os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0700)
 			if err != nil {
 				log.Fatalf("failed to create temp file: %v", err)
 			}
@@ -95,12 +95,12 @@ func slaveMain() {
 			}
 			f.Close()
 			switch zipf.Name {
-			case "cover.bin":
+			case "cover.exe":
 				coverBin = f.Name()
-			case "sonar.bin":
+			case "sonar.exe":
 				sonarBin = f.Name()
 			default:
-				log.Fatalf("unknown file '%v' in input archive", f.Name)
+				log.Fatalf("unknown file '%v' in input archive", f.Name())
 			}
 		}
 		r.Close()

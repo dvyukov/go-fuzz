@@ -67,6 +67,11 @@ func main() {
 	deps["syscall"] = true
 	deps["time"] = true
 	deps["unsafe"] = true
+	if runtime.GOOS == "windows" {
+		// syscall depends on unicode/utf16.
+		// Cross-compilation is not implemented.
+		deps["unicode/utf16"] = true
+	}
 
 	lits := make(map[Literal]struct{})
 	var blocks, sonar []CoverBlock
@@ -96,8 +101,8 @@ func main() {
 			failf("failed to write to zip file: %v", err)
 		}
 	}
-	zipFile("cover.bin", coverBin)
-	zipFile("sonar.bin", sonarBin)
+	zipFile("cover.exe", coverBin)
+	zipFile("sonar.exe", sonarBin)
 	zipFile("metadata", metaData)
 	if err := zipw.Close(); err != nil {
 		failf("failed to close zip file: %v", err)
@@ -123,7 +128,7 @@ func testNormalBuild(pkg string) {
 	}()
 	createFuzzMain(pkg)
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", filepath.Join(workdir, "bin"), mainPkg)
-	cmd.Env = append([]string{"GOPATH=" + workdir + ":" + os.Getenv("GOPATH")}, os.Environ()...)
+	cmd.Env = append([]string{"GOPATH=" + workdir + string(os.PathListSeparator) + os.Getenv("GOPATH")}, os.Environ()...)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
@@ -179,7 +184,7 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 	}
 	createFuzzMain(pkg)
 
-	outf := tempFile()
+	outf := tempFile() + ".exe"
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", outf, mainPkg)
 	for _, v := range os.Environ() {
 		if strings.HasPrefix(v, "GOROOT") {
@@ -204,7 +209,7 @@ func createFuzzMain(pkg string) {
 
 func clonePackage(workdir, pkg string, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	dir := goListProps(pkg, "Dir")[0]
-	if !strings.HasSuffix(dir, pkg) {
+	if !strings.HasSuffix(filepath.ToSlash(dir), pkg) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
 	}
 	newDir := filepath.Join(workdir, "src", pkg)
@@ -220,6 +225,11 @@ func clonePackage(workdir, pkg string, lits map[Literal]struct{}, blocks *[]Cove
 		"runtime/cgo":   true, // why would we instrument it?
 		"runtime/pprof": true, // why would we instrument it?
 		"runtime/race":  true, // why would we instrument it?
+	}
+	if runtime.GOOS == "windows" {
+		// syscall depends on unicode/utf16.
+		// Cross-compilation is not implemented.
+		ignore["unicode/utf16"] = true
 	}
 	nolits := map[string]bool{
 		"math":    true,
@@ -246,6 +256,7 @@ func clonePackage(workdir, pkg string, lits map[Literal]struct{}, blocks *[]Cove
 		fn := filepath.Join(newDir, f.Name())
 		newFn := fn + ".cover"
 		instrument(pkg, filepath.Join(pkg, f.Name()), fn, newFn, lits, blocks, sonar)
+		os.Remove(fn)
 		err := os.Rename(newFn, fn)
 		if err != nil {
 			failf("failed to rename file: %v", err)
