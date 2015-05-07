@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/rpc"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -56,8 +57,12 @@ type ROData struct {
 }
 
 type SonarSite struct {
-	loc   string    // file:line.pos,line.pos
-	taken [2]uint32 // number of times condition evaluated to false/true
+	loc string // file:line.pos,line.pos (const)
+	sync.Mutex
+	dynamic    bool   // both operands are not constant
+	takenFuzz  [2]int // number of times condition evaluated to false/true during fuzzing
+	takenTotal [2]int // number of times condition evaluated to false/true in total
+	val        [2][]byte
 }
 
 type Stats struct {

@@ -348,12 +348,6 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 
 		// TODO: demote taken sites.
 		site := &ro.sonarSites[id]
-		if site.taken[0] > 10 && site.taken[1] > 10 || site.taken[0]+site.taken[1] > 100 {
-			// Already taken both ways enough times or tried enough times.
-			if rand.Intn(1000) != 0 {
-				continue
-			}
-		}
 		if false {
 			// Debug output.
 			op := ""
@@ -424,8 +418,39 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 		if evaluate(flags, v1, v2) {
 			res = 1
 		}
-		if atomic.AddUint32(&site.taken[res], 1) == 1 {
-			updated = true
+		// Ignore sites that has at least one const operand and
+		// are already taken both ways enough times.
+		if !func() bool {
+			site.Lock()
+			defer site.Unlock()
+			if !site.dynamic && flags&SonarConst1+flags&SonarConst2 == 0 {
+				if site.val[0] == nil {
+					site.val[0] = makeCopy(v1)
+				}
+				if site.val[1] == nil {
+					site.val[1] = makeCopy(v2)
+				}
+				if !bytes.Equal(site.val[0], v1) && !bytes.Equal(site.val[1], v2) {
+					site.val[0] = nil
+					site.val[1] = nil
+					site.dynamic = true
+				}
+			}
+			if site.takenTotal[res] == 0 {
+				updated = true
+			}
+			site.takenTotal[res]++
+			if !smash {
+				site.takenFuzz[res]++
+			}
+			if !site.dynamic && (site.takenFuzz[0] > 10 && site.takenFuzz[1] > 10 || site.takenFuzz[0]+site.takenFuzz[1] > 100) {
+				if rand.Intn(10000) != 0 {
+					return false
+				}
+			}
+			return true
+		}() {
+			continue
 		}
 		if smash && bytes.Equal(v1, v2) {
 			// We systematically mutate all bytes during smashing,

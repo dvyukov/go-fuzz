@@ -8,6 +8,10 @@ import (
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
+func makeCopy(data []byte) []byte {
+	return append([]byte{}, data...)
+}
+
 func compareCover(base, cur []byte) (bool, bool) {
 	if len(base) != CoverSize || len(cur) != CoverSize {
 		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
@@ -121,13 +125,13 @@ func dumpSonar(outf string, sites []SonarSite) {
 	defer out.Close()
 	fmt.Fprintf(out, "mode: set\n")
 	for _, s := range sites {
-		cnt := 1
-		stmt := 1
-		if s.taken[0] == 0 && s.taken[1] == 0 {
-			stmt = 0
-			cnt = 0
-		} else if s.taken[0] > 0 && s.taken[1] > 0 {
-			cnt = 100
+		cnt := 0  // red color
+		stmt := 1 // account in precentage calculation
+		if s.takenTotal[0] == 0 && s.takenTotal[1] == 0 {
+			stmt = 0 // don't account in precentage calculation
+			cnt = 1  // grey color
+		} else if s.takenTotal[0] > 0 && s.takenTotal[1] > 0 {
+			cnt = 100 // green color
 		}
 		fmt.Fprintf(out, "%v %v %v\n", s.loc, stmt, cnt)
 	}
