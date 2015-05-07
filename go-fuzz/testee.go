@@ -53,8 +53,7 @@ func newTestBinary(fileName string, periodicCheck func(), stats *Stats) *TestBin
 	}
 	comm.Truncate(CoverSize + MaxInputSize + SonarRegionSize)
 	comm.Close()
-	mapping := createMapping(comm.Name())
-	mem := mapping.mmap(CoverSize + MaxInputSize + SonarRegionSize)
+	mapping, mem := createMapping(comm.Name(), CoverSize+MaxInputSize+SonarRegionSize)
 	return &TestBinary{
 		fileName:      fileName,
 		commFile:      comm.Name(),
