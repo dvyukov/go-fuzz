@@ -9,7 +9,7 @@ import (
 func Fuzz(data []byte) int {
 	r, err := zlib.NewReader(bytes.NewReader(data))
 	if err != nil {
-		panic(err)
+		return 0
 	}
 	_, err = ioutil.ReadAll(r)
 	if err != nil {
