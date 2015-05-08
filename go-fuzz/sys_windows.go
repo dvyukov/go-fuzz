@@ -46,6 +46,9 @@ func (m *Mapping) destroy() {
 }
 
 func setupCommMapping(cmd *exec.Cmd, comm *Mapping, rOut, wIn *os.File) {
+	syscall.SetHandleInformation(Handle(comm.mapping), syscall.HANDLE_FLAG_INHERIT, 0)
+	syscall.SetHandleInformation(Handle(rOut.Fd()), syscall.HANDLE_FLAG_INHERIT, 0)
+	syscall.SetHandleInformation(Handle(wIn.Fd()), syscall.HANDLE_FLAG_INHERIT, 0)
 	cmd.Env = append(cmd.Env, fmt.Sprintf("GO_FUZZ_COMM_FD=%v", comm.mapping))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("GO_FUZZ_IN_FD=%v", rOut.Fd()))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("GO_FUZZ_OUT_FD=%v", wIn.Fd()))
