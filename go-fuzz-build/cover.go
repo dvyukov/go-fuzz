@@ -198,6 +198,8 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	//	func() bool { v1 := x; v2 := y; go-fuzz-dep.Sonar(v1, v2, flags); return v1 != v2 }() == true
 	v1 := nn.X
 	v2 := nn.Y
+	ast.Walk(s, v1)
+	ast.Walk(s, v2)
 	if isUninterestingLiteral(v1) || isUninterestingLiteral(v2) {
 		return s
 	}
@@ -225,7 +227,6 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	endPos := s.fset.Position(nn.End())
 	*s.blocks = append(*s.blocks, CoverBlock{sonarSeq, s.name, startPos.Line, startPos.Column, endPos.Line, endPos.Column, int(flags)})
 	sonarSeq++
-	// TODO: walk v1 and v2 recursively
 	block := &ast.BlockStmt{}
 	if !isSimpleExpr(v1) {
 		tmp := ast.NewIdent("v1")
