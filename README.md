@@ -145,10 +145,12 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 
 ## Trophies
 
-- [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
-- [fmt: index out of range](https://github.com/golang/go/issues/10745) **fixed**
+- [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
+- [fmt: index out of range (2)](https://github.com/golang/go/issues/10745) **fixed**
+- [fmt: index out of range (3)](https://github.com/golang/go/issues/10770)
+- [fmt: index out of range (4)](https://github.com/golang/go/issues/10771)
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
 - [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs] **fixed**
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415)
