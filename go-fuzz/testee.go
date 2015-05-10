@@ -117,8 +117,14 @@ retry:
 		log.Fatalf("failed to pipe: %v", err)
 	}
 	cmd := exec.Command(bin)
-	cmd.Stdout = wStdout
-	cmd.Stderr = wStdout
+	if *flagTestOutput {
+		// For debugging of testee failures.
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stdout
+	} else {
+		cmd.Stdout = wStdout
+		cmd.Stderr = wStdout
+	}
 	cmd.Env = append([]string{}, os.Environ()...)
 	cmd.Env = append(cmd.Env, "GOTRACEBACK=1")
 	setupCommMapping(cmd, comm, rOut, wIn)

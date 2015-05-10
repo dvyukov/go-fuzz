@@ -1,6 +1,7 @@
 package testcover
 
 import (
+	"bytes"
 	"encoding/binary"
 )
 
@@ -53,11 +54,25 @@ func Fuzz(data []byte) int {
 		bingo()
 	}
 
-	if len(data) > 20 {
-		magic := uint32(data[5]) | uint32(data[6])<<8 | uint32(data[9])<<16 | uint32(data[11])<<24
-		if magic == 0xabcd1234 {
-			bingo()
-		}
+	magic := uint32(data[5]) | uint32(data[6])<<8 | uint32(data[9])<<16 | uint32(data[11])<<24
+	if magic == 0xabcd1234 {
+		bingo()
+	}
+
+	type Hdr struct {
+		Magic [8]byte
+		N     uint32
+	}
+	var hdr Hdr
+	binary.Read(bytes.NewReader(data), binary.LittleEndian, &hdr)
+	if hdr.Magic == [8]byte{'m', 'a', 'g', 'i', 'c', 'h', 'd', 'r'} {
+		bingo()
+	}
+
+	type Name string
+	name := Name(data[4:9])
+	if name == "12345" {
+		bingo()
 	}
 
 	return 0

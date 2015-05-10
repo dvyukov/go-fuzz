@@ -9,18 +9,26 @@ import (
 
 const failure = ^uint8(0)
 
+type iface struct {
+	typ unsafe.Pointer
+	val unsafe.Pointer
+}
+
 // Sonar is called by instrumentation code to notify go-fuzz about comparisons.
 // Low 8 bits of id are flags, the rest is unique id of a comparison.
 func Sonar(v1, v2 interface{}, id uint32) {
 	var buf [SonarHdrLen + 2*SonarMaxLen]byte
-	n1, f1 := serialize(v1, buf[SonarHdrLen:])
+	n1, f1 := serialize(v1, v2, buf[SonarHdrLen:])
 	if n1 == failure {
 		return
 	}
-	n2, f2 := serialize(v2, buf[SonarHdrLen+n1:])
+	n2, f2 := serialize(v2, v1, buf[SonarHdrLen+n1:])
 	if n2 == failure {
 		return
 	}
+	// Ideal const operands are converted to signed int,
+	// but it does not mean that the comparison is signed
+	// unless the other operand is signed.
 	if id&SonarConst1 != 0 {
 		f1 &^= SonarSigned
 	}
@@ -45,7 +53,7 @@ func Sonar(v1, v2 interface{}, id uint32) {
 	copy(sonarRegion[pos:pos+n], buf[:])
 }
 
-func serialize(v interface{}, buf []byte) (n, flags uint8) {
+func serialize(v, v2 interface{}, buf []byte) (n, flags uint8) {
 	switch vv := v.(type) {
 	case int8:
 		buf[0] = byte(vv)
@@ -82,7 +90,58 @@ func serialize(v interface{}, buf []byte) (n, flags uint8) {
 			return failure, 0
 		}
 		return uint8(copy(buf, vv)), SonarString
+	case [1]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [2]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [3]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [4]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [5]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [6]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [7]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [8]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [9]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [10]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [11]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [12]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [13]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [14]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [15]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [16]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [17]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [18]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [19]byte:
+		return uint8(copy(buf, vv[:])), SonarString
+	case [20]byte:
+		return uint8(copy(buf, vv[:])), SonarString
 	default:
+		// Special case: string literal is compared with a variable of
+		// user type with string underlying type:
+		//	type Name string
+		//	var name Name
+		//	if name == "foo" { ... }
+		if _, ok := v2.(string); ok {
+			s := *(*string)((*iface)(unsafe.Pointer(&v)).val)
+			if len(s) <= SonarMaxLen {
+				return uint8(copy(buf[:], s)), SonarString
+			}
+		}
 		return failure, 0
 	}
 }
