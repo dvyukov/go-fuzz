@@ -42,16 +42,22 @@ func Fuzz(data []byte) int {
 	}
 
 	n := binary.BigEndian.Uint32(data[0:4])
-	if int(n) <= len(data) - 4 {
-		s := string(data[4:4+n])
+	if int(n) <= len(data)-4 {
+		s := string(data[4 : 4+n])
 		if s == "eat this" {
 			bingo()
 		}
 	}
 
-
 	if f := binary.BigEndian.Uint32(data[9:]) > 0xfffffffd; f {
 		bingo()
+	}
+
+	if len(data) > 20 {
+		magic := uint32(data[5]) | uint32(data[6])<<8 | uint32(data[9])<<16 | uint32(data[11])<<24
+		if magic == 0xabcd1234 {
+			bingo()
+		}
 	}
 
 	return 0
