@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/rpc"
 	"path/filepath"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -56,15 +55,6 @@ type ROData struct {
 	sonarSites   []SonarSite
 }
 
-type SonarSite struct {
-	loc string // file:line.pos,line.pos (const)
-	sync.Mutex
-	dynamic    bool   // both operands are not constant
-	takenFuzz  [2]int // number of times condition evaluated to false/true during fuzzing
-	takenTotal [2]int // number of times condition evaluated to false/true in total
-	val        [2][]byte
-}
-
 type Stats struct {
 	execs    uint64
 	restarts uint64
@@ -90,6 +80,7 @@ func newHub(metadata MetaData) *Hub {
 		if i != b.ID {
 			log.Fatalf("corrputed sonar metadata")
 		}
+		sonarSites[i].id = b.ID
 		sonarSites[i].loc = fmt.Sprintf("%v:%v.%v,%v.%v", b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol)
 	}
 
