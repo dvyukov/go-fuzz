@@ -141,8 +141,12 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 				}
 			}
 		}
-		if flags&SonarConst1 == 0 {
+		check1 := func(v1, v2 []byte) {
 			check(v1, v2)
+			// Try several common wire encodings of the values:
+			// network format (big endian), hex, base-128.
+			// TODO: try more encodings if it proves to be useful:
+			// base-64, quoted-printable, xml-escaping? hex+increment/decrement?
 			if flags&SonarString == 0 {
 				// Increment and decrement take care of less and greater comparison operators
 				// as well as of off-by-one bugs.
@@ -154,18 +158,26 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 					check(reverse(v1), reverse(decrement(v2)))
 				}
 			}
+			check([]byte(hex.EncodeToString(v1)), []byte(hex.EncodeToString(v2)))
+			if flags&SonarString == 0 {
+				var u1, u2 uint64
+				for i := 0; i < len(v1); i++ {
+					u1 += uint64(v1[i]) << uint(i*8)
+				}
+				for i := 0; i < len(v2); i++ {
+					u2 += uint64(v2[i]) << uint(i*8)
+				}
+				var vv1, vv2 [10]byte
+				n1 := binary.PutUvarint(vv1[:], u1)
+				n2 := binary.PutUvarint(vv2[:], u2)
+				check(vv1[:n1], vv2[:n2])
+			}
+		}
+		if flags&SonarConst1 == 0 {
+			check1(v1, v2)
 		}
 		if flags&SonarConst2 == 0 {
-			check(v2, v1)
-			if flags&SonarString == 0 {
-				check(v2, increment(v1))
-				check(v2, decrement(v1))
-				if len(v2) > 1 {
-					check(reverse(v2), reverse(v1))
-					check(reverse(v2), reverse(increment(v1)))
-					check(reverse(v2), reverse(decrement(v1)))
-				}
-			}
+			check1(v2, v1)
 		}
 	}
 	if updated && *flagDumpCover {
