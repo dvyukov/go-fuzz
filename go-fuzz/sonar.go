@@ -274,7 +274,7 @@ func (sam *SonarSample) evaluate() bool {
 	if sam.flags&SonarString != 0 {
 		s1 := string(v1)
 		s2 := string(v2)
-		switch sam.flags & 7 {
+		switch sam.flags & SonarOpMask {
 		case SonarEQL:
 			return s1 == s2
 		case SonarNEQ:
@@ -314,7 +314,7 @@ func (sam *SonarSample) evaluate() bool {
 	if sam.flags&SonarSigned == 0 {
 		s1 := binary.LittleEndian.Uint64(v1)
 		s2 := binary.LittleEndian.Uint64(v2)
-		switch sam.flags & 7 {
+		switch sam.flags & SonarOpMask {
 		case SonarEQL:
 			return s1 == s2
 		case SonarNEQ:
@@ -333,7 +333,7 @@ func (sam *SonarSample) evaluate() bool {
 	} else {
 		s1 := int64(binary.LittleEndian.Uint64(v1))
 		s2 := int64(binary.LittleEndian.Uint64(v2))
-		switch sam.flags & 7 {
+		switch sam.flags & SonarOpMask {
 		case SonarEQL:
 			return s1 == s2
 		case SonarNEQ:
@@ -355,7 +355,7 @@ func (sam *SonarSample) evaluate() bool {
 func dumpSonarData(site *SonarSite, flags byte, v1, v2 []byte) {
 	// Debug output.
 	op := ""
-	switch flags & 7 {
+	switch flags & SonarOpMask {
 	case SonarEQL:
 		op = "=="
 	case SonarNEQ:

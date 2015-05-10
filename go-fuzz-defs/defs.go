@@ -14,6 +14,8 @@ const (
 	SonarLEQ
 	SonarGEQ
 
+	SonarOpMask = 7
+	SonarLength = 1 << 3
 	SonarSigned = 1 << 4
 	SonarString = 1 << 5
 	SonarConst1 = 1 << 6

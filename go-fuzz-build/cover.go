@@ -131,6 +131,40 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 		nn.Body = &ast.BlockStmt{List: []ast.Stmt{&ast.CaseClause{Body: stmts}}}
 		return s // recurse
 
+	case *ast.ForStmt:
+		// For condition is usually uninteresting, but produces lots of samples.
+		// So we skip it if it looks boring.
+		if nn.Init != nil {
+			ast.Walk(s, nn.Init)
+		}
+		if nn.Post != nil {
+			ast.Walk(s, nn.Post)
+		}
+		ast.Walk(s, nn.Body)
+		if nn.Cond != nil {
+			// Look for the following pattern:
+			//	for foo := ...; foo ? ...; ... { ... }
+			boring := false
+			if nn.Init != nil {
+				if init, ok1 := nn.Init.(*ast.AssignStmt); ok1 && init.Tok == token.DEFINE && len(init.Lhs) == 1 {
+					if id, ok2 := init.Lhs[0].(*ast.Ident); ok2 {
+						if bex, ok3 := nn.Cond.(*ast.BinaryExpr); ok3 {
+							if x, ok4 := bex.X.(*ast.Ident); ok4 && x.Name == id.Name {
+								boring = true
+							}
+							if x, ok4 := bex.Y.(*ast.Ident); ok4 && x.Name == id.Name {
+								boring = true
+							}
+						}
+					}
+				}
+			}
+			if !boring {
+				ast.Walk(s, nn.Cond)
+			}
+		}
+		return nil
+
 	default:
 		return s // recurse
 	}
@@ -166,6 +200,19 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	v2 := nn.Y
 	if isUninterestingLiteral(v1) || isUninterestingLiteral(v2) {
 		return s
+	}
+	if isCap(v1) || isCap(v2) {
+		// Haven't seen useful cases yet.
+		return s
+	}
+	if isLen(v1) || isLen(v2) {
+		// TODO: we could pass both length value and the len argument.
+		// For example, if the code is:
+		//	name := ... // obtained from input
+		//	if len(name) > 5 { ... }
+		// If we would have the name value at runtime, we will know
+		// what part of the input to alter to affect len result.
+		flags |= SonarLength
 	}
 	if isConstExpr(v1) {
 		flags |= SonarConst1
@@ -269,6 +316,24 @@ func isConstExpr(n ast.Expr) bool {
 	default:
 		return false
 	}
+}
+
+func isCap(n ast.Expr) bool {
+	if call, ok := n.(*ast.CallExpr); ok {
+		if id, ok2 := call.Fun.(*ast.Ident); ok2 {
+			return id.Name == "cap"
+		}
+	}
+	return false
+}
+
+func isLen(n ast.Expr) bool {
+	if call, ok := n.(*ast.CallExpr); ok {
+		if id, ok2 := call.Fun.(*ast.Ident); ok2 {
+			return id.Name == "len"
+		}
+	}
+	return false
 }
 
 func isConv(n *ast.CallExpr) ast.Expr {
