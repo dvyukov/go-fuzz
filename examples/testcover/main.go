@@ -2,6 +2,7 @@ package testcover
 
 import (
 	"bytes"
+	"crypto/sha1"
 	"encoding/binary"
 )
 
@@ -73,6 +74,15 @@ func Fuzz(data []byte) int {
 	name := Name(data[4:9])
 	if name == "12345" {
 		bingo()
+	}
+
+	if len(data) > 40 {
+		hash1 := sha1.Sum(data[0:20])
+		var hash2 [20]byte
+		binary.Read(bytes.NewReader(data[20:40]), binary.LittleEndian, &hash2)
+		if hash1 == hash2 {
+			bingo()
+		}
 	}
 
 	return 0
