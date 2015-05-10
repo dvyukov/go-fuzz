@@ -85,6 +85,14 @@ func Fuzz(data []byte) int {
 		}
 	}
 
+	for i := 0; i < 6; i++ {
+		if data[i] != "CDATA["[i] {
+			goto fail
+		}
+	}
+	bingo()
+fail:
+
 	return 0
 }
 
