@@ -168,6 +168,22 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	default:
 		return s // recurse
 	}
+
+	// TODO: handle map index expressions (especially useful for strings).
+	// E.g. when code matches a read in identifier against a set of known identifiers.
+	// For the record, it looks as follows. However, it is tricky to distinguish
+	// from slice/array index and map assignments...
+	//.  .  .  .  .  .  .  *ast.IndexExpr {
+	//.  .  .  .  .  .  .  .  X: *ast.Ident {
+	//.  .  .  .  .  .  .  .  .  Name: "m"
+	//.  .  .  .  .  .  .  .  }
+	//.  .  .  .  .  .  .  .  Index: *ast.Ident {
+	//.  .  .  .  .  .  .  .  .  Name: "s"
+	//.  .  .  .  .  .  .  .  }
+	//.  .  .  .  .  .  .  }
+
+	// TODO: intercept strings.Index/HasPrefix and similar functions.
+
 	nn := n.(*ast.BinaryExpr)
 	var flags uint8
 	switch nn.Op {

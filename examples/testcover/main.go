@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha1"
 	"encoding/binary"
+	"encoding/hex"
 )
 
 func Fuzz(data []byte) int {
@@ -92,6 +93,14 @@ func Fuzz(data []byte) int {
 	}
 	bingo()
 fail:
+
+	if varx, _ := binary.Uvarint(data[3:]); varx == 0xbadbeefc0ffee {
+		bingo()
+	}
+
+	if data, err := hex.DecodeString(string(data[:6])); err == nil && string(data) == "foo" {
+		bingo()
+	}
 
 	return 0
 }
