@@ -93,7 +93,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 		upd, skip := site.update(sam, smash, res)
 		if site.takenTotal[0] == 10 && site.takenTotal[1] == 0 ||
 			site.takenTotal[1] == 10 && site.takenTotal[0] == 0 {
-			s.bruteForce(data, samples, sam.site)
+			//s.bruteForce(data, samples, sam.site)
 		}
 		if upd {
 			updated = true
