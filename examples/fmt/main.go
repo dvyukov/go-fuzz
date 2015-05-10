@@ -20,5 +20,6 @@ func Fuzz(data []byte) int {
 	x := struct{ X, Y int }{}
 	fmt.Sscanf("42", sdata, &x)
 	fmt.Sprintf(sdata, x)
+	fmt.Sscanf(sdata, sdata, &s, &i)
 	return 0
 }
