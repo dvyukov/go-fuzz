@@ -31,13 +31,13 @@ func main() {
 	if len(flag.Args()) != 1 || len(flag.Arg(0)) == 0 {
 		failf("usage: go-fuzz-build pkg")
 	}
-	if os.Getenv("GOROOT") == "" {
-		// Figure out GOROOT from go command location.
-		out, err := exec.Command("which", "go").CombinedOutput()
+	GOROOT := os.Getenv("GOROOT")
+	if GOROOT == "" {
+		out, err := exec.Command("go", "env", "GOROOT").CombinedOutput()
 		if err != nil || len(out) == 0 {
-			failf("GOROOT is not set and failed to locate go command: 'which go' returned '%s' (%v)", out, err)
+			failf("GOROOT is not set and failed to locate it: 'go env GOROOT' returned '%s' (%v)", out, err)
 		}
-		os.Setenv("GOROOT", filepath.Dir(filepath.Dir(string(out))))
+		GOROOT = strings.Trim(string(out), "\n\t ")
 	}
 	pkg := flag.Arg(0)
 	if pkg[0] == '.' {
@@ -84,12 +84,12 @@ func main() {
 			failf("failed to write temp file: %v", err)
 		}
 	}
-	copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), true, nil)
-	if _, err := os.Stat(filepath.Join(os.Getenv("GOROOT"), "pkg", "include")); err == nil {
-		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", "include"), filepath.Join(workdir, "pkg", "include"), true, nil)
+	copyDir(filepath.Join(GOROOT, "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), true, nil)
+	if _, err := os.Stat(filepath.Join(GOROOT, "pkg", "include")); err == nil {
+		copyDir(filepath.Join(GOROOT, "pkg", "include"), filepath.Join(workdir, "pkg", "include"), true, nil)
 	} else {
 		// Cross-compilation is not implemented.
-		copyDir(filepath.Join(os.Getenv("GOROOT"), "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
+		copyDir(filepath.Join(GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
 	}
 	lits := make(map[string]bool)
 	for p := range deps {
