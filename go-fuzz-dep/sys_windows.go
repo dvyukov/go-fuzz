@@ -16,11 +16,14 @@ type sliceHeader struct {
 type FD syscall.Handle
 
 func setupCommFile() ([]byte, FD, FD) {
+	const (
+		size                = CoverSize + MaxInputSize + SonarRegionSize
+		FILE_MAP_ALL_ACCESS = 0xF001F
+	)
 	mapping := readEnvParam("GO_FUZZ_COMM_FD")
-	const size = CoverSize + MaxInputSize + SonarRegionSize
-	addr, err := syscall.MapViewOfFile(mapping, syscall.PAGE_READWRITE, 0, 0, size)
+	addr, err := syscall.MapViewOfFile(mapping, FILE_MAP_ALL_ACCESS, 0, 0, size)
 	if err != nil {
-		println("failed to mmap comm file")
+		println("failed to mmap comm file:", err.Error())
 		syscall.Exit(1)
 	}
 	hdr := sliceHeader{addr, size, size}
