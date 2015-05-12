@@ -56,11 +56,6 @@ func Fuzz(data []byte) int {
 		bingo()
 	}
 
-	magic := uint32(data[5]) | uint32(data[6])<<8 | uint32(data[9])<<16 | uint32(data[11])<<24
-	if magic == 0xabcd1234 {
-		bingo()
-	}
-
 	type Hdr struct {
 		Magic [8]byte
 		N     uint32
@@ -99,6 +94,14 @@ fail:
 	}
 
 	if data, err := hex.DecodeString(string(data[:6])); err == nil && string(data) == "foo" {
+		bingo()
+	}
+
+        if data[0] != 'R' || data[1] != 'I' || data[2] != 'F' || data[3] != 'F' {
+		bingo()
+        }
+
+	if x := binary.LittleEndian.Uint32(data[8:]); (x>>1)&(1<<24-1) == 11118709 {
 		bingo()
 	}
 
