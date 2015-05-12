@@ -182,6 +182,22 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	//.  .  .  .  .  .  .  .  }
 	//.  .  .  .  .  .  .  }
 
+	// TODO: transform expressions so that lhs expression contains a variable
+	// and rhs contains all constant operands. For example, for (real code from vp8 codec):
+	//	cf := (b[0]>>4)&7 == 5
+	// we would like to transform it to:
+	//	b[0] & (7<<4) == 5<<4
+	// and then to:
+	//	b[0] == 5<<4 | b & ^(7<<4)
+	// and emit:
+	//	Sonar(b[0], 5<<4 | b & ^(7<<4), SonarEQL)
+	// This will allow the fuzzer to figure out what bytes it needs to replace
+	// with what bytes in order to crack this condition.
+	// Similarly, for:
+	//	x/3 == 100
+	// we would like to emit:
+	//	Sonar(x, 100*3, SonarEQL)
+
 	// TODO: intercept strings.Index/HasPrefix and similar functions.
 
 	nn := n.(*ast.BinaryExpr)
