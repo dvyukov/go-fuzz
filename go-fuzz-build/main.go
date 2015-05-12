@@ -66,7 +66,10 @@ func main() {
 	deps["runtime"] = true
 	deps["syscall"] = true
 	deps["time"] = true
+	deps["errors"] = true
 	deps["unsafe"] = true
+	deps["sync"] = true
+	deps["sync/atomic"] = true
 	if runtime.GOOS == "windows" {
 		// syscall depends on unicode/utf16.
 		// Cross-compilation is not implemented.
