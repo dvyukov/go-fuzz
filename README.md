@@ -176,6 +176,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [html/template: nil pointer dereference](https://github.com/golang/go/issues/10673) **fixed**
 - [x/image/webp: index out of range](https://github.com/golang/go/issues/10383) **fixed**
 - [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384) **fixed**
+- [x/image/webp: excessive memory consumption](https://github.com/golang/go/issues/10790)
 - [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10393) **fixed**
 - [x/image/tiff: index out of range](https://github.com/golang/go/issues/10394) **fixed**
 - [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10395) **fixed**
