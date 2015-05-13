@@ -174,6 +174,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [html/template: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10615) **fixed**
 - [html/template: panic: Call using zero Value argument](https://github.com/golang/go/issues/10634) **fixed**
 - [html/template: nil pointer dereference](https://github.com/golang/go/issues/10673) **fixed**
+- [html/template: slice bounds out of range](https://github.com/golang/go/issues/10799)
 - [x/image/webp: index out of range](https://github.com/golang/go/issues/10383) **fixed**
 - [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384) **fixed**
 - [x/image/webp: excessive memory consumption](https://github.com/golang/go/issues/10790)
