@@ -147,6 +147,8 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 			// network format (big endian), hex, base-128.
 			// TODO: try more encodings if it proves to be useful:
 			// base-64, quoted-printable, xml-escaping? hex+increment/decrement?
+
+			// TODO: ascii-encoding: 0xff -> "255"
 			if flags&SonarString == 0 {
 				// Increment and decrement take care of less and greater comparison operators
 				// as well as of off-by-one bugs.
