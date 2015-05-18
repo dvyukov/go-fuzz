@@ -167,7 +167,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676) **fixed**
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
-- [text/template: Call using string as type int](https://github.com/golang/go/issues/10800)
+- [text/template: Call using string as type int](https://github.com/golang/go/issues/10800) **fixed**
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610) **fixed**
 - [html/template: unidentified node type in allIdents (2)](https://github.com/golang/go/issues/10801)
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611) **fixed**
