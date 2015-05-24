@@ -99,7 +99,7 @@ test, file with .output suffix contains output of the test on this input. Every
 few seconds go-fuzz prints logs of the form:
 ```
 2015/04/25 12:39:53 slaves: 500, corpus: 186 (42s ago), crashers: 3,
-	 restarts: 1/8027, execs: 12009519 (121224/sec), cover: 0.31%, uptime: 1m39s
+     restarts: 1/8027, execs: 12009519 (121224/sec), cover: 0.31%, uptime: 1m39s
 ```
 Where ```slaves``` means number of tests running in parallel (set with -procs
 flag). ```corpus``` is current number of interesting inputs the fuzzer has
