@@ -99,7 +99,7 @@ test, file with .output suffix contains output of the test on this input. Every
 few seconds go-fuzz prints logs of the form:
 ```
 2015/04/25 12:39:53 slaves: 500, corpus: 186 (42s ago), crashers: 3,
-     restarts: 1/8027, execs: 12009519 (121224/sec), cover: 0.31%, uptime: 1m39s
+	 restarts: 1/8027, execs: 12009519 (121224/sec), cover: 0.31%, uptime: 1m39s
 ```
 Where ```slaves``` means number of tests running in parallel (set with -procs
 flag). ```corpus``` is current number of interesting inputs the fuzzer has
@@ -209,5 +209,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/bkaradzic/go-lz4: slice bounds out of range](https://github.com/bkaradzic/go-lz4/commit/b8d4dc7b31511bf5f39dfdb02d2ea7662eb8407c) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/332853ab7b3c719dd67c657394139491c1f6deb7) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72) **fixed**
+- [github.com/tdewolff/minify: 8 crashers](https://github.com/tdewolff/minify/wiki) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
