@@ -117,6 +117,7 @@ type ConnectRes struct {
 type MasterInput struct {
 	Data      []byte
 	Prio      uint64
+	Type      int
 	Minimized bool
 	Smashed   bool
 }
@@ -136,10 +137,10 @@ func (m *Master) Connect(a *ConnectArgs, r *ConnectRes) error {
 	r.ID = s.id
 	// Give the slave initial corpus.
 	for _, a := range m.bootstrap.m {
-		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, false, false})
+		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, execCorpus, false, false})
 	}
 	for _, a := range m.corpus.m {
-		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, true, true})
+		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, execCorpus, true, true})
 	}
 	return nil
 }
@@ -167,7 +168,7 @@ func (m *Master) NewInput(a *NewInputArgs, r *int) error {
 	m.lastInput = time.Now()
 	// Queue the input for sending to every slave.
 	for _, s1 := range m.slaves {
-		s1.pending = append(s1.pending, MasterInput{a.Data, a.Prio, true, s1 != s})
+		s1.pending = append(s1.pending, MasterInput{a.Data, a.Prio, execCorpus, true, s1 != s})
 	}
 
 	return nil

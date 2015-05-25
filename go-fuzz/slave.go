@@ -5,7 +5,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"index/suffixarray"
 	"io"
 	"io/ioutil"
 	"log"
@@ -13,15 +12,18 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+	"unsafe"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 const (
-	execMinimizeInput = iota
+	execCorpus = iota
+	execMinimizeInput
 	execMinimizeCrasher
 	execTriageInput
 	execFuzz
+	execVersifier
 	execSmash
 	execSonar
 	execSonarHint
@@ -53,7 +55,9 @@ type Input struct {
 	coverSize       int
 	res             int
 	depth           int
+	typ             int
 	execTime        uint64
+	favored         bool
 	score           int
 	runningScoreSum int
 }
@@ -119,7 +123,8 @@ func slaveMain() {
 }
 
 func (s *Slave) loop() {
-	for iter := 0; atomic.LoadUint32(&shutdown) == 0; iter++ {
+	iter, fuzzSonarIter, versifierSonarIter := 0, 0, 0
+	for atomic.LoadUint32(&shutdown) == 0 {
 		if len(s.crasherQueue) > 0 {
 			n := len(s.crasherQueue) - 1
 			crash := s.crasherQueue[n]
@@ -156,16 +161,40 @@ func (s *Slave) loop() {
 
 		ro := s.hub.ro.Load().(*ROData)
 		if len(ro.corpus) == 0 {
+			// Some other slave triages corpus inputs.
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		data, depth := s.mutator.generate(ro)
-		if iter%1000 != 0 {
-			s.testInput(data, depth, execFuzz)
+
+		// 9 out of 10 iterations are random fuzzing.
+		iter++
+		if iter%10 != 0 || ro.verse == nil {
+			data, depth := s.mutator.generate(ro)
+			// Every 1000-th iteration goes to sonar.
+			fuzzSonarIter++
+			if *flagSonar && fuzzSonarIter%1000 == 0 {
+				// TODO: ensure that generated hint inputs does not actually take 99% of time.
+				sonar := s.testInputSonar(data, depth)
+				s.processSonarData(data, sonar, depth, false)
+			} else {
+				// Plain old blind fuzzing.
+				s.testInput(data, depth, execFuzz)
+			}
 		} else {
-			// TODO: ensure that generated inputs does not actually take 99% of time.
-			sonar := s.testInputSonar(data, depth)
-			s.processSonarData(data, sonar, depth, false)
+			// 1 out of 10 iterations goes to versifier.
+			data := ro.verse.Rhyme()
+			const maxSize = MaxInputSize - 5*SonarMaxLen // need some gap for sonar replacements
+			if len(data) > maxSize {
+				data = data[:maxSize]
+			}
+			// Every 100-th versifier input goes to sonar.
+			versifierSonarIter++
+			if *flagSonar && versifierSonarIter%100 == 0 {
+				sonar := s.testInputSonar(data, 0)
+				s.processSonarData(data, sonar, 0, false)
+			} else {
+				s.testInput(data, 0, execVersifier)
+			}
 		}
 	}
 	s.shutdown()
@@ -178,6 +207,7 @@ func (s *Slave) triageInput(input MasterInput) {
 	inp := Input{
 		data:     input.Data,
 		depth:    int(input.Prio),
+		typ:      input.Type,
 		execTime: 1 << 60,
 	}
 	// Calculate min exec time, min coverage and max result of 3 runs.
@@ -209,13 +239,23 @@ func (s *Slave) triageInput(input MasterInput) {
 	}
 	if !input.Minimized {
 		inp.mine = true
+		ro := s.hub.ro.Load().(*ROData)
+		// When minimizing new inputs we don't pursue exactly the same coverage,
+		// instead we pursue just the "novelty" in coverage.
+		// Here we use corpusCover, because maxCover already includes the input coverage.
+		newCover, ok := findNewCover(ro.corpusCover, inp.cover)
+		if !ok {
+			return // covered by somebody else
+		}
 		inp.data = s.minimizeInput(inp.data, false, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if crashed {
 				s.noteCrasher(candidate, output, hanged)
 				return false
 			}
-			if inp.res != res || !bytes.Equal(inp.cover, cover) {
-				// TODO: this can be a new intersting input.
+			if inp.res != res || worseCover(newCover, cover) {
+				if s.hub.updateMaxCover(cover) {
+					s.triageQueue = append(s.triageQueue, MasterInput{makeCopy(candidate), uint64(inp.depth + 1), execMinimizeInput, false, false})
+				}
 				return false
 			}
 			return true
@@ -289,12 +329,30 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 		if !pred(candidate, cover, output, result, crashed, hanged) {
 			continue
 		}
-		res = make([]byte, len(candidate))
-		copy(res, candidate)
+		res = makeCopy(candidate)
 		if time.Since(start) > *flagMinimize {
 			return res
 		}
 		i--
+	}
+
+	// Then, try to remove each possible subset of bytes.
+	for i := 0; i < len(res)-1; i++ {
+		copy(tmp, res[:i])
+		for j := len(res); j > i+1; j-- {
+			candidate := tmp[:len(res)-j+i]
+			copy(candidate[i:], res[j:])
+			*stat++
+			result, _, cover, _, output, crashed, hanged := s.coverBin.test(candidate)
+			if !pred(candidate, cover, output, result, crashed, hanged) {
+				continue
+			}
+			res = makeCopy(candidate)
+			if time.Since(start) > *flagMinimize {
+				return res
+			}
+			j = len(res)
+		}
 	}
 
 	// Then, try to replace each individual byte with '0'.
@@ -326,132 +384,121 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 func (s *Slave) smash(data []byte, depth int) {
 	ro := s.hub.ro.Load().(*ROData)
 
-	// TODO: some of the mutations are disabled, because they take too long
-	// at least during experimentation (but most likely ok for real runs).
-	// Figure out what to do here.
+	// Pass it through sonar.
+	if *flagSonar {
+		sonar := s.testInputSonar(data, depth)
+		s.processSonarData(data, sonar, depth, true)
+	}
 
-	sonar := s.testInputSonar(data, depth)
-	s.processSonarData(data, sonar, depth, true)
-
-	_ = suffixarray.New
-	/*
-		suffix := suffixarray.New(data)
-			for i0, lit := range ro.strLits {
-				for _, pos := range suffix.Lookup(lit, -1) {
-					for i1, lit1 := range ro.strLits {
-						if i0 == i1 {
-							continue
-						}
-						tmp := make([]byte, len(data)-len(lit)+len(lit1))
-						copy(tmp, data[:pos])
-						copy(tmp[pos:], lit1)
-						copy(tmp[pos+len(lit1):], data[pos+len(lit):])
-						s.testInput(tmp, depth, execSmash)
-					}
-				}
-			}
-		for i0, lit := range ro.intLits {
-			for _, pos := range suffix.Lookup(lit, -1) {
-				for i1, lit1 := range ro.intLits {
-					if i0 == i1 || len(lit) != len(lit1) {
-						continue
-					}
-					tmp := make([]byte, len(lit))
-					copy(tmp, data[pos:])
-					copy(data[pos:], lit1)
-					s.testInput(data, depth, execSmash)
-					copy(data[pos:], tmp)
-				}
-			}
-
-			if len(lit) == 1 {
-				continue
-			}
-			lit = reverse(lit)
-			for _, pos := range suffix.Lookup(lit, -1) {
-				for i1, lit1 := range ro.intLits {
-					if i0 == i1 || len(lit) != len(lit1) {
-						continue
-					}
-					lit1 = reverse(lit1)
-					tmp := make([]byte, len(lit))
-					copy(tmp, data[pos:])
-					copy(data[pos:], lit1)
-					s.testInput(data, depth, execSmash)
-					copy(data[pos:], tmp)
-				}
-			}
-		}
-	*/
-
-	// Stage 0: flip each bit one-by-one.
+	// Flip each bit one-by-one.
 	for i := 0; i < len(data)*8; i++ {
 		data[i/8] ^= 1 << uint(i%8)
 		s.testInput(data, depth, execSmash)
 		data[i/8] ^= 1 << uint(i%8)
 	}
 
-	/*
-		// Stage 1: two walking bits.
-		for i := 0; i < len(data)*8-1; i++ {
-			data[i/8] ^= 1 << uint(i%8)
-			data[(i+1)/8] ^= 1 << uint((i+1)%8)
-			s.testInput(data, depth, execSmash)
-			data[i/8] ^= 1 << uint(i%8)
-			data[(i+1)/8] ^= 1 << uint((i+1)%8)
-		}
+	// Two walking bits.
+	for i := 0; i < len(data)*8-1; i++ {
+		data[i/8] ^= 1 << uint(i%8)
+		data[(i+1)/8] ^= 1 << uint((i+1)%8)
+		s.testInput(data, depth, execSmash)
+		data[i/8] ^= 1 << uint(i%8)
+		data[(i+1)/8] ^= 1 << uint((i+1)%8)
+	}
 
-		// Stage 2: four walking bits.
-		for i := 0; i < len(data)*8-3; i++ {
-			data[i/8] ^= 1 << uint(i%8)
-			data[(i+1)/8] ^= 1 << uint((i+1)%8)
-			data[(i+2)/8] ^= 1 << uint((i+2)%8)
-			data[(i+3)/8] ^= 1 << uint((i+3)%8)
-			s.testInput(data, depth, execSmash)
-			data[i/8] ^= 1 << uint(i%8)
-			data[(i+1)/8] ^= 1 << uint((i+1)%8)
-			data[(i+2)/8] ^= 1 << uint((i+2)%8)
-			data[(i+3)/8] ^= 1 << uint((i+3)%8)
-		}
-	*/
+	// Four walking bits.
+	for i := 0; i < len(data)*8-3; i++ {
+		data[i/8] ^= 1 << uint(i%8)
+		data[(i+1)/8] ^= 1 << uint((i+1)%8)
+		data[(i+2)/8] ^= 1 << uint((i+2)%8)
+		data[(i+3)/8] ^= 1 << uint((i+3)%8)
+		s.testInput(data, depth, execSmash)
+		data[i/8] ^= 1 << uint(i%8)
+		data[(i+1)/8] ^= 1 << uint((i+1)%8)
+		data[(i+2)/8] ^= 1 << uint((i+2)%8)
+		data[(i+3)/8] ^= 1 << uint((i+3)%8)
+	}
 
-	// Stage 3: byte flip.
+	// Byte flip.
 	for i := 0; i < len(data); i++ {
 		data[i] ^= 0xff
 		s.testInput(data, depth, execSmash)
 		data[i] ^= 0xff
 	}
 
-	/*
-		// Stage 4: two walking bytes.
-		for i := 0; i < len(data)-1; i++ {
-			data[i] ^= 0xff
-			data[i+1] ^= 0xff
-			s.testInput(data, depth, execSmash)
-			data[i] ^= 0xff
-			data[i+1] ^= 0xff
-		}
+	// Two walking bytes.
+	for i := 0; i < len(data)-1; i++ {
+		data[i] ^= 0xff
+		data[i+1] ^= 0xff
+		s.testInput(data, depth, execSmash)
+		data[i] ^= 0xff
+		data[i+1] ^= 0xff
+	}
 
-		// Stage 5: four walking bytes.
-		for i := 0; i < len(data)-3; i++ {
-			data[i] ^= 0xff
-			data[i+1] ^= 0xff
-			data[i+2] ^= 0xff
-			data[i+3] ^= 0xff
-			s.testInput(data, depth, execSmash)
-			data[i] ^= 0xff
-			data[i+1] ^= 0xff
-			data[i+2] ^= 0xff
-			data[i+3] ^= 0xff
-		}
-	*/
+	// Four walking bytes.
+	for i := 0; i < len(data)-3; i++ {
+		data[i] ^= 0xff
+		data[i+1] ^= 0xff
+		data[i+2] ^= 0xff
+		data[i+3] ^= 0xff
+		s.testInput(data, depth, execSmash)
+		data[i] ^= 0xff
+		data[i+1] ^= 0xff
+		data[i+2] ^= 0xff
+		data[i+3] ^= 0xff
+	}
 
-	// arith for bytes
-	// arith for shorts (both endianess)
-	// arith for ints (both endianess)
-	// set to interesting_8
-	// set to interesting_16 (both endianess)
-	// set to interesting_32 (both endianess)
+	// Increment/decrement every byte.
+	for i := 0; i < len(data); i++ {
+		for j := uint8(1); j <= 4; j++ {
+			data[i] += j
+			s.testInput(data, depth, execSmash)
+			data[i] -= j
+			data[i] -= j
+			s.testInput(data, depth, execSmash)
+			data[i] += j
+		}
+	}
+
+	// Set bytes to interesting values.
+	for i := 0; i < len(data); i++ {
+		v := data[i]
+		for _, x := range interesting8 {
+			data[i] = uint8(x)
+			s.testInput(data, depth, execSmash)
+		}
+		data[i] = v
+	}
+
+	// Set words to interesting values.
+	for i := 0; i < len(data)-1; i++ {
+		p := (*int16)(unsafe.Pointer(&data[i]))
+		v := *p
+		for _, x := range interesting16 {
+			*p = x
+			s.testInput(data, depth, execSmash)
+			if x != 0 && x != -1 {
+				*p = int16(swap16(uint16(x)))
+				s.testInput(data, depth, execSmash)
+			}
+		}
+		*p = v
+	}
+
+	// Set double-words to interesting values.
+	for i := 0; i < len(data)-3; i++ {
+		p := (*int32)(unsafe.Pointer(&data[i]))
+		v := *p
+		for _, x := range interesting32 {
+			*p = x
+			s.testInput(data, depth, execSmash)
+			if x != 0 && x != -1 {
+				*p = int32(swap32(uint32(x)))
+				s.testInput(data, depth, execSmash)
+			}
+		}
+		*p = v
+	}
 
 	// Trim after every byte.
 	for i := 1; i < len(data); i++ {
@@ -498,17 +545,9 @@ func (s *Slave) testInputImpl(bin *TestBinary, data []byte, depth, typ int) (son
 		s.noteCrasher(data, output, hanged)
 		return nil
 	}
-	ro = s.hub.ro.Load().(*ROData)
-	newCover, newCount := compareCover(ro.maxCover, cover)
-	if !newCover && !newCount {
-		return sonar
+	if s.hub.updateMaxCover(cover) {
+		s.triageQueue = append(s.triageQueue, MasterInput{makeCopy(data), uint64(depth), typ, false, false})
 	}
-	// Preliminary coverage update, so that we don't rediscover the same new coverage
-	// over and over again in short succession.
-	s.hub.newCoverC <- append([]byte{}, cover...)
-
-	// TODO: give more priority for newCover
-	s.triageQueue = append(s.triageQueue, MasterInput{append([]byte{}, data...), uint64(depth), false, false})
 	return sonar
 }
 
@@ -540,10 +579,10 @@ func (s *Slave) periodicCheck() {
 	s.stats.execs = 0
 	s.stats.restarts = 0
 	if *flagV >= 1 {
-		log.Printf("slave %v: triageq=%v execs=%v mininp=%v mincrash=%v triage=%v fuzz=%v smash=%v sonar=%v hint=%v",
+		log.Printf("slave %v: triageq=%v execs=%v mininp=%v mincrash=%v triage=%v fuzz=%v versifier=%v smash=%v sonar=%v hint=%v",
 			s.id, len(s.triageQueue),
 			s.execs[execTotal], s.execs[execMinimizeInput], s.execs[execMinimizeCrasher],
-			s.execs[execTriageInput], s.execs[execFuzz], s.execs[execSmash],
+			s.execs[execTriageInput], s.execs[execFuzz], s.execs[execVersifier], s.execs[execSmash],
 			s.execs[execSonar], s.execs[execSonarHint])
 	}
 }
@@ -560,7 +599,6 @@ func extractSuppression(out []byte) []byte {
 	collect := false
 	s := bufio.NewScanner(bytes.NewReader(out))
 	for s.Scan() {
-		// TODO: make clear when it is a timeout.
 		line := s.Text()
 		if !seenPanic && (strings.HasPrefix(line, "panic: ") ||
 			strings.HasPrefix(line, "fatal error: ") ||

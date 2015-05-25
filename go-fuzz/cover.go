@@ -12,35 +12,33 @@ func makeCopy(data []byte) []byte {
 	return append([]byte{}, data...)
 }
 
-func compareCover(base, cur []byte) (bool, bool) {
+func compareCover(base, cur []byte) bool {
 	if len(base) != CoverSize || len(cur) != CoverSize {
 		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
 	}
-	newCover, newCounter := compareCoverBody(&base[0], &cur[0])
+	res := compareCoverBody(&base[0], &cur[0])
 	if false {
-		newCover1, newCounter1 := compareCoverDump(base, cur)
-		if newCover != newCover1 || newCounter != newCounter1 {
+		if compareCoverDump(base, cur) != res {
 			panic("bad")
 		}
 	}
-	return newCover, newCounter
+	return res
 }
 
-func compareCoverDump(base, cur []byte) (bool, bool) {
-	cnt := false
+func compareCoverDump(base, cur []byte) bool {
 	for i, v := range base {
 		x := cur[i]
 		if v == 0 && x != 0 {
-			return true, true
+			return true
 		}
 		if x > v {
-			cnt = true
+			return true
 		}
 	}
-	return false, cnt
+	return false
 }
 
-func compareCoverBody(base, cur *byte) (bool, bool) // in compare.s
+func compareCoverBody(base, cur *byte) bool // in compare.s
 
 func updateMaxCover(base, cur []byte) int {
 	if len(base) != CoverSize || len(cur) != CoverSize {
@@ -48,31 +46,7 @@ func updateMaxCover(base, cur []byte) int {
 	}
 	cnt := 0
 	for i, x := range cur {
-		// Quantize the counters.
-		// Otherwise we get too inflated corpus.
-		if x == 0 {
-			x = 0
-		} else if x <= 1 {
-			x = 1
-		} else if x <= 2 {
-			x = 2
-		} else if x <= 3 {
-			x = 3
-		} else if x <= 4 {
-			x = 4
-		} else if x <= 5 {
-			x = 5
-		} else if x <= 8 {
-			x = 8
-		} else if x <= 16 {
-			x = 16
-		} else if x <= 32 {
-			x = 32
-		} else if x <= 64 {
-			x = 64
-		} else {
-			x = 255
-		}
+		x = roundUpCover(x)
 		v := base[i]
 		if v != 0 || x > 0 {
 			cnt++
@@ -82,6 +56,61 @@ func updateMaxCover(base, cur []byte) int {
 		}
 	}
 	return cnt
+}
+
+// Quantize the counters. Otherwise we get too inflated corpus.
+func roundUpCover(x byte) byte {
+	if x == 0 {
+		x = 0
+	} else if x <= 1 {
+		x = 1
+	} else if x <= 2 {
+		x = 2
+	} else if x <= 3 {
+		x = 3
+	} else if x <= 4 {
+		x = 4
+	} else if x <= 5 {
+		x = 5
+	} else if x <= 8 {
+		x = 8
+	} else if x <= 16 {
+		x = 16
+	} else if x <= 32 {
+		x = 32
+	} else if x <= 64 {
+		x = 64
+	} else {
+		x = 255
+	}
+	if !*flagCoverCounters {
+		if x > 0 {
+			x = 255
+		}
+	}
+	return x
+}
+
+func findNewCover(base, cover []byte) (res []byte, notEmpty bool) {
+	res = make([]byte, CoverSize)
+	for i, b := range base {
+		c := cover[i]
+		if c > b {
+			res[i] = c
+			notEmpty = true
+		}
+	}
+	return
+}
+
+func worseCover(base, cover []byte) bool {
+	for i, b := range base {
+		c := cover[i]
+		if c < b {
+			return true
+		}
+	}
+	return false
 }
 
 func dumpCover(outf string, blocks map[int][]CoverBlock, cover []byte) {
@@ -128,7 +157,8 @@ func dumpSonar(outf string, sites []SonarSite) {
 	}
 	defer out.Close()
 	fmt.Fprintf(out, "mode: set\n")
-	for _, s := range sites {
+	for i := range sites {
+		s := &sites[i]
 		cnt := 0  // red color
 		stmt := 1 // account in precentage calculation
 		if s.takenTotal[0] == 0 && s.takenTotal[1] == 0 {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/binary"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -95,6 +96,10 @@ func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, outp
 		}
 		if crashed {
 			output = bin.testee.shutdown()
+			if hanged {
+				hdr := fmt.Sprintf("program hanged (timeout %v seconds)\n\n", *flagTimeout)
+				output = append([]byte(hdr), output...)
+			}
 			bin.testee = nil
 			return
 		}

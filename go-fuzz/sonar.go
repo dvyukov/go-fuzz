@@ -5,8 +5,8 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"log"
-	"math/rand"
 	"path/filepath"
+	"strconv"
 	"sync"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
@@ -83,6 +83,12 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 	checked := make(map[string]struct{})
 	samples := s.parseSonarData(sonar)
 	for _, sam := range samples {
+		// TODO: extract literal corpus from sonar instead of from source.
+		// This should give smaller, better corpus which does not contain literals from dead code.
+
+		// TODO: detect loop counters (small incrementing/decrementing values on the same site).
+		// Either ignore them or handle differently (e.g. alter a string length).
+
 		site := sam.site
 		flags := sam.flags
 		v1 := sam.val[0]
@@ -91,10 +97,6 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 		// Ignore sites that has at least one const operand and
 		// are already taken both ways enough times.
 		upd, skip := site.update(sam, smash, res)
-		if site.takenTotal[0] == 10 && site.takenTotal[1] == 0 ||
-			site.takenTotal[1] == 10 && site.takenTotal[0] == 0 {
-			//s.bruteForce(data, samples, sam.site)
-		}
 		if upd {
 			updated = true
 		}
@@ -105,6 +107,9 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 			// We systematically mutate all bytes during smashing,
 			// no point in trying to break equality here.
 			continue
+		}
+		testInput := func(tmp []byte) {
+			s.testInput(tmp, depth+1, execSonarHint)
 		}
 		check := func(v1, v2 []byte) {
 			if len(v1) == 0 || bytes.Equal(v1, v2) {
@@ -127,15 +132,17 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 				copy(tmp, data[:i])
 				copy(tmp[i:], v2)
 				copy(tmp[i+len(v2):], data[i+len(v1):])
-				s.testInput(tmp, depth+1, execSonarHint)
+				if len(tmp) > CoverSize {
+					tmp = tmp[:CoverSize]
+				}
+				testInput(tmp)
 				if flags&SonarString != 0 && len(v1) != len(v2) {
 					// Update length field.
-					// TODO: handle multi-byte/big-endian length fields.
+					// TODO: handle multi-byte/big-endian/base-128 length fields.
 					diff := byte(len(v2) - len(v1))
 					for idx := i - 1; idx >= 0 && idx+5 >= i; idx-- {
-						//tmp1 := append([]byte{}, tmp...)
 						tmp[idx] += diff
-						s.testInput(tmp, depth+1, execSonarHint)
+						testInput(tmp)
 						tmp[idx] -= diff
 					}
 				}
@@ -146,22 +153,23 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 			// Try several common wire encodings of the values:
 			// network format (big endian), hex, base-128.
 			// TODO: try more encodings if it proves to be useful:
-			// base-64, quoted-printable, xml-escaping? hex+increment/decrement?
+			// base-64, quoted-printable, xml-escaping, hex+increment/decrement.
 
-			// TODO: ascii-encoding: 0xff -> "255"
 			if flags&SonarString == 0 {
 				// Increment and decrement take care of less and greater comparison operators
 				// as well as of off-by-one bugs.
 				check(v1, increment(v2))
 				check(v1, decrement(v2))
+
+				// Also try big-endian increments/decrements.
 				if len(v1) > 1 {
 					check(reverse(v1), reverse(v2))
 					check(reverse(v1), reverse(increment(v2)))
 					check(reverse(v1), reverse(decrement(v2)))
 				}
-			}
-			check([]byte(hex.EncodeToString(v1)), []byte(hex.EncodeToString(v2)))
-			if flags&SonarString == 0 {
+
+				// Base-128.
+				// TODO: try to treat the value as negative.
 				var u1, u2 uint64
 				for i := 0; i < len(v1); i++ {
 					u1 += uint64(v1[i]) << uint(i*8)
@@ -169,11 +177,28 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 				for i := 0; i < len(v2); i++ {
 					u2 += uint64(v2[i]) << uint(i*8)
 				}
-				var vv1, vv2 [10]byte
-				n1 := binary.PutUvarint(vv1[:], u1)
-				n2 := binary.PutUvarint(vv2[:], u2)
-				check(vv1[:n1], vv2[:n2])
+				if u1 > 127 || u2 > 127 { // otherwise it's the same as byte replacement
+					var vv1, vv2 [10]byte
+					n1 := binary.PutUvarint(vv1[:], u1)
+					n2 := binary.PutUvarint(vv2[:], u2)
+					check(vv1[:n1], vv2[:n2])
+
+					// Increment/decrement in base-128.
+					n1 = binary.PutUvarint(vv1[:], u1+1)
+					n2 = binary.PutUvarint(vv2[:], u2+1)
+					check(vv1[:n1], vv2[:n2])
+					n1 = binary.PutUvarint(vv1[:], u1-1)
+					n2 = binary.PutUvarint(vv2[:], u2-1)
+					check(vv1[:n1], vv2[:n2])
+				}
+
+				// Ascii-encoding.
+				// TODO: try to treat the value as negative.
+				s1 := strconv.FormatUint(u1, 10)
+				s2 := strconv.FormatUint(u2, 10)
+				check([]byte(s1), []byte(s2))
 			}
+			check([]byte(hex.EncodeToString(v1)), []byte(hex.EncodeToString(v2)))
 		}
 		if flags&SonarConst1 == 0 {
 			check1(v1, v2)
@@ -220,66 +245,18 @@ func (site *SonarSite) update(sam SonarSample, smash, resb bool) (updated, skip 
 	if !smash {
 		site.takenFuzz[res]++
 	}
-	if !site.dynamic && (site.takenFuzz[0] > 10 && site.takenFuzz[1] > 10 || site.takenFuzz[0]+site.takenFuzz[1] > 100) {
-		if rand.Intn(10000) != 0 {
+	if !site.dynamic && !smash {
+		// Skip this site if it has at least one const operand
+		// and is taken both ways enough times.
+		// Check sites that don't have const operands always,
+		// because it can be a CRC-like verification, which
+		// won't be cracked otherwise.
+		if site.takenFuzz[0] > 10 && site.takenFuzz[1] > 10 || site.takenFuzz[0]+site.takenFuzz[1] > 100 {
 			skip = true
 			return
 		}
 	}
 	return
-}
-
-func (s *Slave) bruteForce(data []byte, samples []SonarSample, site *SonarSite) {
-	si := -1
-	var sam SonarSample
-	for i, sam1 := range samples {
-		if sam1.site == site {
-			sam = sam1
-			si = i
-			break
-		}
-	}
-	if si == -1 {
-		panic("can't find the sample")
-	}
-	var deps []int
-	for i := range data {
-		data[i] ^= 0xff
-		sonar := s.testInputSonar(data, 0)
-		data[i] ^= 0xff
-		samples1 := s.parseSonarData(sonar)
-		var sam1 SonarSample
-		si1 := -1
-		for i, sam2 := range samples1 {
-			if sam2.site == site {
-				si1 = i
-				sam1 = sam2
-				break
-			}
-		}
-		if si1 == -1 {
-			continue
-		}
-		if bytes.Equal(sam.val[0], sam1.val[0]) && bytes.Equal(sam.val[1], sam1.val[1]) {
-			continue
-		}
-		matches := 0
-		for i := 0; i < si && i < si1; i++ {
-			if samples[i].site == samples1[i].site {
-				matches++
-			}
-		}
-		if matches+1 < si {
-			for i := si - 1; i > 0 && i+si1-si > 0; i-- {
-				if samples[i].site == samples1[i+si1-si].site {
-					matches++
-				}
-			}
-		}
-		log.Printf("BRUTEFORCE: byte %v matches %v si=%v/%v", i, matches, si, si1)
-		deps = append(deps, i)
-	}
-	log.Printf("BRUTEFORCE: %v deps=%+v", sam.site.loc, deps)
 }
 
 func (sam *SonarSample) evaluate() bool {
@@ -308,7 +285,7 @@ func (sam *SonarSample) evaluate() bool {
 	if len(v1) == 0 || len(v2) == 0 || len(v1) > 8 || len(v2) > 8 || len(v1) != len(v2) {
 		return false
 	}
-	v1 = append([]byte{}, v1...)
+	v1 = makeCopy(v1)
 	for len(v1) < 8 {
 		if int8(v1[len(v1)-1]) >= 0 {
 			v1 = append(v1, 0)
@@ -316,7 +293,7 @@ func (sam *SonarSample) evaluate() bool {
 			v1 = append(v1, 0xff)
 		}
 	}
-	v2 = append([]byte{}, v2...)
+	v2 = makeCopy(v2)
 	for len(v2) < 8 {
 		if int8(v2[len(v2)-1]) >= 0 {
 			v2 = append(v2, 0)
