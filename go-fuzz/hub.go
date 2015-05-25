@@ -5,10 +5,12 @@ import (
 	"log"
 	"net/rpc"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"time"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+	"github.com/dvyukov/go-fuzz/go-fuzz/versifier"
 )
 
 const (
@@ -29,30 +31,33 @@ type Hub struct {
 
 	ro atomic.Value // *ROData
 
-	maxCoverSize int
-	corpusSigs   map[Sig]struct{}
-	corpusCover  []byte
-	corpusStale  bool
-	triageQueue  []MasterInput
+	maxCoverMu sync.Mutex
+	maxCover   atomic.Value // []byte
+
+	corpusCoverSize int
+	corpusSigs      map[Sig]struct{}
+	corpusStale     bool
+	triageQueue     []MasterInput
 
 	triageC     chan MasterInput
 	newInputC   chan Input
 	newCrasherC chan NewCrasherArgs
-	newCoverC   chan []byte
 	syncC       chan Stats
 
-	stats Stats
+	stats         Stats
+	corpusOrigins [execCount]uint64
 }
 
 type ROData struct {
 	corpus       []Input
-	maxCover     []byte
+	corpusCover  []byte
 	badInputs    map[Sig]struct{}
 	suppressions map[Sig]struct{}
 	strLits      [][]byte // string literals in testee
 	intLits      [][]byte // int literals in testee
 	coverBlocks  map[int][]CoverBlock
 	sonarSites   []SonarSite
+	verse        *versifier.Verse
 }
 
 type Stats struct {
@@ -87,18 +92,17 @@ func newHub(metadata MetaData) *Hub {
 	hub := &Hub{
 		id:          res.ID,
 		master:      c,
-		corpusCover: make([]byte, CoverSize),
 		corpusSigs:  make(map[Sig]struct{}),
 		triageQueue: res.Corpus,
 		triageC:     make(chan MasterInput, procs),
 		newInputC:   make(chan Input, procs),
 		newCrasherC: make(chan NewCrasherArgs, procs),
-		newCoverC:   make(chan []byte, procs),
 		syncC:       make(chan Stats, procs),
 	}
+	hub.maxCover.Store(make([]byte, CoverSize))
 
 	ro := &ROData{
-		maxCover:     make([]byte, CoverSize),
+		corpusCover:  make([]byte, CoverSize),
 		badInputs:    make(map[Sig]struct{}),
 		suppressions: make(map[Sig]struct{}),
 		coverBlocks:  coverBlocks,
@@ -137,11 +141,20 @@ func (hub *Hub) loop() {
 		select {
 		case <-syncTicker:
 			// Sync with the master.
+			if *flagV >= 1 {
+				ro := hub.ro.Load().(*ROData)
+				log.Printf("hub: corpus=%v bootstrap=%v fuzz=%v minimize=%v versifier=%v smash=%v sonar=%v",
+					len(ro.corpus), hub.corpusOrigins[execCorpus],
+					hub.corpusOrigins[execFuzz]+hub.corpusOrigins[execSonar],
+					hub.corpusOrigins[execMinimizeInput]+hub.corpusOrigins[execMinimizeCrasher],
+					hub.corpusOrigins[execVersifier], hub.corpusOrigins[execSmash],
+					hub.corpusOrigins[execSonarHint])
+			}
 			args := &SyncArgs{
 				ID:            hub.id,
 				Execs:         hub.stats.execs,
 				Restarts:      hub.stats.restarts,
-				CoverFullness: float64(hub.maxCoverSize) / CoverSize,
+				CoverFullness: float64(hub.corpusCoverSize) / CoverSize,
 			}
 			hub.stats.execs = 0
 			hub.stats.restarts = 0
@@ -178,8 +191,7 @@ func (hub *Hub) loop() {
 		case input := <-hub.newInputC:
 			// New interesting input from slaves.
 			ro := hub.ro.Load().(*ROData)
-			newCover, newCount := compareCover(hub.corpusCover, input.cover)
-			if !newCover && !newCount {
+			if !compareCover(ro.corpusCover, input.cover) {
 				break
 			}
 			sig := hash(input.data)
@@ -203,10 +215,14 @@ func (hub *Hub) loop() {
 			input.score = defScore
 			input.runningScoreSum = scoreSum + defScore
 			ro1.corpus = append(ro1.corpus, input)
-			ro1.maxCover = append([]byte{}, ro.maxCover...)
-			updateMaxCover(ro1.maxCover, input.cover)
-			hub.maxCoverSize = updateMaxCover(hub.corpusCover, input.cover)
+			hub.updateMaxCover(input.cover)
+			ro1.corpusCover = makeCopy(ro.corpusCover)
+			hub.corpusCoverSize = updateMaxCover(ro1.corpusCover, input.cover)
+			if input.res > 0 || input.typ == execCorpus {
+				ro1.verse = versifier.BuildVerse(ro.verse, input.data)
+			}
 			hub.ro.Store(ro1)
+			hub.corpusOrigins[input.typ]++
 
 			if input.mine {
 				if err := hub.master.Call("Master.NewInput", NewInputArgs{hub.id, input.data, uint64(input.depth)}, nil); err != nil {
@@ -215,7 +231,7 @@ func (hub *Hub) loop() {
 			}
 
 			if *flagDumpCover {
-				dumpCover(filepath.Join(*flagWorkdir, "coverprofile"), ro.coverBlocks, hub.corpusCover)
+				dumpCover(filepath.Join(*flagWorkdir, "coverprofile"), ro.coverBlocks, ro.corpusCover)
 			}
 
 		case crash := <-hub.newCrasherC:
@@ -241,21 +257,27 @@ func (hub *Hub) loop() {
 			if err := hub.master.Call("Master.NewCrasher", crash, nil); err != nil {
 				log.Printf("new crasher call failed: %v", err)
 			}
-
-		case cover := <-hub.newCoverC:
-			// Preliminary cover update (to prevent new input thundering herd.
-			ro := hub.ro.Load().(*ROData)
-			newCover, newCount := compareCover(ro.maxCover, cover)
-			if !newCover && !newCount {
-				break
-			}
-			ro1 := new(ROData)
-			*ro1 = *ro
-			ro1.maxCover = append([]byte{}, ro.maxCover...)
-			updateMaxCover(ro1.maxCover, cover)
-			hub.ro.Store(ro1)
 		}
 	}
+}
+
+// Preliminary cover update to prevent new input thundering herd.
+// This function is synchronous to reduce latency.
+func (hub *Hub) updateMaxCover(cover []byte) bool {
+	oldMaxCover := hub.maxCover.Load().([]byte)
+	if !compareCover(oldMaxCover, cover) {
+		return false
+	}
+	hub.maxCoverMu.Lock()
+	defer hub.maxCoverMu.Unlock()
+	oldMaxCover = hub.maxCover.Load().([]byte)
+	if !compareCover(oldMaxCover, cover) {
+		return false
+	}
+	maxCover := makeCopy(oldMaxCover)
+	updateMaxCover(maxCover, cover)
+	hub.maxCover.Store(maxCover)
+	return true
 }
 
 func (hub *Hub) updateScores() {
@@ -275,7 +297,7 @@ func (hub *Hub) updateScores() {
 	avgExecTime := sumExecTime / n
 	avgCoverSize := sumCoverSize / n
 
-	scoreSum := 0
+	// Phase 1: calculate score for each input independently.
 	for i, inp := range corpus {
 		score := defScore
 
@@ -348,9 +370,55 @@ func (hub *Hub) updateScores() {
 		if score > maxScore {
 			score = maxScore
 		}
-		scoreSum += int(score)
 		corpus[i].score = int(score)
+	}
+
+	// Phase 2: Choose a minimal set of (favored) inputs that give full coverage.
+	// Non-favored inputs receive minimal score.
+	type Candidate struct {
+		index  int
+		score  int
+		chosen bool
+	}
+	candidates := make([]Candidate, CoverSize)
+	for idx, inp := range corpus {
+		corpus[idx].favored = false
+		for i, c := range inp.cover {
+			c = roundUpCover(c)
+			if c == 0 || c != ro.corpusCover[i] {
+				continue
+			}
+			if c > ro.corpusCover[i] {
+				log.Fatalf("bad")
+			}
+			if candidates[i].score < inp.score {
+				candidates[i].index = idx
+				candidates[i].score = inp.score
+			}
+		}
+	}
+	for ci, cand := range candidates {
+		if cand.score == 0 {
+			continue
+		}
+		inp := &corpus[cand.index]
+		inp.favored = true
+		for i := ci + 1; i < CoverSize; i++ {
+			c := roundUpCover(inp.cover[i])
+			if c == 0 || c != ro.corpusCover[i] {
+				continue
+			}
+			candidates[i].score = 0
+		}
+	}
+	scoreSum := 0
+	for i, inp := range corpus {
+		if !inp.favored {
+			inp.score = minScore
+		}
+		scoreSum += inp.score
 		corpus[i].runningScoreSum = scoreSum
 	}
+
 	hub.ro.Store(ro1)
 }
