@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"time"
 	"unsafe"
+
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 type Mutator struct {
@@ -340,12 +342,13 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			}
 		case 18:
 			// Insert a literal.
+			// TODO: encode int literals in big-endian, base-128, etc.
 			if len(ro.intLits) == 0 && len(ro.strLits) == 0 {
 				iter--
 				continue
 			}
 			var lit []byte
-			if len(ro.intLits) == 0 || m.rand(2) == 0 {
+			if len(ro.strLits) != 0 && m.rand(2) == 0 {
 				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
 			} else {
 				lit = ro.intLits[m.rand(len(ro.intLits))]
@@ -366,7 +369,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			var lit []byte
-			if len(ro.intLits) == 0 || m.rand(2) == 0 {
+			if len(ro.strLits) != 0 && m.rand(2) == 0 {
 				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
 			} else {
 				lit = ro.intLits[m.rand(len(ro.intLits))]
@@ -382,8 +385,8 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			copy(res[pos:], lit)
 		}
 	}
-	if len(res) > maxInputSize {
-		res = res[:maxInputSize]
+	if len(res) > MaxInputSize {
+		res = res[:MaxInputSize]
 	}
 	return res
 }
@@ -391,11 +394,11 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 // chooseLen chooses length of range mutation.
 // It gives preference to shorter ranges.
 func (m *Mutator) chooseLen(n int) int {
-	switch m.rand(9) {
-	case 0, 1, 2, 3, 4:
-		return m.rand(min(10, n)) + 1
-	case 5, 6, 7:
-		return m.rand(min(50, n)) + 1
+	switch x := m.rand(100); {
+	case x < 90:
+		return m.rand(min(8, n)) + 1
+	case x < 99:
+		return m.rand(min(32, n)) + 1
 	default:
 		return m.rand(n) + 1
 	}

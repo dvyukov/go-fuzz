@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"crypto/sha1"
-	"encoding/binary"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -14,11 +13,13 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(in, out string, lits map[string]bool) {
+func instrument(pkg, shortName, in, out string, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	fset := token.NewFileSet()
 	content, err := ioutil.ReadFile(in)
 	if err != nil {
@@ -31,18 +32,24 @@ func instrument(in, out string, lits map[string]bool) {
 	parsedFile.Comments = trimComments(parsedFile, fset)
 
 	file := &File{
-		fset:    fset,
-		name:    in,
-		astFile: parsedFile,
+		fset:      fset,
+		name:      in,
+		shortName: shortName,
+		astFile:   parsedFile,
+		blocks:    blocks,
 	}
 	file.addImport("github.com/dvyukov/go-fuzz/go-fuzz-dep", fuzzdepPkg, "Main")
 
 	if lits != nil {
-		lc := &LiteralCollector{lits}
-		ast.Walk(lc, file.astFile)
+		ast.Walk(&LiteralCollector{lits}, file.astFile)
 	}
 
 	ast.Walk(file, file.astFile)
+
+	if sonar != nil {
+		s := &Sonar{fset: fset, name: shortName, pkg: pkg, blocks: sonar}
+		ast.Walk(s, file.astFile)
+	}
 
 	fd, err := os.Create(out)
 	if err != nil {
@@ -53,8 +60,355 @@ func instrument(in, out string, lits map[string]bool) {
 	file.print(fd)
 }
 
+type Sonar struct {
+	fset   *token.FileSet
+	name   string
+	pkg    string
+	blocks *[]CoverBlock
+}
+
+var sonarSeq = 0
+
+func (s *Sonar) Visit(n ast.Node) ast.Visitor {
+	// TODO: detect "x&mask==0", emit sonar(x, x&^mask)
+	switch nn := n.(type) {
+	case *ast.BinaryExpr:
+		break
+	case *ast.GenDecl:
+		if nn.Tok != token.VAR {
+			return nil // constants and types are not interesting
+		}
+		return s
+
+	case *ast.FuncDecl:
+		if s.pkg == "math" && (nn.Name.Name == "Y0" || nn.Name.Name == "Y1" || nn.Name.Name == "Yn" ||
+			nn.Name.Name == "J0" || nn.Name.Name == "J1" || nn.Name.Name == "Jn" ||
+			nn.Name.Name == "Pow") {
+			// Can't handle code there:
+			// math/j0.go:93: constant 680564733841876926926749214863536422912 overflows int
+			return nil
+		}
+		return s // recurse
+
+	case *ast.SwitchStmt:
+		if nn.Tag == nil || nn.Body == nil {
+			return s // recurse
+		}
+		// Replace:
+		//	switch a := foo(); bar(a) {
+		//	case x: ...
+		//	case y: ...
+		//	}
+		// with:
+		//	switch {
+		//	default:
+		//		a := foo()
+		//		__tmp := bar(a)
+		//		switch {
+		//		case __tmp == x: ...
+		//		case __tmp == y: ...
+		//		}
+		//	}
+		// The == comparisons will be instrumented later when we recurse.
+		sw := new(ast.SwitchStmt)
+		*sw = *nn
+		var stmts []ast.Stmt
+		if sw.Init != nil {
+			stmts = append(stmts, sw.Init)
+			sw.Init = nil
+		}
+		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: "__go_fuzz_tmp"}}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
+		sw.Tag = nil
+		stmts = append(stmts, sw)
+		for _, cas1 := range sw.Body.List {
+			cas := cas1.(*ast.CaseClause)
+			for i, expr := range cas.List {
+				cas.List[i] = &ast.BinaryExpr{X: &ast.Ident{Name: "__go_fuzz_tmp", NamePos: expr.Pos()}, Op: token.EQL, Y: expr}
+			}
+		}
+		nn.Tag = nil
+		nn.Init = nil
+		nn.Body = &ast.BlockStmt{List: []ast.Stmt{&ast.CaseClause{Body: stmts}}}
+		return s // recurse
+
+	case *ast.ForStmt:
+		// For condition is usually uninteresting, but produces lots of samples.
+		// So we skip it if it looks boring.
+		if nn.Init != nil {
+			ast.Walk(s, nn.Init)
+		}
+		if nn.Post != nil {
+			ast.Walk(s, nn.Post)
+		}
+		ast.Walk(s, nn.Body)
+		if nn.Cond != nil {
+			// Look for the following pattern:
+			//	for foo := ...; foo ? ...; ... { ... }
+			boring := false
+			if nn.Init != nil {
+				if init, ok1 := nn.Init.(*ast.AssignStmt); ok1 && init.Tok == token.DEFINE && len(init.Lhs) == 1 {
+					if id, ok2 := init.Lhs[0].(*ast.Ident); ok2 {
+						if bex, ok3 := nn.Cond.(*ast.BinaryExpr); ok3 {
+							if x, ok4 := bex.X.(*ast.Ident); ok4 && x.Name == id.Name {
+								boring = true
+							}
+							if x, ok4 := bex.Y.(*ast.Ident); ok4 && x.Name == id.Name {
+								boring = true
+							}
+						}
+					}
+				}
+			}
+			if !boring {
+				ast.Walk(s, nn.Cond)
+			}
+		}
+		return nil
+
+	default:
+		return s // recurse
+	}
+
+	// TODO: handle map index expressions (especially useful for strings).
+	// E.g. when code matches a read in identifier against a set of known identifiers.
+	// For the record, it looks as follows. However, it is tricky to distinguish
+	// from slice/array index and map assignments...
+	//.  .  .  .  .  .  .  *ast.IndexExpr {
+	//.  .  .  .  .  .  .  .  X: *ast.Ident {
+	//.  .  .  .  .  .  .  .  .  Name: "m"
+	//.  .  .  .  .  .  .  .  }
+	//.  .  .  .  .  .  .  .  Index: *ast.Ident {
+	//.  .  .  .  .  .  .  .  .  Name: "s"
+	//.  .  .  .  .  .  .  .  }
+	//.  .  .  .  .  .  .  }
+
+	// TODO: transform expressions so that lhs expression contains a variable
+	// and rhs contains all constant operands. For example, for (real code from vp8 codec):
+	//	cf := (b[0]>>4)&7 == 5
+	// we would like to transform it to:
+	//	b[0] & (7<<4) == 5<<4
+	// and then to:
+	//	b[0] == 5<<4 | b & ^(7<<4)
+	// and emit:
+	//	Sonar(b[0], 5<<4 | b & ^(7<<4), SonarEQL)
+	// This will allow the fuzzer to figure out what bytes it needs to replace
+	// with what bytes in order to crack this condition.
+	// Similarly, for:
+	//	x/3 == 100
+	// we would like to emit:
+	//	Sonar(x, 100*3, SonarEQL)
+
+	// TODO: intercept strings.Index/HasPrefix and similar functions.
+
+	nn := n.(*ast.BinaryExpr)
+	var flags uint8
+	switch nn.Op {
+	case token.EQL:
+		flags = SonarEQL
+		break
+	case token.NEQ:
+		flags = SonarNEQ
+		break
+	case token.LSS:
+		flags = SonarLSS
+		break
+	case token.GTR:
+		flags = SonarGTR
+		break
+	case token.LEQ:
+		flags = SonarLEQ
+		break
+	case token.GEQ:
+		flags = SonarGEQ
+		break
+	default:
+		return s // recurse
+	}
+	// Replace:
+	//	x != y
+	// with:
+	//	func() bool { v1 := x; v2 := y; go-fuzz-dep.Sonar(v1, v2, flags); return v1 != v2 }() == true
+	v1 := nn.X
+	v2 := nn.Y
+	ast.Walk(s, v1)
+	ast.Walk(s, v2)
+	if isUninterestingLiteral(v1) || isUninterestingLiteral(v2) {
+		return s
+	}
+	if isCap(v1) || isCap(v2) {
+		// Haven't seen useful cases yet.
+		return s
+	}
+	if isLen(v1) || isLen(v2) {
+		// TODO: we could pass both length value and the len argument.
+		// For example, if the code is:
+		//	name := ... // obtained from input
+		//	if len(name) > 5 { ... }
+		// If we would have the name value at runtime, we will know
+		// what part of the input to alter to affect len result.
+		flags |= SonarLength
+	}
+	if isConstExpr(v1) {
+		flags |= SonarConst1
+	}
+	if isConstExpr(v2) {
+		flags |= SonarConst2
+	}
+	id := int(flags) | sonarSeq<<8
+	startPos := s.fset.Position(nn.Pos())
+	endPos := s.fset.Position(nn.End())
+	*s.blocks = append(*s.blocks, CoverBlock{sonarSeq, s.name, startPos.Line, startPos.Column, endPos.Line, endPos.Column, int(flags)})
+	sonarSeq++
+	block := &ast.BlockStmt{}
+	if !isSimpleExpr(v1) {
+		tmp := ast.NewIdent("v1")
+		block.List = append(block.List, &ast.AssignStmt{Tok: token.DEFINE, Lhs: []ast.Expr{tmp}, Rhs: []ast.Expr{v1}})
+		v1 = tmp
+	}
+	if !isSimpleExpr(v2) {
+		tmp := ast.NewIdent("v2")
+		block.List = append(block.List, &ast.AssignStmt{Tok: token.DEFINE, Lhs: []ast.Expr{tmp}, Rhs: []ast.Expr{v2}})
+		v2 = tmp
+	}
+	block.List = append(block.List,
+		&ast.ExprStmt{
+			X: &ast.CallExpr{
+				Fun:  &ast.SelectorExpr{X: &ast.Ident{Name: fuzzdepPkg}, Sel: &ast.Ident{Name: "Sonar"}},
+				Args: []ast.Expr{v1, v2, &ast.BasicLit{Kind: token.INT, Value: strconv.Itoa(id)}},
+			},
+		},
+		&ast.ReturnStmt{Results: []ast.Expr{&ast.BinaryExpr{Op: nn.Op, X: v1, Y: v2}}},
+	)
+	nn.X = &ast.CallExpr{
+		Fun: &ast.FuncLit{
+			Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "bool"}}}}},
+			Body: block,
+		},
+	}
+	nn.Y = &ast.BasicLit{Kind: token.INT, Value: "true"}
+	nn.Op = token.EQL
+	return nil
+}
+
+func isUninterestingLiteral(n ast.Expr) bool {
+	if id, ok := n.(*ast.Ident); ok {
+		return id.Name == "nil" || id.Name == "true" || id.Name == "false"
+	}
+	return false
+}
+
+func isSimpleExpr(n ast.Expr) bool {
+	switch nn := n.(type) {
+	case *ast.Ident:
+		return true
+	case *ast.BasicLit:
+		return true
+	case *ast.UnaryExpr:
+		return isSimpleExpr(nn.X)
+	case *ast.BinaryExpr:
+		return isSimpleExpr(nn.X) && isSimpleExpr(nn.Y)
+	case *ast.SelectorExpr:
+		return isSimpleExpr(nn.X) && isSimpleExpr(nn.Sel)
+	case *ast.ParenExpr:
+		return isSimpleExpr(nn.X)
+	case *ast.CallExpr:
+		if arg := isConv(nn); arg != nil {
+			return isSimpleExpr(arg)
+		}
+		if isUnsafeOperator(nn) {
+			return true
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+func isConstExpr(n ast.Expr) bool {
+	switch nn := n.(type) {
+	case *ast.Ident:
+		return nn.Obj != nil && nn.Obj.Kind == ast.Con
+	case *ast.BasicLit:
+		return true
+	case *ast.UnaryExpr:
+		return isConstExpr(nn.X)
+	case *ast.BinaryExpr:
+		return isConstExpr(nn.X) && isConstExpr(nn.Y)
+	case *ast.SelectorExpr:
+		return isConstExpr(nn.Sel)
+	case *ast.ParenExpr:
+		return isConstExpr(nn.X)
+	case *ast.CallExpr:
+		if arg := isConv(nn); arg != nil {
+			return isConstExpr(arg)
+		}
+		if isUnsafeOperator(nn) {
+			return true
+		}
+		return false
+	default:
+		return false
+	}
+}
+
+func isCap(n ast.Expr) bool {
+	if call, ok := n.(*ast.CallExpr); ok {
+		if id, ok2 := call.Fun.(*ast.Ident); ok2 {
+			return id.Name == "cap"
+		}
+	}
+	return false
+}
+
+func isLen(n ast.Expr) bool {
+	if call, ok := n.(*ast.CallExpr); ok {
+		if id, ok2 := call.Fun.(*ast.Ident); ok2 {
+			return id.Name == "len"
+		}
+	}
+	return false
+}
+
+func isConv(n *ast.CallExpr) ast.Expr {
+	if id, ok := n.Fun.(*ast.Ident); ok {
+		if knownTypes[id.Name] {
+			return n.Args[0]
+		}
+	}
+	return nil
+}
+
+var knownTypes = map[string]bool{
+	"rune":    true,
+	"byte":    true,
+	"int8":    true,
+	"uint8":   true,
+	"int16":   true,
+	"uint16":  true,
+	"int32":   true,
+	"uint32":  true,
+	"int64":   true,
+	"uint64":  true,
+	"string":  true,
+	"int":     true,
+	"uint":    true,
+	"intptr":  true,
+	"uintptr": true,
+	"float32": true,
+	"float64": true,
+}
+
+func isUnsafeOperator(n *ast.CallExpr) bool {
+	if sel, ok := n.Fun.(*ast.SelectorExpr); ok {
+		if id, ok := sel.X.(*ast.Ident); ok {
+			return id.Name == "unsafe"
+		}
+	}
+	return false
+}
+
 type LiteralCollector struct {
-	lits map[string]bool
+	lits map[Literal]struct{}
 }
 
 func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
@@ -81,24 +435,32 @@ func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
 		lit := nn.Value
 		switch nn.Kind {
 		case token.STRING:
-			lc.lits[lit] = true
+			lc.lits[Literal{unquote(lit), true}] = struct{}{}
 		case token.CHAR:
-			lc.lits[fmt.Sprintf("string(%v)", lit)] = true
+			lc.lits[Literal{unquote(lit), false}] = struct{}{}
 		case token.INT:
 			if lit[0] < '0' || lit[0] > '9' {
 				failf("unsupported literal '%v'", lit)
 			}
-			v, err := strconv.ParseUint(lit, 0, 64)
+			v, err := strconv.ParseInt(lit, 0, 64)
 			if err != nil {
-				i, err := strconv.ParseInt(lit, 0, 64)
+				u, err := strconv.ParseUint(lit, 0, 64)
 				if err != nil {
 					failf("failed to parse int literal '%v': %v", lit, err)
 				}
-				v = uint64(i)
+				v = int64(u)
 			}
-			buf := new(bytes.Buffer)
-			binary.Write(buf, binary.LittleEndian, v)
-			lc.lits[fmt.Sprintf("%q", buf.String())] = true
+			var val []byte
+			if v >= -(1<<7) && v < 1<<8 {
+				val = append(val, byte(v))
+			} else if v >= -(1<<15) && v < 1<<16 {
+				val = append(val, byte(v), byte(v>>8))
+			} else if v >= -(1<<31) && v < 1<<32 {
+				val = append(val, byte(v), byte(v>>8), byte(v>>16), byte(v>>24))
+			} else {
+				val = append(val, byte(v), byte(v>>8), byte(v>>16), byte(v>>24), byte(v>>32), byte(v>>40), byte(v>>48), byte(v>>56))
+			}
+			lc.lits[Literal{string(val), false}] = struct{}{}
 		}
 		return nil
 	}
@@ -144,22 +506,22 @@ func initialComments(content []byte) []byte {
 }
 
 type File struct {
-	fset    *token.FileSet
-	name    string // Name of file.
-	astFile *ast.File
-	blocks  []Block
-}
-
-type Block struct {
-	startByte token.Pos
-	endByte   token.Pos
-	numStmt   int
+	fset      *token.FileSet
+	name      string // Name of file.
+	shortName string
+	astFile   *ast.File
+	blocks    *[]CoverBlock
 }
 
 var slashslash = []byte("//")
 
 func (f *File) Visit(node ast.Node) ast.Visitor {
 	switch n := node.(type) {
+	case *ast.GenDecl:
+		if n.Tok != token.VAR {
+			return nil // constants and types are not interesting
+		}
+
 	case *ast.BlockStmt:
 		// If it's a switch or select, the body is a list of case clauses; don't tag the block itself.
 		if len(n.List) > 0 {
@@ -180,6 +542,12 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 		}
 		n.List = f.addCounters(n.Lbrace, n.Rbrace+1, n.List, true) // +1 to step past closing brace.
 	case *ast.IfStmt:
+		if n.Init != nil {
+			ast.Walk(f, n.Init)
+		}
+		if n.Cond != nil {
+			ast.Walk(f, n.Cond)
+		}
 		ast.Walk(f, n.Body)
 		if n.Else == nil {
 			// Add else because we want coverage for "not taken".
@@ -241,11 +609,24 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 		if n.Body == nil || len(n.Body.List) == 0 {
 			return nil
 		}
-		// TODO: add default if it is not already there
 	case *ast.TypeSwitchStmt:
 		// Don't annotate an empty type switch - creates a syntax error.
+		// TODO: add default case
 		if n.Body == nil || len(n.Body.List) == 0 {
 			return nil
+		}
+	case *ast.BinaryExpr:
+		if n.Op == token.LAND || n.Op == token.LOR {
+			// Replace:
+			//	x && y
+			// with:
+			//	x && func() bool { return y }
+			n.Y = &ast.CallExpr{
+				Fun: &ast.FuncLit{
+					Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "bool"}}}}},
+					Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ReturnStmt{Results: []ast.Expr{n.Y}}}},
+				},
+			}
 		}
 	}
 	return f
@@ -434,18 +815,26 @@ func (f *File) statementBoundary(s ast.Stmt) token.Pos {
 
 var counterGen uint32
 
-func genCounter() uint16 {
+func genCounter() int {
 	counterGen++
 	id := counterGen
 	buf := []byte{byte(id), byte(id >> 8), byte(id >> 16), byte(id >> 24)}
 	hash := sha1.Sum(buf)
-	return uint16(hash[0]) | uint16(hash[1])<<8
+	return int(uint16(hash[0]) | uint16(hash[1])<<8)
 }
 
 func (f *File) newCounter(start, end token.Pos, numStmt int) ast.Stmt {
+	cnt := genCounter()
+
+	if f.blocks != nil {
+		s := f.fset.Position(start)
+		e := f.fset.Position(end)
+		*f.blocks = append(*f.blocks, CoverBlock{cnt, f.shortName, s.Line, s.Column, e.Line, e.Column, numStmt})
+	}
+
 	idx := &ast.BasicLit{
 		Kind:  token.INT,
-		Value: fmt.Sprint(genCounter()),
+		Value: strconv.Itoa(cnt),
 	}
 	counter := &ast.IndexExpr{
 		X: &ast.SelectorExpr{
