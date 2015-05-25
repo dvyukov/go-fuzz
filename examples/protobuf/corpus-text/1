@@ -1,0 +1,4 @@
+f: -1000000
+/* 3 unknown bytes */
+0: 1
+0: /* unexpected EOF */

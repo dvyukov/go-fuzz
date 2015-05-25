@@ -6,6 +6,13 @@ import (
 )
 
 func Fuzz(data []byte) int {
+	cfg, err := tiff.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return 0
+	}
+	if cfg.Width*cfg.Height > 1e6 {
+		return 0
+	}
 	img, err := tiff.Decode(bytes.NewReader(data))
 	if err != nil {
 		return 0

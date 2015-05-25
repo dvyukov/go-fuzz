@@ -59,7 +59,7 @@ func main() {
 		&pb.M22{F: []*pb.M2{&pb.M2{}, &pb.M2{F: proto.Uint32(123123)}}},
 		&pb.M23{},
 		&pb.M23{F: map[int32]string{42: "", 11: "foo", 123123123: "\x00\x01\x02"}},
-		&pb.M24{F: map[string]*pb.M2{"": nil, "foo": &pb.M2{}, "\x00\x01\x02": &pb.M2{F: proto.Uint32(123123)}}},
+		&pb.M24{F: map[string]*pb.M2{"": &pb.M2{}, "foo": &pb.M2{}, "\x00\x01\x02": &pb.M2{F: proto.Uint32(123123)}}},
 		&pb.M25{},
 		&pb.M25{F0: proto.String("")},
 		&pb.M25{F0: proto.String("foo")},
@@ -68,6 +68,7 @@ func main() {
 		&pb.M25{F2: pb.Corpus_UNIVERSAL.Enum()},
 	}
 	for i, v := range vars {
+		if false {
 		data, err := proto.Marshal(v)
 		if err != nil {
 			panic(err)
@@ -78,5 +79,17 @@ func main() {
 		}
 		f.Write(data)
 		f.Close()
+		} else {
+		f, err := os.Create(fmt.Sprintf("/tmp/proto/%v", i))
+		if err != nil {
+			panic(err)
+		}
+		fmt.Printf("%v: %+v\n", i, v)
+		err = proto.MarshalText(f, v)
+		if err != nil {
+			panic(err)
+		}
+		f.Close()
+		}
 	}
 }

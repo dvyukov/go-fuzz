@@ -1,0 +1,172 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+)
+
+func makeCopy(data []byte) []byte {
+	return append([]byte{}, data...)
+}
+
+func compareCover(base, cur []byte) bool {
+	if len(base) != CoverSize || len(cur) != CoverSize {
+		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
+	}
+	res := compareCoverBody(&base[0], &cur[0])
+	if false {
+		if compareCoverDump(base, cur) != res {
+			panic("bad")
+		}
+	}
+	return res
+}
+
+func compareCoverDump(base, cur []byte) bool {
+	for i, v := range base {
+		x := cur[i]
+		if v == 0 && x != 0 {
+			return true
+		}
+		if x > v {
+			return true
+		}
+	}
+	return false
+}
+
+func compareCoverBody(base, cur *byte) bool // in compare.s
+
+func updateMaxCover(base, cur []byte) int {
+	if len(base) != CoverSize || len(cur) != CoverSize {
+		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
+	}
+	cnt := 0
+	for i, x := range cur {
+		x = roundUpCover(x)
+		v := base[i]
+		if v != 0 || x > 0 {
+			cnt++
+		}
+		if v < x {
+			base[i] = x
+		}
+	}
+	return cnt
+}
+
+// Quantize the counters. Otherwise we get too inflated corpus.
+func roundUpCover(x byte) byte {
+	if x == 0 {
+		x = 0
+	} else if x <= 1 {
+		x = 1
+	} else if x <= 2 {
+		x = 2
+	} else if x <= 3 {
+		x = 3
+	} else if x <= 4 {
+		x = 4
+	} else if x <= 5 {
+		x = 5
+	} else if x <= 8 {
+		x = 8
+	} else if x <= 16 {
+		x = 16
+	} else if x <= 32 {
+		x = 32
+	} else if x <= 64 {
+		x = 64
+	} else {
+		x = 255
+	}
+	if !*flagCoverCounters {
+		if x > 0 {
+			x = 255
+		}
+	}
+	return x
+}
+
+func findNewCover(base, cover []byte) (res []byte, notEmpty bool) {
+	res = make([]byte, CoverSize)
+	for i, b := range base {
+		c := cover[i]
+		if c > b {
+			res[i] = c
+			notEmpty = true
+		}
+	}
+	return
+}
+
+func worseCover(base, cover []byte) bool {
+	for i, b := range base {
+		c := cover[i]
+		if c < b {
+			return true
+		}
+	}
+	return false
+}
+
+func dumpCover(outf string, blocks map[int][]CoverBlock, cover []byte) {
+	// Exclude files that have no coverage at all.
+	files := make(map[string]bool)
+	for i, v := range cover {
+		if v == 0 {
+			continue
+		}
+		for _, b := range blocks[i] {
+			files[b.File] = true
+		}
+	}
+
+	out, err := os.Create(outf)
+	if err != nil {
+		log.Fatalf("failed to create coverage file: %v", err)
+	}
+	defer out.Close()
+	const showCounters = false
+	if showCounters {
+		fmt.Fprintf(out, "mode: count\n")
+	} else {
+		fmt.Fprintf(out, "mode: set\n")
+	}
+	for i, v := range cover {
+		for _, b := range blocks[i] {
+			if !files[b.File] {
+				continue
+			}
+			if !showCounters && v != 0 {
+				v = 1
+			}
+			fmt.Fprintf(out, "%s:%v.%v,%v.%v %v %v\n",
+				b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol, b.NumStmt, v)
+		}
+	}
+}
+
+func dumpSonar(outf string, sites []SonarSite) {
+	out, err := os.Create(outf)
+	if err != nil {
+		log.Fatalf("failed to create coverage file: %v", err)
+	}
+	defer out.Close()
+	fmt.Fprintf(out, "mode: set\n")
+	for i := range sites {
+		s := &sites[i]
+		cnt := 0  // red color
+		stmt := 1 // account in precentage calculation
+		if s.takenTotal[0] == 0 && s.takenTotal[1] == 0 {
+			stmt = 0 // don't account in precentage calculation
+			cnt = 1  // grey color
+		} else if s.takenTotal[0] > 0 && s.takenTotal[1] > 0 {
+			cnt = 100 // green color
+		}
+		fmt.Fprintf(out, "%v %v %v\n", s.loc, stmt, cnt)
+	}
+}

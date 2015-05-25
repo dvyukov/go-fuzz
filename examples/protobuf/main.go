@@ -6,6 +6,14 @@ import (
 )
 
 func Fuzz(data []byte) int {
+	return fuzz(data, false)
+}
+
+func FuzzText(data []byte) int {
+	return fuzz(data, true)
+}
+
+func fuzz(data []byte, text bool) int {
 	vars := []proto.Message{
 		new(pb.M0),
 		new(pb.M1),
@@ -34,9 +42,19 @@ func Fuzz(data []byte) int {
 		new(pb.M24),
 		new(pb.M25),
 	}
+	datas := ""
+	if text {
+		datas = string(data)
+	}
 	score := 0
 	for _, v := range vars {
-		if err := proto.Unmarshal(data, v); err == nil {
+		var err error
+		if text {
+			err = proto.UnmarshalText(datas, v)
+		} else {
+			err = proto.Unmarshal(data, v)
+		}
+		if err == nil {
 			score++
 			if _, err := proto.Marshal(v); err != nil {
 				panic(err)

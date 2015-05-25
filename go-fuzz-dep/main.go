@@ -2,57 +2,33 @@ package gofuzzdep
 
 import (
 	"runtime"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
-)
 
-const (
-	coverSize    = 64 << 10
-	maxInputSize = 1 << 20
-
-	commFD = 3
-	inFD   = 4
-	outFD  = 5
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 var (
-	CoverTab *[coverSize]byte
-	input    []byte
+	inFD  FD
+	outFD FD
+
+	CoverTab    *[CoverSize]byte
+	input       []byte
+	sonarRegion []byte
+	sonarPos    uint32
 )
 
 func init() {
-	if cmd, _ := syscall.Getenv("GO-FUZZ-CMD"); cmd != "" {
-		// The process is started to execute some driver command.
-		CoverTab = new([coverSize]byte)
-		return
-	}
-
-	mem, err := syscall.Mmap(commFD, 0, coverSize+maxInputSize, syscall.PROT_READ|syscall.PROT_WRITE, syscall.MAP_SHARED)
-	if err != nil {
-		println("failed to mmap fd = 3 errno =", err.(syscall.Errno))
-		syscall.Exit(1)
-	}
-	CoverTab = (*[coverSize]byte)(unsafe.Pointer(&mem[0]))
-	input = mem[coverSize:]
+	var mem []byte
+	mem, inFD, outFD = setupCommFile()
+	CoverTab = (*[CoverSize]byte)(unsafe.Pointer(&mem[0]))
+	input = mem[CoverSize : CoverSize+MaxInputSize]
+	sonarRegion = mem[CoverSize+MaxInputSize:]
 }
 
-func Main(f func([]byte) int, lits []string) {
-	if cmd, _ := syscall.Getenv("GO-FUZZ-CMD"); cmd != "" {
-		switch cmd {
-		case "literals":
-			write(commFD, uint64(len(lits)))
-			for _, lit := range lits {
-				write(commFD, uint64(len(lit)))
-				writeStr(commFD, lit)
-			}
-			syscall.Exit(0)
-		default:
-			println("unknown command")
-			syscall.Exit(1)
-		}
-	}
-
+func Main(f func([]byte) int) {
 	runtime.GOMAXPROCS(1) // makes coverage more deterministic, we parallelize on higher level
 	for {
 		n := read(inFD)
@@ -63,19 +39,20 @@ func Main(f func([]byte) int, lits []string) {
 		for i := range CoverTab {
 			CoverTab[i] = 0
 		}
+		atomic.StoreUint32(&sonarPos, 0)
 		t0 := time.Now()
 		res := f(input[:n])
 		ns := time.Since(t0)
-		write(outFD, uint64(res), uint64(ns))
+		write(outFD, uint64(res), uint64(ns), uint64(atomic.LoadUint32(&sonarPos)))
 	}
 }
 
 // read reads little-endian-encoded uint64 from fd.
-func read(fd int) uint64 {
+func read(fd FD) uint64 {
 	rd := 0
 	var buf [8]byte
 	for rd != len(buf) {
-		n, err := syscall.Read(fd, buf[rd:])
+		n, err := fd.read(buf[rd:])
 		if err == syscall.EINTR {
 			continue
 		}
@@ -88,19 +65,12 @@ func read(fd int) uint64 {
 		}
 		rd += n
 	}
-	return uint64(buf[0])<<0 |
-		uint64(buf[1])<<8 |
-		uint64(buf[2])<<16 |
-		uint64(buf[3])<<24 |
-		uint64(buf[4])<<32 |
-		uint64(buf[5])<<40 |
-		uint64(buf[6])<<48 |
-		uint64(buf[7])<<56
+	return deserialize64(buf[:])
 }
 
 // write writes little-endian-encoded vals... to fd.
-func write(fd int, vals ...uint64) {
-	var tmp [2 * 8]byte
+func write(fd FD, vals ...uint64) {
+	var tmp [3 * 8]byte
 	buf := tmp[:len(vals)*8]
 	for i, v := range vals {
 		for j := 0; j < 8; j++ {
@@ -110,7 +80,7 @@ func write(fd int, vals ...uint64) {
 	}
 	wr := 0
 	for wr != len(buf) {
-		n, err := syscall.Write(fd, buf[wr:])
+		n, err := fd.write(buf[wr:])
 		if err == syscall.EINTR {
 			continue
 		}
@@ -123,11 +93,11 @@ func write(fd int, vals ...uint64) {
 }
 
 // writeStr writes strings s to fd.
-func writeStr(fd int, s string) {
+func writeStr(fd FD, s string) {
 	buf := []byte(s)
 	wr := 0
 	for wr != len(buf) {
-		n, err := syscall.Write(fd, buf[wr:])
+		n, err := fd.write(buf[wr:])
 		if err == syscall.EINTR {
 			continue
 		}

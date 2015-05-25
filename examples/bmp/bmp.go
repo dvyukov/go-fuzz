@@ -1,13 +1,24 @@
 package bmp
 
 import (
-	"fmt"
 	"bytes"
 	"encoding/hex"
+	"fmt"
 	"golang.org/x/image/bmp"
 )
 
 func Fuzz(data []byte) int {
+	cfg, err := bmp.DecodeConfig(bytes.NewReader(data))
+	if err != nil {
+		return 0
+	}
+	if cfg.Width*cfg.Height > 1e6 {
+		return 0
+	}
+	if cfg.Width*cfg.Height == 0 {
+		// Workaround for a know bug.
+		return 0
+	}
 	img, err := bmp.Decode(bytes.NewReader(data))
 	if err != nil {
 		return 0

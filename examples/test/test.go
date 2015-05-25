@@ -43,7 +43,7 @@ func Fuzz(data []byte) int {
 	}
 
 	if len(data) >= 14 && bytes.HasPrefix(data, []byte("0123456789")) {
-		x := int(data[10]) + int(data[11]) << 8 + int(data[12]) << 16 + int(data[13]) << 24
+		x := int(data[10]) + int(data[11])<<8 + int(data[12])<<16 + int(data[13])<<24
 		if x == 0 || x == -1 {
 			panic("bingo 1")
 		}
