@@ -145,9 +145,12 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 
 ## Trophies
 
-- [fmt: index out of range](https://github.com/golang/go/issues/10675)
-- [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674)
-- [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695)
+- [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
+- [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
+- [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
+- [fmt: index out of range (2)](https://github.com/golang/go/issues/10745) **fixed**
+- [fmt: index out of range (3)](https://github.com/golang/go/issues/10770) **fixed**
+- [fmt: index out of range (4)](https://github.com/golang/go/issues/10771) **fixed**
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
 - [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs] **fixed**
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415)
@@ -161,25 +164,32 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/png: slice bounds out of range](https://github.com/golang/go/issues/10414) **fixed**
 - [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423) **fixed**
 - [image/png: nil deref](https://github.com/golang/go/issues/10493) **fixed**
-- [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676)
+- [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676) **fixed**
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
-- [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610)
+- [text/template: Call using string as type int](https://github.com/golang/go/issues/10800) **fixed**
+- [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610) **fixed**
+- [html/template: unidentified node type in allIdents (2)](https://github.com/golang/go/issues/10801)
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611) **fixed**
 - [html/template: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10612) **fixed**
 - [html/template: runtime error: slice bounds out of range (2)](https://github.com/golang/go/issues/10613) **fixed**
 - [html/template: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10615) **fixed**
 - [html/template: panic: Call using zero Value argument](https://github.com/golang/go/issues/10634) **fixed**
-- [html/template: nil pointer dereference](https://github.com/golang/go/issues/10673)
-- [x/image/webp: index out of range](https://github.com/golang/go/issues/10383)
-- [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384)
+- [html/template: nil pointer dereference](https://github.com/golang/go/issues/10673) **fixed**
+- [html/template: slice bounds out of range](https://github.com/golang/go/issues/10799) **fixed**
+- [x/image/webp: index out of range](https://github.com/golang/go/issues/10383) **fixed**
+- [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384) **fixed**
+- [x/image/webp: excessive memory consumption](https://github.com/golang/go/issues/10790)
 - [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10393) **fixed**
 - [x/image/tiff: index out of range](https://github.com/golang/go/issues/10394) **fixed**
 - [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10395) **fixed**
 - [x/image/tiff: index out of range](https://github.com/golang/go/issues/10597) **fixed**
 - [x/image/tiff: slice bounds out of range](https://github.com/golang/go/issues/10596) **fixed**
-- [x/image/bmp: makeslice: len out of range](https://github.com/golang/go/issues/10396)
-- [x/image/bmp: out of memory](https://github.com/golang/go/issues/10399)
+- [x/image/tiff: integer divide by zero](https://github.com/golang/go/issues/10711)
+- [x/image/tiff: index out of range](https://github.com/golang/go/issues/10712)
+- [x/image/bmp: hang on degenerate image](https://github.com/golang/go/issues/10746) **fixed**
+- [x/image/bmp: makeslice: len out of range](https://github.com/golang/go/issues/10396) **fixed**
+- [x/image/bmp: out of memory](https://github.com/golang/go/issues/10399) **fixed**
 - [x/net/html: void element <link> has child nodes](https://github.com/golang/go/issues/10535)
 - [x/net/spdy: unexpected EOF](https://github.com/golang/go/issues/10539) **fixed**
 - [x/net/spdy: EOF](https://github.com/golang/go/issues/10540) **fixed**
@@ -195,8 +205,10 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/Sereal/Sereal: 8 crashers](https://github.com/Sereal/Sereal/commit/c254cc3f2c48caffee6cd04ea8100a0150357a44)
 - [github.com/bradfitz/http2: Server.handleConn hangs](https://github.com/bradfitz/http2/issues/53)
 - [github.com/bradfitz/http2: nil pointer dereference in hpack.HuffmanDecode](https://github.com/bradfitz/http2/issues/56)
+- [github.com/bradfitz/http2: serverConn.readFrames goroutine leak](https://github.com/bradfitz/http2/issues/58)
 - [github.com/bkaradzic/go-lz4: slice bounds out of range](https://github.com/bkaradzic/go-lz4/commit/b8d4dc7b31511bf5f39dfdb02d2ea7662eb8407c) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/332853ab7b3c719dd67c657394139491c1f6deb7) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72) **fixed**
+- [github.com/tdewolff/minify: 8 crashers](https://github.com/tdewolff/minify/wiki) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
