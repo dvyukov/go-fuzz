@@ -84,11 +84,11 @@ Then, build the test program with necessary instrumentation:
 ```
 $ go-fuzz-build github.com/dvyukov/go-fuzz/examples/png
 ```
-This will produce png-fuzz binary.
+This will produce png-fuzz.zip archive.
 
 Now we are ready to go:
 ```
-$ go-fuzz -bin=./png-fuzz -corpus=examples/png/corpus -workdir=$HOME/png-fuzz
+$ go-fuzz -bin=./png-fuzz.zip -corpus=examples/png/corpus -workdir=$HOME/png-fuzz
 ```
 Go-fuzz will generate and test various inputs in an infinite loop. Workdir is
 used to store persistent data like current corpus and crashers, it allows fuzzer
