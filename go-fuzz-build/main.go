@@ -22,6 +22,7 @@ var (
 	flagInstrument = flag.String("instrument", "", "instrument a single file (for debugging)")
 
 	workdir string
+	GOROOT  string
 )
 
 const (
@@ -41,7 +42,7 @@ func main() {
 	if len(flag.Args()) != 1 || len(flag.Arg(0)) == 0 {
 		failf("usage: go-fuzz-build pkg")
 	}
-	GOROOT := os.Getenv("GOROOT")
+	GOROOT = os.Getenv("GOROOT")
 	if GOROOT == "" {
 		out, err := exec.Command("go", "env", "GOROOT").CombinedOutput()
 		if err != nil || len(out) == 0 {
