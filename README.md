@@ -151,6 +151,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [fmt: index out of range (2)](https://github.com/golang/go/issues/10745) **fixed**
 - [fmt: index out of range (3)](https://github.com/golang/go/issues/10770) **fixed**
 - [fmt: index out of range (4)](https://github.com/golang/go/issues/10771) **fixed**
+- [fmt: index out of range (5)](https://github.com/golang/go/issues/10945)
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
 - [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs] **fixed**
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415)
@@ -168,6 +169,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
 - [text/template: Call using string as type int](https://github.com/golang/go/issues/10800) **fixed**
+- [text/template: Call using complex128 as type string](https://github.com/golang/go/issues/10946)
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610) **fixed**
 - [html/template: unidentified node type in allIdents (2)](https://github.com/golang/go/issues/10801)
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611) **fixed**
@@ -199,6 +201,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545) **fixed**
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
+- [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33)
 - [code.google.com/p/freetype-go: 42 crashers](https://code.google.com/p/freetype-go/issues/detail?id=17) [42 bugs]
 - [github.com/cryptix/wav: 2 panics in header decoding](https://github.com/cryptix/wav/commit/2f49a0df0d213ee323f694e7bdee8b8a097dc698#diff-f86b763600291cbceee077a33133434a)
 - [github.com/spf13/hugo: 7 crashers](https://github.com/spf13/hugo/search?q=go-fuzz&type=Issues) **7 fixed**
