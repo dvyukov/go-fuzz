@@ -192,6 +192,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/image/bmp: hang on degenerate image](https://github.com/golang/go/issues/10746) **fixed**
 - [x/image/bmp: makeslice: len out of range](https://github.com/golang/go/issues/10396) **fixed**
 - [x/image/bmp: out of memory](https://github.com/golang/go/issues/10399) **fixed**
+- [x/net/icmp: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10951)
 - [x/net/html: void element <link> has child nodes](https://github.com/golang/go/issues/10535)
 - [x/net/spdy: unexpected EOF](https://github.com/golang/go/issues/10539) **fixed**
 - [x/net/spdy: EOF](https://github.com/golang/go/issues/10540) **fixed**
