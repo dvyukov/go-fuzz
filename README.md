@@ -154,8 +154,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [fmt: index out of range (5)](https://github.com/golang/go/issues/10945)
 - [archive/zip: cap out of range](https://github.com/golang/go/issues/10956)
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
-- [archive/tar: slice bounds out of range](https://github.com/golang/go/issues/10959)
-- [archive/tar: slice bounds out of range (2)](https://github.com/golang/go/issues/10960)
+- [archive/tar: slice bounds out of range](https://github.com/golang/go/issues/10959) **fixed**
+- [archive/tar: slice bounds out of range (2)](https://github.com/golang/go/issues/10960) **fixed**
 - [archive/tar: slice bounds out of range (3)](https://github.com/golang/go/issues/10966)
 - [archive/tar: slice bounds out of range (4)](https://github.com/golang/go/issues/10967)
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
