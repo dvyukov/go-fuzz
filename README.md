@@ -163,6 +163,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415)
 - [encoding/gob: excessive memory consumption](https://github.com/golang/go/issues/10490)
 - [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491) **fixed**
+- [encoding/pem: can't decode encoded message](https://github.com/golang/go/issues/10980)
 - [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387) **fixed**
 - [image/jpeg: index out of range](https://github.com/golang/go/issues/10388) **fixed**
 - [image/jpeg: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10389) **fixed**
