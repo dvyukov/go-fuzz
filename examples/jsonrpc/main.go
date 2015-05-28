@@ -4,6 +4,7 @@ import (
 	"io"
 	"net/rpc"
 	"net/rpc/jsonrpc"
+	"runtime"
 )
 
 func init() {
@@ -34,6 +35,9 @@ func Fuzz(data []byte) int {
 	jsonrpc.ServeConn(c)
 	if !c.closed {
 		panic("conn is not closed")
+	}
+	if runtime.Gosched(); runtime.NumGoroutine() > 100 {
+		panic("goroutine leak")
 	}
 	return 0
 }

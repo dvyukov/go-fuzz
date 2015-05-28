@@ -1,0 +1,1 @@
+{"method":"Foo.Bar","params":[{"I":42,"S":"baz","V":["bbb","aaa"],"X":{"www":"xxx","zzz":"qqq"},"N":{"I":99,"S":"ddd"}}],"id":0}
