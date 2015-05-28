@@ -1,0 +1,7 @@
+220 smtpserver ESMTP
+250-smtpserver 250-AUTH LOGIN PLAIN 250-8BITMIME 250 PIPELINING
+235 Authentication succeeded.
+250 Sender accepted.
+250 Recipient accepted.
+354 End your message with a period.
+250 Accepted message qp 847 bytes 247 quit 221 Good bye.

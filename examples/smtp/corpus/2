@@ -1,0 +1,7 @@
+220 mx1.example.com ESMTP server ready Tue, 20 Jan 2004 22:33:36 +0200
+250 mx1.example.com
+250 Sender <sender@example.com> Ok
+250 Recipient <recipient@example.com> Ok
+354 Ok Send data ending with <CRLF>.<CRLF>
+250 Message received: 20040120203404.CCCC18555.mx1.example.com@client.example.com
+221 mx1.example.com ESMTP server closing connection
