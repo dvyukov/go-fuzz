@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"sync"
+	"unicode"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
@@ -111,7 +112,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 		testInput := func(tmp []byte) {
 			s.testInput(tmp, depth+1, execSonarHint)
 		}
-		check := func(v1, v2 []byte) {
+		check := func(indexdata, v1, v2 []byte) {
 			if len(v1) == 0 || bytes.Equal(v1, v2) {
 				return
 			}
@@ -122,7 +123,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 			checked[vv] = struct{}{}
 			pos := 0
 			for {
-				i := bytes.Index(data[pos:], v1)
+				i := bytes.Index(indexdata[pos:], v1)
 				if i == -1 {
 					break
 				}
@@ -149,23 +150,38 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 			}
 		}
 		check1 := func(v1, v2 []byte) {
-			check(v1, v2)
-			// Try several common wire encodings of the values:
-			// network format (big endian), hex, base-128.
-			// TODO: try more encodings if it proves to be useful:
-			// base-64, quoted-printable, xml-escaping, hex+increment/decrement.
+			check(data, v1, v2)
+			// TODO: for strings check upper/lower case.
+			if flags&SonarString != 0 {
+				if bytes.Equal(v1, bytes.ToLower(v1)) && bytes.Equal(v2, bytes.ToLower(v2)) {
+					check(bytes.ToLower(data), v1, v2)
+				}
+				if bytes.Equal(v1, bytes.ToUpper(v1)) && bytes.Equal(v2, bytes.ToUpper(v2)) {
+					check(bytes.ToUpper(data), v1, v2)
+				}
+			} else {
+				// Try several common wire encodings of the values:
+				// network format (big endian), hex, base-128.
+				// TODO: try more encodings if it proves to be useful:
+				// base-64, quoted-printable, xml-escaping, hex+increment/decrement.
 
-			if flags&SonarString == 0 {
+				if len(v1) == 1 && len(v2) == 1 && unicode.IsLower(rune(v1[0])) && unicode.IsLower(rune(v2[0])) {
+					check(bytes.ToLower(data), v1, v2)
+				}
+				if len(v1) == 1 && len(v2) == 1 && unicode.IsUpper(rune(v1[0])) && unicode.IsUpper(rune(v2[0])) {
+					check(bytes.ToUpper(data), v1, v2)
+				}
+
 				// Increment and decrement take care of less and greater comparison operators
 				// as well as of off-by-one bugs.
-				check(v1, increment(v2))
-				check(v1, decrement(v2))
+				check(data, v1, increment(v2))
+				check(data, v1, decrement(v2))
 
 				// Also try big-endian increments/decrements.
 				if len(v1) > 1 {
-					check(reverse(v1), reverse(v2))
-					check(reverse(v1), reverse(increment(v2)))
-					check(reverse(v1), reverse(decrement(v2)))
+					check(data, reverse(v1), reverse(v2))
+					check(data, reverse(v1), reverse(increment(v2)))
+					check(data, reverse(v1), reverse(decrement(v2)))
 				}
 
 				// Base-128.
@@ -181,24 +197,24 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 					var vv1, vv2 [10]byte
 					n1 := binary.PutUvarint(vv1[:], u1)
 					n2 := binary.PutUvarint(vv2[:], u2)
-					check(vv1[:n1], vv2[:n2])
+					check(data, vv1[:n1], vv2[:n2])
 
 					// Increment/decrement in base-128.
 					n1 = binary.PutUvarint(vv1[:], u1+1)
 					n2 = binary.PutUvarint(vv2[:], u2+1)
-					check(vv1[:n1], vv2[:n2])
+					check(data, vv1[:n1], vv2[:n2])
 					n1 = binary.PutUvarint(vv1[:], u1-1)
 					n2 = binary.PutUvarint(vv2[:], u2-1)
-					check(vv1[:n1], vv2[:n2])
+					check(data, vv1[:n1], vv2[:n2])
 				}
 
 				// Ascii-encoding.
 				// TODO: try to treat the value as negative.
 				s1 := strconv.FormatUint(u1, 10)
 				s2 := strconv.FormatUint(u2, 10)
-				check([]byte(s1), []byte(s2))
+				check(data, []byte(s1), []byte(s2))
 			}
-			check([]byte(hex.EncodeToString(v1)), []byte(hex.EncodeToString(v2)))
+			check(data, []byte(hex.EncodeToString(v1)), []byte(hex.EncodeToString(v2)))
 		}
 		if flags&SonarConst1 == 0 {
 			check1(v1, v2)
