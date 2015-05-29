@@ -254,9 +254,7 @@ func (s *Slave) triageInput(input MasterInput) {
 				return false
 			}
 			if inp.res != res || worseCover(newCover, cover) {
-				if s.hub.updateMaxCover(cover) {
-					s.triageQueue = append(s.triageQueue, MasterInput{makeCopy(candidate), uint64(inp.depth + 1), execMinimizeInput, false, false})
-				}
+				s.noteNewInput(candidate, cover, inp.depth+1, execMinimizeInput)
 				return false
 			}
 			return true
@@ -545,10 +543,14 @@ func (s *Slave) testInputImpl(bin *TestBinary, data []byte, depth, typ int) (son
 		s.noteCrasher(data, output, hanged)
 		return nil
 	}
+	s.noteNewInput(data, cover, depth, typ)
+	return sonar
+}
+
+func (s *Slave) noteNewInput(data, cover []byte, depth, typ int) {
 	if s.hub.updateMaxCover(cover) {
 		s.triageQueue = append(s.triageQueue, MasterInput{makeCopy(data), uint64(depth), typ, false, false})
 	}
-	return sonar
 }
 
 func (s *Slave) noteCrasher(data, output []byte, hanged bool) {

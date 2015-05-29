@@ -79,6 +79,13 @@ func randTerm(v *Verse, dict map[string]struct{}) []byte {
 	return []byte(terms[v.Rand(len(terms))])
 }
 
+func singleTerm(dict map[string]struct{}) string {
+	for k := range dict {
+		return k
+	}
+	panic("bad")
+}
+
 type WsNode struct {
 	dict map[string]struct{}
 }
@@ -169,6 +176,7 @@ func (n *NumNode) Generate(w io.Writer, v *Verse) {
 		w.Write(randTerm(v, n.dict))
 	} else {
 		randNum := func() []byte {
+			base := []int{8, 10, 16}[v.Rand(3)]
 			len := 0
 			switch v.Rand(3) {
 			case 0:
@@ -180,16 +188,46 @@ func (n *NumNode) Generate(w io.Writer, v *Verse) {
 			}
 			num := make([]byte, len+1)
 			for i := range num {
-				num[i] = '0' + byte(v.Rand(10))
+				switch base {
+				case 8:
+					num[i] = '0' + byte(v.Rand(8))
+				case 10:
+					num[i] = '0' + byte(v.Rand(10))
+				case 16:
+					switch v.Rand(3) {
+					case 0:
+						num[i] = '0' + byte(v.Rand(10))
+					case 1:
+						num[i] = 'a' + byte(v.Rand(6))
+					case 2:
+						num[i] = 'A' + byte(v.Rand(6))
+					}
+				}
+			}
+			switch base {
+			case 8:
+				num = append([]byte{'0'}, num...)
+			case 10:
+			case 16:
+				num = append([]byte{'0', 'x'}, num...)
+			default:
+				panic("bad")
+			}
+			if v.Rand(2) == 0 {
+				num = append([]byte{'-'}, num...)
 			}
 			return num
 		}
-		// TODO: add more formats
-		switch v.Rand(2) {
+		switch v.Rand(3) {
 		case 0:
 			w.Write(randNum())
 		case 1:
-			w.Write([]byte{'-'})
+			w.Write(randNum())
+			w.Write([]byte{'.'})
+			w.Write(randNum())
+		case 2:
+			w.Write(randNum())
+			w.Write([]byte{'e'})
 			w.Write(randNum())
 		}
 	}
@@ -292,7 +330,6 @@ func (n *ListNode) Print(w io.Writer, ident int) {
 func (n *ListNode) Generate(w io.Writer, v *Verse) {
 	blocks := n.blocks
 	if v.Rand(5) == 0 {
-		// TODO: exchange subranges of nodes between list elements.
 		blocks = nil
 		for v.Rand(3) != 0 {
 			blocks = append(blocks, n.blocks[v.Rand(len(n.blocks))])
@@ -498,11 +535,102 @@ func tokenize(data []byte) []Node {
 }
 
 func structure(nn []Node) []Node {
-	// TODO: extract various number forms (-123, 0xab, 1e2).
-	// TODO: extract key-value pairs delimited by '=' and ':'.
+	nn = extractNumbers(nn)
 	nn = structureBrackets(nn)
 	nn = structureLists(nn)
+	nn = structureKeyValue(nn)
 	nn = structureLines(nn)
+	return nn
+}
+
+func isHexNum(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, c := range s {
+		if c >= '0' && c <= '9' || c >= 'a' && c <= 'f' || c >= 'A' && c <= 'F' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func isDecNum(s string) bool {
+	if len(s) == 0 {
+		return false
+	}
+	for _, c := range s {
+		if c >= '0' && c <= '9' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func extractNumbers(nn []Node) []Node {
+	// TODO: replace this mess with a real parser.
+	for changed := true; changed; {
+		changed = false
+		for i := 0; i < len(nn); i++ {
+			n := nn[i]
+			if num, ok := n.(*AlphaNumNode); ok {
+				v := singleTerm(num.dict)
+				if len(v) >= 3 {
+					if v[0] == '0' && v[1] == 'x' && isHexNum(v[2:]) {
+						nn[i] = &NumNode{hex: true, dict: num.dict}
+						changed = true
+						continue
+					}
+					if e := strings.IndexByte(v, 'e'); e != -1 {
+						if isDecNum(v[:e]) && isDecNum(v[e+1:]) {
+							nn[i] = &NumNode{hex: false, dict: num.dict}
+							changed = true
+							continue
+						}
+						if e == len(v)-1 && i != len(nn)-1 {
+							if num1, ok := nn[i+1].(*NumNode); ok {
+								nn[i+1] = &NumNode{hex: false, dict: makeDict([]byte(v + singleTerm(num1.dict)))}
+								copy(nn[i:], nn[i+1:])
+								nn = nn[:len(nn)-1]
+								changed = true
+								continue
+							}
+						}
+					}
+				}
+			}
+			if minus, ok := n.(*ControlNode); ok && minus.ch == '-' && i != len(nn)-1 {
+				if num, ok := nn[i+1].(*NumNode); ok {
+					var prev Node
+					if i != 0 {
+						prev = nn[i-1]
+					}
+					// TODO: check that previous is not alphanum
+					// e.g. ID-001, but allow 1e-1.
+					if prev1, ok := prev.(*AlphaNumNode); !ok || len(singleTerm(prev1.dict)) > 1 && singleTerm(prev1.dict)[len(singleTerm(prev1.dict))-1] == 'e' {
+						num.dict = makeDict([]byte("-" + singleTerm(num.dict)))
+						copy(nn[i:], nn[i+1:])
+						nn = nn[:len(nn)-1]
+						changed = true
+						continue
+					}
+				}
+			}
+			if ctrl, ok := n.(*ControlNode); ok && ctrl.ch == '.' && i != 0 && i != len(nn)-1 {
+				num1, ok1 := nn[i-1].(*NumNode)
+				num2, ok2 := nn[i+1].(*NumNode)
+				if ok1 && ok2 {
+					nn[i+1] = &NumNode{hex: false, dict: makeDict([]byte(singleTerm(num1.dict) + "." + singleTerm(num2.dict)))}
+					copy(nn[i-1:], nn[i+1:])
+					nn = nn[:len(nn)-2]
+					changed = true
+					continue
+				}
+			}
+		}
+	}
 	return nn
 }
 
@@ -548,9 +676,6 @@ func structureLists(nn []Node) (res []Node) {
 	// TODO: fails on:
 	//	"f1": "v1", "f2": "v2", "f3": "v3"
 	// the first detected list is "v2", "f3"
-	// Similarly fails on:
-	//	1,2.0,3e-3
-	// these probably should be parsed as numbers.
 	for i := len(nn) - 1; i >= 0; i-- {
 		n := nn[i]
 		if ctrl, ok := n.(*ControlNode); ok && delims[ctrl.ch] {
@@ -597,9 +722,23 @@ func structureLists(nn []Node) (res []Node) {
 					break
 				}
 			}
+
 			for k := range elems[1].tok {
 				elems[0].tok[k] = true
 			}
+
+		elemLoop:
+			for _, e := range elems {
+				for ; e.pos >= 0 && e.pos < len(nn); e.pos += e.inc {
+					if ctrl1, ok := nn[e.pos].(*ControlNode); ok && !elems[0].tok[ctrl1.ch] {
+						continue elemLoop
+					}
+					if brk1, ok := nn[e.pos].(*BracketNode); ok && !(elems[0].tok[brk1.open] && elems[0].tok[brk1.clos]) {
+						continue elemLoop
+					}
+				}
+			}
+
 			for _, e := range elems {
 				for {
 					if e.done || e.pos < 0 || e.pos >= len(nn) {
@@ -663,6 +802,12 @@ func structureLists(nn []Node) (res []Node) {
 			i = start + 1
 		}
 	}
+	return nn
+}
+
+func structureKeyValue(nn []Node) (res []Node) {
+	// TODO: extract key-value pairs delimited by '=' and ':'.
+	// delims := map[rune]bool{'=': true, ':': true}
 	return nn
 }
 
