@@ -205,6 +205,9 @@ func (s *Slave) loop() {
 // It calculates per-input metrics like execution time, coverage mask,
 // and minimizes the input to the minimal input with the same coverage.
 func (s *Slave) triageInput(input MasterInput) {
+	if len(input.Data) > MaxInputSize {
+		input.Data = input.Data[:MaxInputSize]
+	}
 	inp := Input{
 		data:     input.Data,
 		depth:    int(input.Prio),
@@ -320,6 +323,9 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 	// Then, try to remove each individual byte.
 	tmp := make([]byte, len(res))
 	for i := 0; i < len(res); i++ {
+		if time.Since(start) > *flagMinimize {
+			return res
+		}
 		candidate := tmp[:len(res)-1]
 		copy(candidate[:i], res[:i])
 		copy(candidate[i:], res[i+1:])
@@ -329,9 +335,6 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 			continue
 		}
 		res = makeCopy(candidate)
-		if time.Since(start) > *flagMinimize {
-			return res
-		}
 		i--
 	}
 
@@ -339,6 +342,9 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 	for i := 0; i < len(res)-1; i++ {
 		copy(tmp, res[:i])
 		for j := len(res); j > i+1; j-- {
+			if time.Since(start) > *flagMinimize {
+				return res
+			}
 			candidate := tmp[:len(res)-j+i]
 			copy(candidate[i:], res[j:])
 			*stat++
@@ -347,9 +353,6 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 				continue
 			}
 			res = makeCopy(candidate)
-			if time.Since(start) > *flagMinimize {
-				return res
-			}
 			j = len(res)
 		}
 	}
@@ -360,6 +363,9 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 			if res[i] == '0' {
 				continue
 			}
+			if time.Since(start) > *flagMinimize {
+				return res
+			}
 			candidate := tmp[:len(res)]
 			copy(candidate, res)
 			candidate[i] = '0'
@@ -369,9 +375,6 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 				continue
 			}
 			res = makeCopy(candidate)
-			if time.Since(start) > *flagMinimize {
-				return res
-			}
 		}
 	}
 
@@ -506,7 +509,10 @@ func (s *Slave) smash(data []byte, depth int) {
 
 	// Insert a byte after every byte.
 	tmp := make([]byte, len(data)+1)
-	for i := 0; i <= len(data); i++ {
+	if len(tmp) > MaxInputSize {
+		tmp = tmp[:MaxInputSize]
+	}
+	for i := 0; i <= len(data) && i < MaxInputSize-1; i++ {
 		copy(tmp, data[:i])
 		copy(tmp[i+1:], data[i:])
 		tmp[i] = 0
