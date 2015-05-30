@@ -189,6 +189,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [html/template: slice bounds out of range](https://github.com/golang/go/issues/10799) **fixed**
 - [debug/elf: index out of range](https://github.com/golang/go/issues/10996)
 - [debug/elf: makeslice: len out of range](https://github.com/golang/go/issues/10997)
+- [debug/elf: slice bounds out of range](https://github.com/golang/go/issues/10999)
 - [x/image/webp: index out of range](https://github.com/golang/go/issues/10383) **fixed**
 - [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384) **fixed**
 - [x/image/webp: excessive memory consumption](https://github.com/golang/go/issues/10790)
