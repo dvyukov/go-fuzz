@@ -177,7 +177,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
 - [text/template: Call using string as type int](https://github.com/golang/go/issues/10800) **fixed**
-- [text/template: Call using complex128 as type string](https://github.com/golang/go/issues/10946)
+- [text/template: Call using complex128 as type string](https://github.com/golang/go/issues/10946) **fixed**
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610) **fixed**
 - [html/template: unidentified node type in allIdents (2)](https://github.com/golang/go/issues/10801)
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611) **fixed**
