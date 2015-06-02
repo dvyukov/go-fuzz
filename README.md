@@ -107,7 +107,7 @@ discovered, time in brackets says when the last interesting input was
 discovered. ```crashers``` is number of discovered bugs (check out
 workdir/crashers dir). ```restarts``` is the rate with which the fuzzer restarts
 test processes. The rate should be close to 1/10000 (which is the planned
-restart rate); if it is considerably lower than 1/10000, consider fixing already
+restart rate); if it is considerably higher than 1/10000, consider fixing already
 discovered bugs which lead to frequent restarts. ```execs``` is total number of
 test executions, and the number in brackets is the average speed of test
 executions. ```cover``` is density of hashed coverage bitmap, ideally this value
@@ -227,4 +227,4 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72) **fixed**
 - [github.com/tdewolff/minify: 8 crashers](https://github.com/tdewolff/minify/wiki) **fixed**
 
-**If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferrable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
+**If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
