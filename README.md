@@ -156,7 +156,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
 - [archive/tar: slice bounds out of range](https://github.com/golang/go/issues/10959) **fixed**
 - [archive/tar: slice bounds out of range (2)](https://github.com/golang/go/issues/10960) **fixed**
-- [archive/tar: slice bounds out of range (3)](https://github.com/golang/go/issues/10966)
+- [archive/tar: slice bounds out of range (3)](https://github.com/golang/go/issues/10966) **fixed**
 - [archive/tar: slice bounds out of range (4)](https://github.com/golang/go/issues/10967) **fixed**
 - [archive/tar: deadly hang](https://github.com/golang/go/issues/10968) **fixed**
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
