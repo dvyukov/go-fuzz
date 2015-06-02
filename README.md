@@ -151,7 +151,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [fmt: index out of range (2)](https://github.com/golang/go/issues/10745) **fixed**
 - [fmt: index out of range (3)](https://github.com/golang/go/issues/10770) **fixed**
 - [fmt: index out of range (4)](https://github.com/golang/go/issues/10771) **fixed**
-- [fmt: index out of range (5)](https://github.com/golang/go/issues/10945)
+- [fmt: index out of range (5)](https://github.com/golang/go/issues/10945) **fixed**
 - [archive/zip: cap out of range](https://github.com/golang/go/issues/10956) **fixed**
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
 - [archive/tar: slice bounds out of range](https://github.com/golang/go/issues/10959) **fixed**
