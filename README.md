@@ -162,7 +162,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
 - [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs] **fixed**
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415) **fixed**
-- [encoding/gob: excessive memory consumption](https://github.com/golang/go/issues/10490)
+- [encoding/gob: excessive memory consumption](https://github.com/golang/go/issues/10490) **fixed**
 - [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491) **fixed**
 - [encoding/pem: can't decode encoded message](https://github.com/golang/go/issues/10980) **fixed**
 - [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387) **fixed**
