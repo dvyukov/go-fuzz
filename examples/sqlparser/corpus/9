@@ -1,0 +1,3 @@
+UPDATE STATS SET RAIN_I = RAIN_I + 0.01;
+
+
