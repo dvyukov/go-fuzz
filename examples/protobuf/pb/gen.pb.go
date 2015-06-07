@@ -335,12 +335,11 @@ func (m *M14) GetF() []byte {
 }
 
 type M15 struct {
-	F0               *int32   `protobuf:"varint,1,req,name=f0" json:"f0,omitempty"`
-	F1               *string  `protobuf:"bytes,2,opt,name=f1" json:"f1,omitempty"`
-	F2               []byte   `protobuf:"bytes,3,opt,name=f2" json:"f2,omitempty"`
-	F3               *float64 `protobuf:"fixed64,4,opt,name=f3" json:"f3,omitempty"`
-	F4               *bool    `protobuf:"varint,5,opt,name=f4" json:"f4,omitempty"`
-	XXX_unrecognized []byte   `json:"-"`
+	F0               *int32  `protobuf:"varint,1,req,name=f0" json:"f0,omitempty"`
+	F1               *string `protobuf:"bytes,2,opt,name=f1" json:"f1,omitempty"`
+	F2               []byte  `protobuf:"bytes,3,opt,name=f2" json:"f2,omitempty"`
+	F4               *bool   `protobuf:"varint,5,opt,name=f4" json:"f4,omitempty"`
+	XXX_unrecognized []byte  `json:"-"`
 }
 
 func (m *M15) Reset()         { *m = M15{} }
@@ -366,13 +365,6 @@ func (m *M15) GetF2() []byte {
 		return m.F2
 	}
 	return nil
-}
-
-func (m *M15) GetF3() float64 {
-	if m != nil && m.F3 != nil {
-		return *m.F3
-	}
-	return 0
 }
 
 func (m *M15) GetF4() bool {

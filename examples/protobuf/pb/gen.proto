@@ -69,7 +69,6 @@ message M15 {
   required int32 f0 = 1;
   optional string f1 = 2;
   optional bytes f2 = 3;
-  optional double f3 = 4;
   optional bool f4 = 5;
 }
 
