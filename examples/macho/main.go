@@ -1,8 +1,8 @@
 package macho
 
 import (
-	"debug/macho"
 	"bytes"
+	"debug/macho"
 )
 
 func Fuzz(data []byte) int {
@@ -14,6 +14,10 @@ func Fuzz(data []byte) int {
 		return 0
 	}
 	defer f.Close()
+	f.ImportedLibraries()
+	f.ImportedSymbols()
+	f.Section(".text")
+	f.Segment("macho")
 	dw, err := f.DWARF()
 	if err != nil {
 		if dw != nil {
@@ -21,6 +25,12 @@ func Fuzz(data []byte) int {
 		}
 		return 1
 	}
-	
+	dr := dw.Reader()
+	for {
+		e, _ := dr.Next()
+		if e == nil {
+			break
+		}
+	}
 	return 2
 }
