@@ -163,7 +163,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs] **fixed**
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415) **fixed**
 - [encoding/gob: excessive memory consumption](https://github.com/golang/go/issues/10490) **fixed**
-- [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491) **fixed
+- [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491) **fixed**
 - [encoding/xml: allows invalid comments](https://github.com/golang/go/issues/11112)
 - [encoding/pem: can't decode encoded message](https://github.com/golang/go/issues/10980) **fixed**
 - [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387) **fixed**
