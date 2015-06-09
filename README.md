@@ -230,8 +230,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/332853ab7b3c719dd67c657394139491c1f6deb7) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72) **fixed**
 - [github.com/tdewolff/minify: 8 crashers](https://github.com/tdewolff/minify/wiki) **fixed**
-- [github.com/russross/blackfriday: index out of range panic in scanLinkRef](https://github.com/russross/blackfriday/issues/172)
-- [github.com/russross/blackfriday: index out of range panic in isReference](https://github.com/russross/blackfriday/issues/173)
+- [github.com/russross/blackfriday: index out of range panic in scanLinkRef](https://github.com/russross/blackfriday/issues/172) **fixed**
+- [github.com/russross/blackfriday: index out of range panic in isReference](https://github.com/russross/blackfriday/issues/173) **fixed**
 - [github.com/youtube/vitess/go/vt/sqlparser: index out of range](https://github.com/youtube/vitess/issues/767)
 - [gopkg.in/mgo.v2/bson: slice bounds out of range](https://github.com/go-mgo/mgo/issues/116)
 - [gopkg.in/mgo.v2/bson: Document is corrupted](https://github.com/go-mgo/mgo/issues/117)
