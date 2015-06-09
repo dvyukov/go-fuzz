@@ -72,6 +72,11 @@ few non-white pixels) with different levels of compressions and use that as the
 initial corpus. Go-fuzz will deduplicate and minimize the inputs. So throwing in
 a thousand of inputs is fine, diversity is more important.
 
+Put the initial corpus into the workdir/corpus directory (in our case
+```examples/png/corpus```). Go-fuzz will add own inputs to the corpus directory.
+Consider committing the generated inputs to your source control system, this
+will allow you to restart go-fuzz without losing previous work.
+
 Examples directory contains a bunch of examples of test functions and initial
 input corpuses for various packages.
 
@@ -88,8 +93,9 @@ This will produce png-fuzz.zip archive.
 
 Now we are ready to go:
 ```
-$ go-fuzz -bin=./png-fuzz.zip -corpus=examples/png/corpus -workdir=$HOME/png-fuzz
+$ go-fuzz -bin=./png-fuzz.zip -workdir=examples/png
 ```
+
 Go-fuzz will generate and test various inputs in an infinite loop. Workdir is
 used to store persistent data like current corpus and crashers, it allows fuzzer
 to continue after restart. Discovered bad inputs are stored in workdir/crashers
@@ -126,12 +132,12 @@ checksum are very low, so most work will be in vain otherwise.
 
 Go-fuzz can utilize several machines. To do this, start master process separately:
 ```
-$ go-fuzz -corpus=examples/png/corpus -workdir=~/png-fuzz -master=127.0.0.1:8745
+$ go-fuzz -workdir=examples/png -master=127.0.0.1:8745
 ```
 It will manage persistent corpus and crashers and coordinate work of slave processes.
 Then run one or more slave processes as:
 ```
-$ go-fuzz -bin=./png-fuzz -slave=127.0.0.1:8745 -procs=10
+$ go-fuzz -bin=./png-fuzz.zip -slave=127.0.0.1:8745 -procs=10
 ```
 
 ## Credits and technical details

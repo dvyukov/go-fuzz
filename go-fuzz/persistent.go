@@ -20,6 +20,7 @@ type PersistentSet struct {
 type Artifact struct {
 	data []byte
 	meta uint64 // arbitrary user payload
+	user bool   // file created by user
 }
 
 type Sig [sha1.Size]byte
@@ -57,14 +58,15 @@ func (ps *PersistentSet) readInDir(dir string) {
 			return nil
 		}
 		name := info.Name()
-		if len(name) > 2*sha1.Size+1 && name[2*sha1.Size] == '.' {
+		const hexLen = 2 * sha1.Size
+		if len(name) > hexLen+1 && isHexString(name[:hexLen]) && name[hexLen] == '.' {
 			return nil // description file
 		}
 		var meta uint64
-		if len(name) > 2*sha1.Size+1 && name[2*sha1.Size] == '-' {
+		if len(name) > hexLen+1 && isHexString(name[:hexLen]) && name[hexLen] == '-' {
 			meta, _ = strconv.ParseUint(name[2*sha1.Size+1:], 10, 64)
 		}
-		a := Artifact{data, meta}
+		a := Artifact{data, meta, len(name) < hexLen || !isHexString(name[:hexLen])}
 		ps.m[sig] = a
 		return nil
 	})
@@ -76,6 +78,16 @@ func persistentFilename(dir string, a Artifact, sig Sig) string {
 		fname += fmt.Sprintf("-%v", a.meta)
 	}
 	return fname
+}
+
+func isHexString(s string) bool {
+	for _, v := range []byte(s) {
+		if v >= '0' && v <= '9' || v >= 'a' && v <= 'f' {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func (ps *PersistentSet) add(a Artifact) bool {
