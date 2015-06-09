@@ -177,6 +177,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/asn1: incorrectly handles incorrect utf8 strings](https://github.com/golang/go/issues/11126)
 - [encoding/asn1: slice is lost during marshal/unmarshal](https://github.com/golang/go/issues/11130)
 - [encoding/asn1: call of reflect.Value.Type on zero Value](https://github.com/golang/go/issues/11127)
+- [encoding/asn1: Unmarshal accepts negative dates](https://github.com/golang/go/issues/11134)
 - [encoding/pem: can't decode encoded message](https://github.com/golang/go/issues/10980) **fixed**
 - [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387) **fixed**
 - [image/jpeg: index out of range](https://github.com/golang/go/issues/10388) **fixed**
