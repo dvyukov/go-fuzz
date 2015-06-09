@@ -6,6 +6,8 @@ import (
 	"math/big"
 	"reflect"
 	"time"
+	
+	"github.com/dvyukov/go-fuzz/examples/fuzz"
 )
 
 func Fuzz(data []byte) int {
@@ -38,9 +40,6 @@ func Fuzz(data []byte) int {
 		}
 		data1, err := asn1.Marshal(x)
 		if err != nil {
-			if err.Error() == "asn1: structure error: cannot represent time as GeneralizedTime" {
-				continue
-			}
 			panic(err)
 		}
 		v1 := ctor()
@@ -52,9 +51,9 @@ func Fuzz(data []byte) int {
 			fmt.Printf("data: %q\n", rest)
 			panic("leftover data")
 		}
-		if !reflect.DeepEqual(v, v1) {
-			fmt.Printf("v0: %#v\n", v)
-			fmt.Printf("v1: %#v\n", v1)
+		if !fuzz.DeepEqual(v, v1) {
+			fmt.Printf("v0: %#v\n", reflect.ValueOf(v).Elem().Interface())
+			fmt.Printf("v1: %#v\n", reflect.ValueOf(v1).Elem().Interface())
 			panic(fmt.Sprintf("not equal %T", x))
 		}
 	}

@@ -2,16 +2,18 @@ package json
 
 import (
 	"encoding/json"
-	"reflect"
+	"fmt"
+
+	"github.com/dvyukov/go-fuzz/examples/fuzz"
 )
 
 func Fuzz(data []byte) int {
 	score := 0
 	for _, ctor := range []func() interface{}{
 		func() interface{} { return nil },
-		func() interface{} { return []interface{}{} },
-		func() interface{} { return map[interface{}]interface{}{} },
-		func() interface{} { return map[string]interface{}{} },
+		func() interface{} { return new([]interface{}) },
+		func() interface{} { m := map[string]string{}; return &m },
+		func() interface{} { m := map[string]interface{}{}; return &m },
 		func() interface{} { return new(S) },
 	} {
 		v := ctor()
@@ -37,8 +39,10 @@ func Fuzz(data []byte) int {
 			s.P = nil
 			v1.(*S).P = nil
 		}
-		if !reflect.DeepEqual(v, v1) {
-			panic("non-idempotent marshal")
+		if !fuzz.DeepEqual(v, v1) {
+			fmt.Printf("v0: %#v\n", v)
+			fmt.Printf("v1: %#v\n", v1)
+			panic("not equal")
 		}
 	}
 	return score
