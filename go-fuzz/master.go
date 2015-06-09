@@ -18,7 +18,6 @@ type Master struct {
 	mu           sync.Mutex
 	idSeq        int
 	slaves       map[int]*MasterSlave
-	bootstrap    *PersistentSet
 	corpus       *PersistentSet
 	suppressions *PersistentSet
 	crashers     *PersistentSet
@@ -46,9 +45,8 @@ func masterMain(ln net.Listener) {
 	m.suppressions = newPersistentSet(filepath.Join(*flagWorkdir, "suppressions"))
 	m.crashers = newPersistentSet(filepath.Join(*flagWorkdir, "crashers"))
 	m.corpus = newPersistentSet(filepath.Join(*flagWorkdir, "corpus"))
-	m.bootstrap = newPersistentSet(*flagCorpus)
-	if len(m.bootstrap.m) == 0 {
-		m.bootstrap.add(Artifact{[]byte{}, 0})
+	if len(m.corpus.m) == 0 {
+		m.corpus.add(Artifact{[]byte{}, 0, false})
 	}
 
 	m.slaves = make(map[int]*MasterSlave)
@@ -136,11 +134,8 @@ func (m *Master) Connect(a *ConnectArgs, r *ConnectRes) error {
 	m.slaves[s.id] = s
 	r.ID = s.id
 	// Give the slave initial corpus.
-	for _, a := range m.bootstrap.m {
-		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, execBootstrap, false, false})
-	}
 	for _, a := range m.corpus.m {
-		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, execCorpus, true, true})
+		r.Corpus = append(r.Corpus, MasterInput{a.data, a.meta, execCorpus, !a.user, true})
 	}
 	return nil
 }
@@ -161,7 +156,7 @@ func (m *Master) NewInput(a *NewInputArgs, r *int) error {
 		return errors.New("unknown slave")
 	}
 
-	art := Artifact{a.Data, a.Prio}
+	art := Artifact{a.Data, a.Prio, false}
 	if !m.corpus.add(art) {
 		return nil
 	}
@@ -186,7 +181,7 @@ func (m *Master) NewCrasher(a *NewCrasherArgs, r *int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if !m.suppressions.add(Artifact{a.Suppression, 0}) || !m.crashers.add(Artifact{a.Data, 0}) {
+	if !m.suppressions.add(Artifact{a.Suppression, 0, false}) || !m.crashers.add(Artifact{a.Data, 0, false}) {
 		// Already have this.
 		return nil
 	}
