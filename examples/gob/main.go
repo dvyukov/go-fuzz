@@ -5,6 +5,8 @@ import (
 	"encoding/gob"
 	"fmt"
 	"reflect"
+
+	"github.com/dvyukov/go-fuzz/examples/fuzz"
 )
 
 type X struct {
@@ -58,27 +60,24 @@ func Fuzz(data []byte) int {
 		if err != nil {
 			panic(err)
 		}
-		if !reflect.DeepEqual(v, v1.Interface()) {
-			fmt.Printf("v0: %#v\n", v)
-			fmt.Printf("v1: %#v\n", v1.Interface())
-			panic("values not equal")
+		if !fuzz.DeepEqual(v, v1.Interface()) {
+			fmt.Printf("v0: %#v\n", reflect.ValueOf(v).Elem().Interface())
+			fmt.Printf("v1: %#v\n", v1.Elem().Interface())
+			panic(fmt.Sprintf("values not equal %T", v))
 		}
 		b2 := new(bytes.Buffer)
 		err = gob.NewEncoder(b2).EncodeValue(v1)
 		if err != nil {
 			panic(err)
 		}
-		if !bytes.Equal(b1.Bytes(), b2.Bytes()) {
-			panic("bytes are not equal")
-		}
 		v2 := ctor()
 		if err := gob.NewDecoder(b1).Decode(v2); err != nil {
 			panic(err)
 		}
-		if !reflect.DeepEqual(v, v2) {
-			fmt.Printf("v0: %#v\n", v)
-			fmt.Printf("v2: %#v\n", v2)
-			panic("values not equal 2")
+		if !fuzz.DeepEqual(v, v2) {
+			fmt.Printf("v0: %#v\n", reflect.ValueOf(v).Elem().Interface())
+			fmt.Printf("v2: %#v\n", reflect.ValueOf(v2).Elem().Interface())
+			panic(fmt.Sprintf("values not equal 2 %T", v))
 		}
 	}
 	return score
