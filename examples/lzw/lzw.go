@@ -19,16 +19,20 @@ func Fuzz(data []byte) int {
 		return 0 // too large
 	}
 	uncomp = uncomp[:n]
-	for _, order := range []lzw.Order{lzw.MSB, lzw.LSB} {
-		for width := 2; width <= 8; width++ {
+	for width := 2; width <= 8; width++ {
+		uncomp0 := append([]byte{}, uncomp...)
+		for i, v := range uncomp0 {
+			uncomp0[i] = v & (1<<uint(width)-1)
+		}
+		for _, order := range []lzw.Order{lzw.MSB, lzw.LSB} {
 			buf := new(bytes.Buffer)
 			w := lzw.NewWriter(buf, order, width)
-			n, err := w.Write(uncomp)
+			n, err := w.Write(uncomp0)
 			if err != nil {
 				fmt.Printf("order=%v width=%v\n", order, width)
 				panic(err)
 			}
-			if n != len(uncomp) {
+			if n != len(uncomp0) {
 				fmt.Printf("order=%v width=%v\n", order, width)
 				panic("short write")
 			}
@@ -42,7 +46,7 @@ func Fuzz(data []byte) int {
 				fmt.Printf("order=%v width=%v\n", order, width)
 				panic(err)
 			}
-			if !bytes.Equal(uncomp, uncomp1) {
+			if !bytes.Equal(uncomp0, uncomp1) {
 				fmt.Printf("order=%v width=%v\n", order, width)
 				panic("data differs")
 			}
