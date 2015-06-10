@@ -3,37 +3,50 @@ package lzw
 import (
 	"bytes"
 	"compress/lzw"
+	"fmt"
+	"io"
 	"io/ioutil"
 )
 
-const (
-	order = lzw.MSB
-	width = 3
-)
-
 func Fuzz(data []byte) int {
-	r := lzw.NewReader(bytes.NewReader(data), order, width)
-	data1, err := ioutil.ReadAll(r)
-	if err != nil {
+	r := lzw.NewReader(bytes.NewReader(data), lzw.MSB, 8)
+	uncomp := make([]byte, 64<<10)
+	n, err := r.Read(uncomp)
+	if err != nil && err != io.EOF {
 		return 0
 	}
-	var buf bytes.Buffer
-	w := lzw.NewWriter(&buf, order, width)
-	n, err := w.Write(data1)
-	if err != nil {
-		panic("write failed")
+	if n == len(uncomp) {
+		return 0 // too large
 	}
-	if n != len(data1) {
-		panic("invalid write length")
-	}
-	w.Close()
-	r1 := lzw.NewReader(&buf, order, width)
-	data2, err := ioutil.ReadAll(r1)
-	if err != nil {
-		panic("failed to decompress")
-	}
-	if !bytes.Equal(data1, data2) {
-		panic("corrputed data")
+	uncomp = uncomp[:n]
+	for _, order := range []lzw.Order{lzw.MSB, lzw.LSB} {
+		for width := 2; width <= 8; width++ {
+			buf := new(bytes.Buffer)
+			w := lzw.NewWriter(buf, order, width)
+			n, err := w.Write(uncomp)
+			if err != nil {
+				fmt.Printf("order=%v width=%v\n", order, width)
+				panic(err)
+			}
+			if n != len(uncomp) {
+				fmt.Printf("order=%v width=%v\n", order, width)
+				panic("short write")
+			}
+			if err := w.Close(); err != nil {
+				fmt.Printf("order=%v width=%v\n", order, width)
+				panic(err)
+			}
+			r1 := lzw.NewReader(buf, order, width)
+			uncomp1, err := ioutil.ReadAll(r1)
+			if err != nil {
+				fmt.Printf("order=%v width=%v\n", order, width)
+				panic(err)
+			}
+			if !bytes.Equal(uncomp, uncomp1) {
+				fmt.Printf("order=%v width=%v\n", order, width)
+				panic("data differs")
+			}
+		}
 	}
 	return 1
 }
