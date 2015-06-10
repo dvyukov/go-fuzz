@@ -207,6 +207,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [html/template: panic: Call using zero Value argument](https://github.com/golang/go/issues/10634) **fixed**
 - [html/template: nil pointer dereference](https://github.com/golang/go/issues/10673) **fixed**
 - [html/template: slice bounds out of range](https://github.com/golang/go/issues/10799) **fixed**
+- [go/parser: turns correct program into incorrect one](https://github.com/golang/go/issues/11151)
 - [debug/elf: index out of range](https://github.com/golang/go/issues/10996)
 - [debug/elf: makeslice: len out of range](https://github.com/golang/go/issues/10997)
 - [debug/elf: slice bounds out of range](https://github.com/golang/go/issues/10999)
