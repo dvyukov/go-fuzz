@@ -1,0 +1,51 @@
+// Copyright 2013 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// DO NOT EDIT.
+// Generate with: go run gen.go{{if .Full}} -full{{end}} -output md5block.go
+
+package md5
+
+import (
+	"unsafe"
+	"runtime"
+)
+
+{{if not .Full}}
+	var t1 = [...]uint32{
+	{{range .Table1}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+	
+	var t2 = [...]uint32{
+	{{range .Table2}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+	
+	var t3 = [...]uint32{
+	{{range .Table3}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+	
+	var t4 = [...]uint32{
+	{{range .Table4}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+{{end}}
+
+const x86 = runtime.GOARCH == "amd64" || runtime.GOARCH == "386"
+
+var littleEndian bool
+
+func init() {
+	x := uint32(0x04030201)
+	y := [4]byte{0x1, 0x2, 0x3, 0x4}
+	littleEndian = *(*[4]byte)(unsafe.Pointer(&x)) == y
+}
+
+func blockGeneric(dig *digest, p []byte) {
+	a := dig.s[0]
+	b := dig.s[1]
+	c := dig.s[2]
+	d := dig.s[3]
+	var X *[16]uint32
+	var xbuf [16]uint32
+	for len(p) >= chunk {
+		aa, b
