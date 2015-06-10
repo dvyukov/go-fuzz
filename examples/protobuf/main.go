@@ -3,8 +3,9 @@ package protobuf
 import (
 	"bytes"
 	"fmt"
-	"reflect"
+	"strings"
 
+	. "github.com/dvyukov/go-fuzz/examples/fuzz"
 	pb "github.com/dvyukov/go-fuzz/examples/protobuf/pb"
 	"github.com/golang/protobuf/proto"
 )
@@ -83,21 +84,34 @@ func fuzz(data []byte, text bool) int {
 		if err != nil {
 			panic(err)
 		}
-		if !reflect.DeepEqual(v, v1) {
-			// These types contain floats, NaNs don't compare equal.
-			if _, ok := v.(*pb.M10); ok {
-				continue
-			}
-			if _, ok := v.(*pb.M11); ok {
-				continue
-			}
-			// M18 contains extensions map which can either nil or empty, does not compare equal.
-			if _, ok := v.(*pb.M18); ok {
-				continue
-			}
+		if !DeepEqual(v, v1) {
 			fmt.Printf("v0: %#v\n", v)
 			fmt.Printf("v1: %#v\n", v1)
 			panic(fmt.Sprintf("non idempotent marshal of %T", v))
+		}
+		if text {
+			// TODO: Marshal/Unmarshal to binary.
+		} else {
+			var buf bytes.Buffer
+			err := proto.MarshalText(&buf, v)
+			if err != nil {
+				fmt.Printf("failed to MarshalText: %#v\n", v)
+				panic(err)
+			}
+			v2 := ctor()
+			err = proto.UnmarshalText(buf.String(), v2)
+			if err != nil {
+				if strings.Contains(err.Error(), "unexpected byte 0x2f") {
+					continue // known bug
+				}
+				fmt.Printf("failed to UnmarshalText: %q\n", buf.Bytes())
+				panic(err)
+			}
+			if !DeepEqual(v, v2) {
+				fmt.Printf("v0: %#v\n", v)
+				fmt.Printf("v2: %#v\n", v2)
+				panic(fmt.Sprintf("non idempotent text marshal of %T", v))
+			}
 		}
 	}
 	return score
