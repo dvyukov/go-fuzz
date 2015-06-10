@@ -189,6 +189,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/png: nil deref](https://github.com/golang/go/issues/10493) **fixed**
 - [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676) **fixed**
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
+- [compress/lzw: compress/decompress corrupts data](https://github.com/golang/go/issues/11142)
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
 - [text/template: Call using string as type int](https://github.com/golang/go/issues/10800) **fixed**
 - [text/template: Call using complex128 as type string](https://github.com/golang/go/issues/10946) **fixed**
