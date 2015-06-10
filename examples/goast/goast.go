@@ -1,6 +1,8 @@
 package goast
 
 import (
+	"bytes"
+	"fmt"
 	"go/parser"
 	"go/printer"
 	"go/token"
@@ -23,9 +25,14 @@ func Fuzz(data []byte) int {
 			return 0
 		}
 		f.Close()
-		out, _ := exec.Command("6g", f.Name()).CombinedOutput()
+		out, _ := exec.Command("compile", f.Name()).CombinedOutput()
 		outs := string(out)
-		if strings.Contains(outs, "fatal error") || strings.Contains(outs, "panic:") {
+		// "panic" and "fatal error" can be present in normal error messages of compiler.
+		// So instead we look for the main compiler source file,
+		// which should be present in all crash messages.
+		// This does not work either, go-fuzz teaches to massively generate
+		// source code that contains "src/cmd/compile/main.go" in error messages. Yikes!
+		if strings.Contains(outs, "src/cmd/compile/main.go") {
 			panic(outs)
 		}
 	}
@@ -35,6 +42,19 @@ func Fuzz(data []byte) int {
 	if err != nil {
 		return 0
 	}
-	printer.Fprint(ioutil.Discard, fset, f)
+	buf := new(bytes.Buffer)
+	printer.Fprint(buf, fset, f)
+	fset1 := token.NewFileSet()
+	f1, err := parser.ParseFile(fset1, "src.go", buf.Bytes(), parser.ParseComments|parser.DeclarationErrors|parser.AllErrors)
+	if err != nil {
+		panic(err)
+	}
+	buf1 := new(bytes.Buffer)
+	printer.Fprint(buf1, fset1, f1)
+	if !bytes.Equal(buf.Bytes(), buf1.Bytes()) {
+		fmt.Printf("source0: %q\n", buf.Bytes())
+		fmt.Printf("source1: %q\n", buf1.Bytes())
+		panic("source changed")
+	}
 	return 1
 }
