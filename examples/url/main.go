@@ -3,6 +3,7 @@ package url
 import (
 	"fmt"
 	"net/url"
+	"reflect"
 )
 
 func Fuzz(data []byte) int {
@@ -30,9 +31,20 @@ func Fuzz(data []byte) int {
 }
 
 func FuzzValues(data []byte) int {
-	_, err := url.ParseQuery(string(data))
+	sdata := string(data)
+	vals, err := url.ParseQuery(sdata)
 	if err != nil {
 		return 0
+	}
+	sdata1 := vals.Encode()
+	vals1, err := url.ParseQuery(sdata1)
+	if err != nil {
+		panic(err)
+	}
+	if !reflect.DeepEqual(vals, vals1) {
+		fmt.Printf("vals0: %#v\n", vals)
+		fmt.Printf("vals1: %#v\n", vals1)
+		panic("bad")
 	}
 	return 1
 }
