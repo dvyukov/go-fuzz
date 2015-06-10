@@ -5,18 +5,30 @@ import (
 	"encoding/xml"
 	"fmt"
 	"reflect"
+
+	"github.com/dvyukov/go-fuzz/examples/fuzz"
 )
 
 type X struct {
-	A int     `xml:"a,attr"`
-	B float64 `xml:"B"`
-	C bool    `xml:"C>CC"`
-	D string  `xml:",comment,omitempty"`
-	E []byte  `xml:",innerxml,omitempty"`
-	F *X
-	G string `xml:",any,omitempty"`
-	H string `xml:"-,omitempty"`
-	J []byte `xml:",chardata,omitempty"`
+	XMLName xml.Name
+	A       int     `xml:"a,attr"`
+	B       float64 `xml:"B"`
+	C       bool
+	C1      bool   `xml:"C>CC"`
+	D       string `xml:",comment,omitempty"`
+	E       []byte
+	E1      []byte `xml:",innerxml,omitempty"`
+	F       *Y
+	G       string `xml:",any,omitempty"`
+	H       string `xml:"-,omitempty"`
+	J       []byte `xml:",chardata,omitempty"`
+	K       **int
+}
+
+type Y struct {
+	XMLName xml.Name `xml:"http://www.google.com/test name"`
+	A       string   `xml:",chardata"`
+	B       int      `xml:"-"`
 }
 
 func Fuzz(data []byte) int {
@@ -24,15 +36,17 @@ func Fuzz(data []byte) int {
 	for _, ctor := range []func() interface{}{
 		func() interface{} { return nil },
 		func() interface{} { return new(string) },
-		func() interface{} { return []string{} },
+		func() interface{} { return new([]string) },
 		func() interface{} { return new(X) },
+		func() interface{} { return new([]X) },
 	} {
-		v := ctor()
+		v0 := ctor()
 		valid := false
 		dec := xml.NewDecoder(bytes.NewReader(data))
-		if dec.Decode(v) == nil {
+		if dec.Decode(v0) == nil {
 			valid = true
 		}
+		v := ctor()
 		dec1 := xml.NewDecoder(bytes.NewReader(data))
 		dec1.Strict = false
 		dec1.AutoClose = xml.HTMLAutoClose
@@ -57,10 +71,10 @@ func Fuzz(data []byte) int {
 		if err := dec2.Decode(v1); err != nil {
 			panic(err)
 		}
-		if !reflect.DeepEqual(v, v1) {
-			fmt.Printf("v0: %+v\n", v)
-			fmt.Printf("v1: %+v\n", v)
-			panic("non-idempotent Marshal/Unmarshal")
+		if !fuzz.DeepEqual(v, v1) {
+			fmt.Printf("v0: %#v\n", reflect.ValueOf(v).Elem().Interface())
+			fmt.Printf("v1: %#v\n", reflect.ValueOf(v1).Elem().Interface())
+			panic(fmt.Sprintf("not equal %T", v))
 		}
 	}
 	return score

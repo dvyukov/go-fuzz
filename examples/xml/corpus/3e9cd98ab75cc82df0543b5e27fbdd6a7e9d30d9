@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC ""
+  "://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<body xmlns:foo="ns1" xmlns="ns2" xmlns:tag="ns3" `
