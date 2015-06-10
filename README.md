@@ -161,8 +161,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [time: allows signs for year/tz in format string](https://github.com/golang/go/issues/11128)
 - [archive/zip: cap out of range](https://github.com/golang/go/issues/10956) **fixed**
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
-- [archive/zip: unexpected EOF](https://github.com/golang/go/issues/11144)
-- [archive/zip: checksum error](https://github.com/golang/go/issues/11145)
+- [archive/zip: unexpected EOF](https://github.com/golang/go/issues/11144) **fixed**
 - [archive/zip: file with wrong checksum is successfully decompressed](https://github.com/golang/go/issues/11146)
 - [archive/tar: slice bounds out of range](https://github.com/golang/go/issues/10959) **fixed**
 - [archive/tar: slice bounds out of range (2)](https://github.com/golang/go/issues/10960) **fixed**
