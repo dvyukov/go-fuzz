@@ -11,6 +11,14 @@ Versifier generated new inputs + increased fuzzing efficiency by 25% +
 uncovered 62 new basic blocks (excluding counters) which accounts for 2.5% of all discovered basic blocks.
 On json test after 1 hour of fuzzing:
 Versifier uncovered 15 new basic blocks (excluding counters) which accounts for 1.15% of all discovered basic blocks.
+
+Research on automatic protocol reverse engineering:
+- Sequitur (or Nevill-Manning algorithm) algorithm:
+http://en.wikipedia.org/wiki/Sequitur_algorithm
+- Discoverer: Automatic Protocol Reverse Engineering from Network Traces
+http://research.microsoft.com/pubs/153196/discoverer-security07.pdf
+- Reverse Engineering of Protocols from Network Traces
+http://www.di.fc.ul.pt/~nuno/PAPERS/WCRE11.pdf
 */
 
 import (
