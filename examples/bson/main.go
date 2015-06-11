@@ -2,10 +2,10 @@ package bson
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"gopkg.in/mgo.v2/bson"
+	"github.com/dvyukov/go-fuzz/examples/fuzz"
 )
 
 func Fuzz(data []byte) int {
@@ -36,13 +36,9 @@ func Fuzz(data []byte) int {
 			}
 			panic(err)
 		}
-		// The following check fails because of nil/len==0 slice difference.
-		if false && !reflect.DeepEqual(v, v1) {
-			if strings.Contains(fmt.Sprintf("%+v", v), "NaN") {
-				continue
-			}
-			fmt.Printf("v0=%+v\n", v)
-			fmt.Printf("v1=%+v\n", v1)
+		if !fuzz.DeepEqual(v, v1) {
+			fmt.Printf("v0: %#v\n", v)
+			fmt.Printf("v1: %#v\n", v1)
 			panic("non-idempotent unmarshalling")
 		}
 	}
@@ -51,9 +47,9 @@ func Fuzz(data []byte) int {
 
 type S struct {
 	A int
-	B string `bson:",omitempty"`
+	B string
 	C float64
-	D []byte `bson:",omitempty"`
+	D []byte
 	E bool   `bson:"E1"`
 	F uint8  `bson:",omitempty"`
 	G S1
