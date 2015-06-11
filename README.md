@@ -158,6 +158,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [fmt: index out of range (3)](https://github.com/golang/go/issues/10770) **fixed**
 - [fmt: index out of range (4)](https://github.com/golang/go/issues/10771) **fixed**
 - [fmt: index out of range (5)](https://github.com/golang/go/issues/10945) **fixed**
+- [regexp: slice bounds out of range](https://github.com/golang/go/issues/11176)
 - [regexp: LiteralPrefix lies about completeness](https://github.com/golang/go/issues/11172)
 - [regexp: LiteralPrefix lies about completeness (2)](https://github.com/golang/go/issues/11175)
 - [regexp: QuoteMeta does not return regexp that matches input](https://github.com/golang/go/issues/11173)
