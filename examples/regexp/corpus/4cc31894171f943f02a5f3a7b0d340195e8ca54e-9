@@ -1,0 +1,1 @@
+bcfoo\b{^(?i)\P{Any}

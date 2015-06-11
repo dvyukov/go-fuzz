@@ -1,0 +1,1 @@
+Pfirst>[a-zA-Z]+) (?P<ast>[a-zA-Z]+)
