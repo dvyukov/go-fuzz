@@ -170,6 +170,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [archive/tar: slice bounds out of range (5)](https://github.com/golang/go/issues/11167)
 - [archive/tar: deadly hang](https://github.com/golang/go/issues/10968) **fixed**
 - [archive/tar: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/11168)
+- [archive/tar: Reader.Next returns nil header](https://github.com/golang/go/issues/11169)
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
 - [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs] **fixed**
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415) **fixed**
