@@ -1,12 +1,54 @@
 package regexp
 
+// int RE2Match(const char* restr, int restrlen, const char* str, int strlen, int* matched, char** error);
+import "C"
+
 import (
+	"fmt"
 	"regexp"
+	"strings"
+	"unsafe"
 )
+
+func RE2Match(restr, str []byte) (ok, matched bool, err string) {
+	var rep, strp *C.char
+	relen, strlen := C.int(len(restr)), C.int(len(str))
+	if relen != 0 {
+		rep = (*C.char)(unsafe.Pointer(&restr[0]))
+	}
+	if strlen != 0 {
+		strp = (*C.char)(unsafe.Pointer(&str[0]))
+	}
+	var re2matched C.int
+	var re2err *C.char
+	re2ok := C.RE2Match(rep, relen, strp, strlen, &re2matched, &re2err)
+	if re2ok == 0 {
+		var b []byte
+		raw := (*[1<<12]byte)(unsafe.Pointer(re2err))
+		for _, c := range raw {
+			if c == 0 {
+				break
+			}
+			b = append(b, c)
+		}
+		err = string(b)
+	}
+	return re2ok != 0, re2matched != 0, err
+}
+
+func isAscii(b []byte) bool {
+	for _, v := range b {
+		if v == 0 || v >= 128 {
+			return false
+		}
+	}
+	return true
+}
 
 func Fuzz(data []byte) int {
 	str := data[:len(data)/2]
 	sstr := string(str)
+	restrb := data[len(data)/2:]
 	restr := string(data[len(data)/2:])
 
 	quoted := regexp.QuoteMeta(sstr)
@@ -14,6 +56,26 @@ func Fuzz(data []byte) int {
 	if err == nil {
 		if !req.MatchString(sstr) {
 			panic("quoted is not matched")
+		}
+	}
+
+	if isAscii(restrb) && isAscii(str) {
+		re2ok, re2matched, re2err := RE2Match(restrb, str)
+		re, err := regexp.Compile(restr)
+		if (err == nil) != re2ok {
+			if !(re2ok && (strings.HasPrefix(err.Error(), "error parsing regexp: invalid UTF-8") ||
+				strings.HasPrefix(err.Error(), "error parsing regexp: invalid repeat count") ||
+				strings.HasPrefix(err.Error(), "error parsing regexp: invalid escape sequence: `\\C`"))) {
+				fmt.Printf("re=%q regexp=%v re2=%v(%v)\n", restr, err, re2ok, re2err)
+				panic("regexp and re2 disagree on regexp validity")
+			}
+		}
+		if err == nil {
+			matched := re.Match(str)
+			if re2matched != matched {
+				fmt.Printf("re=%q str=%q regexp=%v re2=%v\n", restr, str, matched, re2matched)
+				panic("regexp and re2 disagree on regexp match")
+			}
 		}
 	}
 
