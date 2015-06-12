@@ -163,6 +163,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [regexp: LiteralPrefix lies about completeness](https://github.com/golang/go/issues/11172)
 - [regexp: LiteralPrefix lies about completeness (2)](https://github.com/golang/go/issues/11175)
 - [regexp: POSIX regexp takes 4 seconds to execute](https://github.com/golang/go/issues/11181)
+- [regexp: confusing behavior on invalid utf-8 sequences](https://github.com/golang/go/issues/11185)
 - [time: allows signs for year/tz in format string](https://github.com/golang/go/issues/11128)
 - [archive/zip: cap out of range](https://github.com/golang/go/issues/10956) **fixed**
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
