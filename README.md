@@ -265,6 +265,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/russross/blackfriday: index out of range panic in isReference](https://github.com/russross/blackfriday/issues/173) **fixed**
 - [github.com/youtube/vitess/go/vt/sqlparser: index out of range](https://github.com/youtube/vitess/issues/767)
 - [gopkg.in/mgo.v2/bson: slice bounds out of range](https://github.com/go-mgo/mgo/issues/116) **fixed**
-- [gopkg.in/mgo.v2/bson: Document is corrupted](https://github.com/go-mgo/mgo/issues/117)
+- [gopkg.in/mgo.v2/bson: Document is corrupted](https://github.com/go-mgo/mgo/issues/117) **fixed**
+- [gopkg.in/mgo.v2/bson: Attempted to marshal empty Raw document](https://github.com/go-mgo/mgo/issues/120) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
