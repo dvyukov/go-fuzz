@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 	"fmt"
+	"io"
 	"reflect"
 
 	"github.com/dvyukov/go-fuzz/examples/fuzz"
@@ -34,19 +35,19 @@ func Fuzz(data []byte) int {
 		func() interface{} { return new(int) },
 		func() interface{} { return new(string) },
 		func() interface{} { return new(float64) },
-		func() interface{} { return []byte{} },
 		func() interface{} { return new([]byte) },
-		func() interface{} { return []interface{}{} },
 		func() interface{} { return new(interface{}) },
 		func() interface{} { return new(complex128) },
-		func() interface{} { return make(map[int]int) },
-		func() interface{} { return make(map[string]interface{}) },
+		func() interface{} { m := make(map[int]int); return &m },
+		func() interface{} { m := make(map[string]interface{}); return &m },
 		func() interface{} { return new(X) },
 	} {
 		v := ctor()
-		if gob.NewDecoder(bytes.NewReader(data)).Decode(v) != nil {
+		dec := gob.NewDecoder(bytes.NewReader(data))
+		if dec.Decode(v) != nil {
 			continue
 		}
+		dec.Decode(ctor())
 		score = 1
 		if ctor() == nil {
 			continue
@@ -71,7 +72,11 @@ func Fuzz(data []byte) int {
 			panic(err)
 		}
 		v2 := ctor()
-		if err := gob.NewDecoder(b1).Decode(v2); err != nil {
+		dec1 := gob.NewDecoder(b1)
+		if err := dec1.Decode(v2); err != nil {
+			panic(err)
+		}
+		if err := dec1.Decode(ctor()); err != io.EOF {
 			panic(err)
 		}
 		if !fuzz.DeepEqual(v, v2) {
