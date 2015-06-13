@@ -2,24 +2,37 @@ package fmt
 
 import (
 	"fmt"
+	"reflect"
 )
 
 func Fuzz(data []byte) int {
-	sdata := string(data)
-	fmt.Sscanf("42", sdata)
-	fmt.Sprintf(sdata)
-	i := 0
-	fmt.Sscanf("42", sdata, &i)
-	fmt.Sprintf(sdata, i)
-	f := 0.0
-	fmt.Sscanf("42", sdata, &f)
-	fmt.Sprintf(sdata, f)
-	s := ""
-	fmt.Sscanf("42", sdata, &s)
-	fmt.Sprintf(sdata, s)
-	x := struct{ X, Y int }{}
-	fmt.Sscanf("42", sdata, &x)
-	fmt.Sprintf(sdata, x)
-	fmt.Sscanf(sdata, sdata, &s, &i)
+	f := string(data[:len(data)/2])
+	s := string(data[len(data)/2:])
+	for _, ctor := range []func() interface{}{
+		func() interface{} { return new(int) },
+		func() interface{} { return new(byte) },
+		func() interface{} { return new(uint16) },
+		func() interface{} { return new(int16) },
+		func() interface{} { return new(string) },
+		func() interface{} { return new(float32) },
+		func() interface{} { return new(float64) },
+		func() interface{} { return new(string) },
+		func() interface{} { return new(complex128) },
+		func() interface{} { return new([]int) },
+		func() interface{} { return new([][]string) },
+		func() interface{} { m := make(map[int]float64); return &m },
+		func() interface{} {
+			return &struct {
+				A int
+				B float64
+				C string
+				D []int
+			}{}
+		},
+	} {
+		v := ctor()
+		fmt.Sscanf(s, f, v)
+		fmt.Sprintf(f, reflect.ValueOf(v).Elem().Interface())
+	}
 	return 0
 }
