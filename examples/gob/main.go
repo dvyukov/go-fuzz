@@ -79,6 +79,11 @@ func Fuzz(data []byte) int {
 		if err := dec1.Decode(ctor()); err != io.EOF {
 			panic(err)
 		}
+		if vv, ok := v.(*X); ok && vv.I != nil && *vv.I == nil {
+			// If input contains "I:42 I:null", then I will be in this weird state.
+			// It is effectively nil, but DeepEqual does not handle such case.
+			vv.I = nil
+		}
 		if !fuzz.DeepEqual(v, v2) {
 			fmt.Printf("v0: %#v\n", reflect.ValueOf(v).Elem().Interface())
 			fmt.Printf("v2: %#v\n", reflect.ValueOf(v2).Elem().Interface())
