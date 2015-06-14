@@ -1,0 +1,8 @@
+ / HTTP/1.6
+Transfer-Encoding:chunked
+
+
+cfer-EncodingType:application/x-www-form-urlencoded
+Content-Length:32
+
+home=Cosby&favorite+flavor=flies

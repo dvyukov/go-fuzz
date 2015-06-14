@@ -1,0 +1,6 @@
+T /ilvidtsT1%AA0-05 HTTP/1.1
+t: t
+p: imeout=15
+Connection: Keep-Alive
+: 192.168.10.1
+

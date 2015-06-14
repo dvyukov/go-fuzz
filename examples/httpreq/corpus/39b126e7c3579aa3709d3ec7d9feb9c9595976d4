@@ -1,0 +1,7 @@
+POST /enlighten/rest HTTP/1.1
+Host: alais.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 50
+
+licenseID=string&content=string&/aramsXML=string
+

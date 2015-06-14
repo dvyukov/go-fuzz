@@ -1,0 +1,5 @@
+T / HTTP/1.1
+:
+t:application/vnd.bonfire+xmlrization: Basic XXX
+ping:ip, deflate
+

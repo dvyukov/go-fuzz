@@ -1,0 +1,15 @@
+ / HTTP/1.1
+Host:
+Accept:
+Authorization:ic XXX
+Accept-Encoding:
+y:
+Transfer-Encoding:chunked
+Etag:
+Content-Type:application/vnd.bonfire+xml; charset=utf-8
+Date:
+Server:
+w:
+Cache-Control:
+Connection:close
+

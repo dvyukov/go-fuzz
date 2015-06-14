@@ -1,0 +1,7 @@
+POST / HTTP/1.0
+:com
+User-Agent:HTTPTool/1.0
+Content-Type:application/x-www-form-urlencoded
+Content-Length:32
+
+home=Cosby&favorite+flavor=flies

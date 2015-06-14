@@ -1,0 +1,40 @@
+ / HTTP/1.1
+Content-Length:747
+
+lt&n;*&e;nic;t=d;t=enseID=string&h:50
+
+lt&// Copyright 2013 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the L CENSE file.
+
+// DO NOT EDIT.
+// Generate with: go run gen.go{{if .Full}} -full{{end}} -output md5block.go
+
+package md5
+
+import (
+	"unsafe"
+	"runtime"
+)
+
+{{if not .Full}}
+	var t1 = [...]uint32{
+	{{range .Table1}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+	
+	var t2 = [...]uint32{
+	{{range .Table2}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+	
+	var t3 = [...]uint32{
+	{{range .Table3}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+	
+	var t4 = [...]uint32{
+	{{range .Table4}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+{{end}}
+
+const x86 = runtime.GOARCH == "amd64" || runtime.GOARCH == "386"
+
+var lit

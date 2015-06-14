@@ -1,0 +1,8 @@
+POST /s HTTP/1.0
+From: 
+User-Agent:HTTPTool/1.0
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 32
+
+home=Cosby&favorite+favor=flies
+

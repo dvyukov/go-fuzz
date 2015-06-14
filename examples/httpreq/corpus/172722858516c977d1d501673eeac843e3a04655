@@ -1,0 +1,7 @@
+POST /ighrest HTTP/1.1
+Host: api.opis.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 50
+
+licenseID=string&content=string&/paramsXML=string
+

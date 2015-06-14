@@ -1,0 +1,5 @@
+POST / HTTP/1.1
+Content-Type:application/x-www-form-urlencoded
+Content-Length:50
+
+ip=192.168.10.1&gn=summary&v2=14911&c10=Brazil&vid

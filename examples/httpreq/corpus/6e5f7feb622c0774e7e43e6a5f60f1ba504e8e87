@@ -1,0 +1,6 @@
+G /t HTTP/1.1
+: 4
+t: pplication/vnd.bonfire+xml
+Authorization: Basic XXX
+oding: gzip, deflate
+

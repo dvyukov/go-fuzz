@@ -1,0 +1,7 @@
+POST /rest HTTP/1.1
+Host:is.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 50
+
+licenseID=string&content=string&/paramsXML=string
+
