@@ -79,10 +79,8 @@ func Fuzz(data []byte) int {
 		if err := dec1.Decode(ctor()); err != io.EOF {
 			panic(err)
 		}
-		if vv, ok := v.(*X); ok && vv.I != nil && (*vv.I == nil || **vv.I == 0) {
-			// If input contains "I:42 I:null", then I will be in this weird state.
-			// It is effectively nil, but DeepEqual does not handle such case.
-			vv.I = nil
+		if vv, ok := v.(*X); ok {
+			fix(vv)
 		}
 		if !fuzz.DeepEqual(v, v2) {
 			fmt.Printf("v0: %#v\n", reflect.ValueOf(v).Elem().Interface())
@@ -91,4 +89,19 @@ func Fuzz(data []byte) int {
 		}
 	}
 	return score
+}
+
+func fix(vv *X) {
+	// See https://github.com/golang/go/issues/11119
+	if vv.I != nil && (*vv.I == nil || **vv.I == 0) {
+		// If input contains "I:42 I:null", then I will be in this weird state.
+		// It is effectively nil, but DeepEqual does not handle such case.
+		vv.I = nil
+	}
+	if vv.H != nil && *vv.H == 0 {
+		vv.H = nil
+	}
+	if vv.J != nil {
+		fix(vv.J)
+	}
 }
