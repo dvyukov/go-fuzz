@@ -2,6 +2,7 @@ package x509
 
 import (
 	"bytes"
+	"crypto/dsa"
 	"crypto/x509"
 	"encoding/gob"
 	"encoding/pem"
@@ -40,10 +41,14 @@ func FuzzCertificate(data []byte) int {
 		return 0
 	}
 	c.CheckSignature(x509.SHA1WithRSA, []byte("data"), []byte("01234567890123456789"))
+	c.CheckSignatureFrom(c)
 	c.VerifyHostname("host.com")
 	pool := x509.NewCertPool()
 	pool.AddCert(c)
 	c.Verify(x509.VerifyOptions{DNSName: "host.com", Intermediates: pool})
+	if !c.Equal(c) {
+		panic("not equal")
+	}
 	return 1
 }
 
@@ -79,6 +84,10 @@ func FuzzPKIX(data []byte) int {
 	key, err := x509.ParsePKIXPublicKey(data)
 	if err != nil {
 		return 0
+	}
+	if _, ok := key.(*dsa.PublicKey); ok {
+		// Marshalling of DSA keys is not implemented.
+		return 1
 	}
 	data1, err := x509.MarshalPKIXPublicKey(key)
 	if err != nil {
