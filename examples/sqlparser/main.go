@@ -15,8 +15,7 @@ func Fuzz(data []byte) int {
 		}
 		return 0
 	}
-	sqlparser.String(stmt)
-	if false {
+	if true {
 		data1 := sqlparser.String(stmt)
 		stmt1, err := sqlparser.Parse(data1)
 		if err != nil {
@@ -29,6 +28,8 @@ func Fuzz(data []byte) int {
 			fmt.Printf("data1: %q\n", data1)
 			panic("not equal")
 		}
+	} else {
+		sqlparser.String(stmt)
 	}
 	if sel, ok := stmt.(*sqlparser.Select); ok {
 		var nodes []sqlparser.SQLNode
