@@ -1,0 +1,1 @@
+SELECT(SELECT*FROM F group by(SELECT*FROM F group by(SELECT*FROM F group by(SELECT*FROM F group by(SELECT*FROM F group by(SELECT*FROM F group by(SELECT*FROM g))))))),

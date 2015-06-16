@@ -1,0 +1,1 @@
+SELECT*FROM F group by D,H,D,E,D,I,F,I,F,C,K

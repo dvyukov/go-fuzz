@@ -1,0 +1,1 @@
+SELECT*FROM F right join F

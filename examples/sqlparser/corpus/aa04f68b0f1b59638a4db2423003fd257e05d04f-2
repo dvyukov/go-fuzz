@@ -1,0 +1,1 @@
+SELECT D,C/Y,E/Y,E FROM Q

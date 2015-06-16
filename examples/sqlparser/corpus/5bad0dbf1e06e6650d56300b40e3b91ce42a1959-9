@@ -1,0 +1,1 @@
+SELECT exists(SELECT exists(SELECT D FROM O)FROM O)FROM O having exists(SELECT exists(SELECT D FROM O)FROM O)F

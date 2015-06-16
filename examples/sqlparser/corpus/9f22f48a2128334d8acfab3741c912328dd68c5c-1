@@ -1,0 +1,2 @@
+INSERT INTO STATION VALUES (13, 'Phoenix', 'AZ', 33, 112)
+
