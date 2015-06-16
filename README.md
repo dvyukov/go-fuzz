@@ -272,6 +272,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/russross/blackfriday: index out of range panic in isReference](https://github.com/russross/blackfriday/issues/173) **fixed**
 - [github.com/youtube/vitess/go/vt/sqlparser: index out of range](https://github.com/youtube/vitess/issues/767)
 - [github.com/youtube/vitess/go/vt/sqlparser: statement serialized incorrectly](https://github.com/youtube/vitess/issues/797)
+- [github.com/youtube/vitess/go/vt/sqlparser: statement serialized incorrectly (2)](https://github.com/youtube/vitess/issues/798)
 - [gopkg.in/mgo.v2/bson: slice bounds out of range](https://github.com/go-mgo/mgo/issues/116) **fixed**
 - [gopkg.in/mgo.v2/bson: Document is corrupted](https://github.com/go-mgo/mgo/issues/117) **fixed**
 - [gopkg.in/mgo.v2/bson: Attempted to marshal empty Raw document](https://github.com/go-mgo/mgo/issues/120) **fixed**
