@@ -9,11 +9,6 @@ import (
 	"time"
 )
 
-type Req struct {
-	data []byte
-	done chan bool
-}
-
 type MyListener chan *MyConn
 
 var ln = MyListener(make(chan *MyConn))
