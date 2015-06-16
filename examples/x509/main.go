@@ -3,6 +3,7 @@ package x509
 import (
 	"bytes"
 	"crypto/dsa"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/gob"
 	"encoding/pem"
@@ -101,6 +102,54 @@ func FuzzPKIX(data []byte) int {
 		panic("keys are not equal")
 	}
 	return 1
+}
+
+func FuzzEC(data []byte) int {
+	k, err := x509.ParseECPrivateKey(data)
+	if err != nil {
+		return 0
+	}
+	data1, err := x509.MarshalECPrivateKey(k)
+	if err != nil {
+		panic(err)
+	}
+	k1, err := x509.ParseECPrivateKey(data1)
+	if err != nil {
+		panic(err)
+	}
+	if !fuzz.DeepEqual(k, k1) {
+		panic("keys are not equal")
+	}
+	return 1
+}
+
+func FuzzPKCS(data []byte) int {
+	score := 0
+	if k, err := x509.ParsePKCS1PrivateKey(data); err == nil {
+		score = 1
+		data1 := x509.MarshalPKCS1PrivateKey(k)
+		k1, err := x509.ParsePKCS1PrivateKey(data1)
+		if err != nil {
+			panic(err)
+		}
+		if !fuzz.DeepEqual(k, k1) {
+			panic("keys are not equal")
+		}
+	}
+	if k0, err := x509.ParsePKCS8PrivateKey(data); err == nil {
+		score = 1
+		if k, ok := k0.(*rsa.PrivateKey); ok {
+			data1 := x509.MarshalPKCS1PrivateKey(k)
+			k1, err := x509.ParsePKCS1PrivateKey(data1)
+			if err != nil {
+				panic(err)
+			}
+			if !fuzz.DeepEqual(k, k1) {
+				panic("keys are not equal")
+			}
+		}
+	}
+	return score
 }
 
 type zeroReader int
