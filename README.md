@@ -28,7 +28,7 @@ optimized) and check that the output is equal. To communicate application-level
 bugs Fuzz function should panic (os.Exit(1) will work too, but panic message
 contains more info). Note that Fuzz function should not output to stdout/stderr,
 it will slow down fuzzing and nobody will see the output anyway. The exception
-is printing info about a bug just before panicing.
+is printing info about a bug just before panicking.
 
 Here is an example of a simple Fuzz function for image/png package:
 ```go
@@ -144,7 +144,7 @@ $ go-fuzz -bin=./png-fuzz.zip -slave=127.0.0.1:8745 -procs=10
 
 Go-fuzz fuzzing logic is heavily based on [american fuzzy lop](http://lcamtuf.coredump.cx/afl/),
 so refer to [AFL readme](http://lcamtuf.coredump.cx/afl/README.txt) if you are
-interesting in technical details. AFL is written and maintained by
+interested in technical details. AFL is written and maintained by
 [Michal Zalewski](http://lcamtuf.coredump.cx/). Some of the mutations employed
 by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 [Felix Gröbert](https://twitter.com/fel1x).
