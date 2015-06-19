@@ -169,6 +169,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [net/http: allows empty header names](https://github.com/golang/go/issues/11205)
 - [net/http: allows invalid characters in header values](https://github.com/golang/go/issues/11207)
 - [net/http: allows %-encoding after \[\]](https://github.com/golang/go/issues/11208)
+- [net/mail: ParseAddress/String corrupt address](https://github.com/golang/go/issues/11292)
 - [net/textproto: fails to trim header value](https://github.com/golang/go/issues/11204)
 - [archive/zip: cap out of range](https://github.com/golang/go/issues/10956) **fixed**
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
