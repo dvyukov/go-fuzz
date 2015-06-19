@@ -208,8 +208,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423) **fixed**
 - [image/png: nil deref](https://github.com/golang/go/issues/10493) **fixed**
 - [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676) **fixed**
-- [image/gif: Encode does not preserve Bounds.Min](https://github.com/golang/go/issues/11149)
-- [image/gif: Decode returns an image with empty palette](https://github.com/golang/go/issues/11150)
+- [image/gif: Decode returns an image with empty palette](https://github.com/golang/go/issues/11150) **fixed**
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
 - [compress/lzw: compress/decompress corrupts data](https://github.com/golang/go/issues/11142) **fixed**
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
