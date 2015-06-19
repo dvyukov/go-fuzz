@@ -209,6 +209,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/png: nil deref](https://github.com/golang/go/issues/10493) **fixed**
 - [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676) **fixed**
 - [image/gif: Decode returns an image with empty palette](https://github.com/golang/go/issues/11150) **fixed**
+- [image/gif: LoopCount changes on round trip](https://github.com/golang/go/issues/11287)
 - [compress/flate: hang](https://github.com/golang/go/issues/10426) **fixed**
 - [compress/lzw: compress/decompress corrupts data](https://github.com/golang/go/issues/11142) **fixed**
 - [text/template: leaks goroutines on errors](https://github.com/golang/go/issues/10574#ref-issue-71873016)
