@@ -74,6 +74,7 @@ func (bin *TestBinary) close() {
 	}
 	bin.comm.destroy()
 	os.Remove(bin.commFile)
+	os.Remove(bin.fileName)
 }
 
 func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, output []byte, crashed, hanged bool) {
