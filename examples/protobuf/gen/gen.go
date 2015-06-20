@@ -40,12 +40,12 @@ func main() {
 		&pb.M14{F: []byte{0, 1, 2}},
 		&pb.M14{F: []byte("&pb.M6{F: proto.Uint32(123123), XXX_unrecognized: []byte{0,1,2}},")},
 		&pb.M15{F0: proto.Int32(123)},
-		&pb.M15{F0: proto.Int32(123), F1: proto.String("foo"), F2: []byte{1, 2, 3}, F3: proto.Float64(-123.123), F4: proto.Bool(false)},
+		&pb.M15{F0: proto.Int32(123), F1: proto.String("foo"), F2: []byte{1, 2, 3}, F4: proto.Bool(false)},
 		&pb.M16{},
 		&pb.M16{F: pb.Corpus_UNIVERSAL.Enum()},
 		&pb.M16{F: pb.Corpus_PRODUCTS.Enum()},
 		&pb.M17{F: &pb.M15{F0: proto.Int32(123)}},
-		&pb.M17{F: &pb.M15{F0: proto.Int32(123), F1: proto.String("foo"), F2: []byte{1, 2, 3}, F3: proto.Float64(-123.123), F4: proto.Bool(false)}},
+		&pb.M17{F: &pb.M15{F0: proto.Int32(123), F1: proto.String("foo"), F2: []byte{1, 2, 3}, F4: proto.Bool(false)}},
 		func() proto.Message {
 			v := &pb.M18{F0: proto.String("foo")}
 			proto.SetExtension(v, pb.E_F1, 42)
@@ -54,7 +54,7 @@ func main() {
 		&pb.M19{},
 		&pb.M19{F: []int32{0, -123, 500, 123123123}},
 		&pb.M20{F: []string{"", "foo", "\x00\x01\x02"}},
-		&pb.M21{F: []*pb.M15{&pb.M15{F0: proto.Int32(123)}, &pb.M15{F0: proto.Int32(123), F1: proto.String("foo"), F2: []byte{1, 2, 3}, F3: proto.Float64(-123.123), F4: proto.Bool(false)}}},
+		&pb.M21{F: []*pb.M15{&pb.M15{F0: proto.Int32(123)}, &pb.M15{F0: proto.Int32(123), F1: proto.String("foo"), F2: []byte{1, 2, 3}, F4: proto.Bool(false)}}},
 		&pb.M22{F: []*pb.M2{&pb.M2{}}},
 		&pb.M22{F: []*pb.M2{&pb.M2{}, &pb.M2{F: proto.Uint32(123123)}}},
 		&pb.M23{},
@@ -69,27 +69,27 @@ func main() {
 	}
 	for i, v := range vars {
 		if false {
-		data, err := proto.Marshal(v)
-		if err != nil {
-			panic(err)
-		}
-		f, err := os.Create(fmt.Sprintf("/tmp/proto/%v", i))
-		if err != nil {
-			panic(err)
-		}
-		f.Write(data)
-		f.Close()
+			data, err := proto.Marshal(v)
+			if err != nil {
+				panic(err)
+			}
+			f, err := os.Create(fmt.Sprintf("/tmp/proto/%v", i))
+			if err != nil {
+				panic(err)
+			}
+			f.Write(data)
+			f.Close()
 		} else {
-		f, err := os.Create(fmt.Sprintf("/tmp/proto/%v", i))
-		if err != nil {
-			panic(err)
-		}
-		fmt.Printf("%v: %+v\n", i, v)
-		err = proto.MarshalText(f, v)
-		if err != nil {
-			panic(err)
-		}
-		f.Close()
+			f, err := os.Create(fmt.Sprintf("/tmp/proto/%v", i))
+			if err != nil {
+				panic(err)
+			}
+			fmt.Printf("%v: %+v\n", i, v)
+			err = proto.MarshalText(f, v)
+			if err != nil {
+				panic(err)
+			}
+			f.Close()
 		}
 	}
 }
