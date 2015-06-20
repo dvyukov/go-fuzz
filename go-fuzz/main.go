@@ -30,8 +30,9 @@ var (
 	flagSonar         = flag.Bool("sonar", true, "use sonar hints")
 	flagV             = flag.Int("v", 0, "verbosity level")
 
-	shutdown  uint32
-	shutdownC = make(chan struct{})
+	shutdown        uint32
+	shutdownC       = make(chan struct{})
+	shutdownCleanup []func()
 )
 
 func main() {
@@ -53,6 +54,9 @@ func main() {
 		close(shutdownC)
 		log.Printf("shutting down...")
 		time.Sleep(2 * time.Second)
+		for _, f := range shutdownCleanup {
+			f()
+		}
 		os.Exit(0)
 	}()
 
