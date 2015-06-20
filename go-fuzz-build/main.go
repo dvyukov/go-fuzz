@@ -138,7 +138,7 @@ func testNormalBuild(pkg string) {
 		}
 		cmd.Env = append(cmd.Env, v)
 	}
-	cmd.Env = append(cmd.Env, "GOPATH=" + workdir + string(os.PathListSeparator) + os.Getenv("GOPATH"))
+	cmd.Env = append(cmd.Env, "GOPATH="+workdir+string(os.PathListSeparator)+os.Getenv("GOPATH"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
@@ -194,7 +194,9 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 	}
 	createFuzzMain(pkg)
 
-	outf := tempFile() + ".exe"
+	outf := tempFile()
+	os.Remove(outf)
+	outf += ".exe"
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", outf, mainPkg)
 	for _, v := range os.Environ() {
 		if strings.HasPrefix(v, "GOROOT") {

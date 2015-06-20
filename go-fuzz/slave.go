@@ -110,6 +110,11 @@ func slaveMain() {
 		log.Fatalf("bad input archive: missing file")
 	}
 
+	shutdownCleanup = append(shutdownCleanup, func() {
+		os.Remove(coverBin)
+		os.Remove(sonarBin)
+	})
+
 	hub := newHub(metadata)
 	for i := 0; i < *flagProcs; i++ {
 		s := &Slave{
