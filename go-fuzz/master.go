@@ -26,7 +26,7 @@ type Master struct {
 	lastInput     time.Time
 	statExecs     uint64
 	statRestarts  uint64
-	coverFullness float64
+	coverFullness int
 }
 
 // MasterSlave represents master's view of a slave.
@@ -84,10 +84,10 @@ func masterLoop(m *Master) {
 			procs += s.procs
 		}
 		log.Printf("slaves: %v, corpus: %v (%v ago), crashers: %v,"+
-			" restarts: 1/%v, execs: %v (%.0f/sec), cover: %.2f%%, uptime: %v",
+			" restarts: 1/%v, execs: %v (%.0f/sec), cover: %v, uptime: %v",
 			procs, len(m.corpus.m), fmtDuration(lastInput), len(m.crashers.m),
 			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime),
-			m.coverFullness*100, fmtDuration(uptime))
+			m.coverFullness, fmtDuration(uptime))
 		m.mu.Unlock()
 	}
 }
@@ -209,7 +209,7 @@ type SyncArgs struct {
 	ID            int
 	Execs         uint64
 	Restarts      uint64
-	CoverFullness float64
+	CoverFullness int
 }
 
 type SyncRes struct {
