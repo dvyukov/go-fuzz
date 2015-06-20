@@ -1,0 +1,10 @@
+COPY /litmus/copysrc HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Depth: infinity
+Destination: http://localhost:9999/litmus/copydest
+Overwrite: F
+X-Litmus: copymove: 3 (copy_simple)
+

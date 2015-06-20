@@ -1,0 +1,16 @@
+LOCK /litmus/lockme HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 171
+Content-Type: application/xml
+Depth: 0
+Timeout: Second-3600
+X-Litmus: locks: 23 (lock_shared)
+
+<?xml version="1.0" encoding="utf-8"?>
+<lockinfo xmlns='DAV:'>
+ <lockscope><shared/></lockscope>
+<locktype><write/></locktype><owner>litmus test suite</owner>
+</lockinfo>

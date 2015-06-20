@@ -1,0 +1,26 @@
+DELETE /litmus/ HTTP/1.1
+User-Agent: 6
+Keep-Alive: 
+Connection: , e
+TE: s
+Host: 9
+X-Litmus: )
+
+UNLOCK /litmus/lockme HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: 9
+Lock-Token: <>
+X-Litmus-Second: )
+
+PROPFIND /litmus/ HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: 9
+Content-Length: 5
+Depth: 0
+X-Litmus: )
+
+<

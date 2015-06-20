@@ -1,0 +1,9 @@
+PROPFIND / HTTP/9.6
+Content-Length:5
+
+<foo>GET / HTTP/1.1
+
+DELETE / HTTP/1.1
+
+HEAD / HTTP/1.1
+

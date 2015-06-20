@@ -1,0 +1,9 @@
+PROPFIND /litmus/prop2 HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 138
+X-Litmus: props: 24 (propwformed)
+
+<?xml version="1.0" encoding="utf-8" ?><propfind xmlns='DAV:'><prop><valnspace xmlns='http://example.com/neon/litmus/'/></prop></propfind>

@@ -1,0 +1,28 @@
+MOVE /litmus/mvdest2/ HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: localhost:9999
+Destination: http://localhost:9999/litmus/mvnoncoll
+Overwrite: T
+X-Litmus: )
+
+MOVE /litmus/mvdest2/ HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: localhost:9999
+Destination: http://localhost:9999/litmus/mvnoncoll
+Overwrite: T
+X-Litmus: )
+
+PROPFIND /litmus/ HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: 9
+Content-Length: 5
+Depth: 0
+X-Litmus: )
+
+<

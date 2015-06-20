@@ -1,0 +1,7 @@
+COPY / HTTP/1.1
+Destination:)
+
+DELETE / HTTP/1.1
+
+DELETE / HTTP/1.1
+

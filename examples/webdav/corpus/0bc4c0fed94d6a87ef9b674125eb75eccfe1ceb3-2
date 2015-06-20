@@ -1,0 +1,3 @@
+COPY / HTTP/1.1
+Destination:http//localhost:9999/litmus/lockcoll/lockme.txt
+

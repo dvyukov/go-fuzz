@@ -1,0 +1,9 @@
+MOVE / HTTP/1.1
+Destination://s
+
+COPY / HTTP/1.1
+Destination://9
+
+COPY / HTTP/1.1
+Destination://9
+

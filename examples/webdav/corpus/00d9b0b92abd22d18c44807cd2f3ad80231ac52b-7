@@ -1,0 +1,86 @@
+COPY / HTTP/1.1
+s:
+Host:localhost:9999
+D:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+Host:localhost:9999
+D:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+st:localhost:9999
+Depth:
+Destination://local√ost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Desost:99
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+st:localhost:9999
+Depth:
+Destination://local√ost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+

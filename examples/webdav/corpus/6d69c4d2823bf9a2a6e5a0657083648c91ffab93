@@ -1,0 +1,25 @@
+OPTIONS /litmus/ HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: 9
+X-Litmus: )
+
+COPY /litmus/notlocked HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: localhost:9999
+Depth: 0
+Destination: http://localhost:9999/litmus/lockme
+Overwrite: T
+X-Litmus-Second: )
+
+UNLOCK /litmus/lockme HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: 9
+Lock-Token: <>
+X-Litmus-Second: )
+

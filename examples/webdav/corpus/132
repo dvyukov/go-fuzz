@@ -1,0 +1,9 @@
+PROPPATCH /litmus/prop2 HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 156
+X-Litmus: props: 15 (propnullns)
+
+<?xml version="1.0" encoding="utf-8" ?><propertyupdate xmlns="DAV:"><set><prop><nonamespace xmlns="">randomvalue</nonamespace></prop></set></propertyupdate>

@@ -1,0 +1,3 @@
+COPY //chan9/.. HTTP/1.0
+Destination:.
+

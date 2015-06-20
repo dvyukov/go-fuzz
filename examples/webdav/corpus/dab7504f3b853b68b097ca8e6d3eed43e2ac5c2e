@@ -1,0 +1,9 @@
+MOVE /litmus/move2 HTTP/1.1
+-t:6
+n:E
+E:s
+Host:localhost:9999
+Destination://localhost:9999/litmus/movedest
+Overwrite:F
+-s:)
+

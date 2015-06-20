@@ -1,0 +1,8 @@
+UNLOCK /litmus/lockme HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Lock-Token: <opaquelocktoken:foobar>
+X-Litmus-Second: locks: 13 (notowner_lock)
+

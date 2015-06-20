@@ -1,0 +1,10 @@
+COPY /litmus/copysrc HTTP/1.1
+:6
+n:
+E:
+Host:localhost:9999
+Depth:infinity
+Destination://localhost:9999/litmus/copydest
+Overwrite:
+s:
+

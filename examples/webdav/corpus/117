@@ -1,0 +1,10 @@
+PROPFIND /litmus/ HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 5
+Depth: 0
+X-Litmus: props: 2 (propfind_invalid)
+
+<foo>

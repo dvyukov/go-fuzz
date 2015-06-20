@@ -1,0 +1,22 @@
+MOVE / HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/l
+Overwrite:
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/e
+Overwrite:
+
+COPY / HTTP/1.1
+Destination:p:///
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/e
+Overwrite:
+

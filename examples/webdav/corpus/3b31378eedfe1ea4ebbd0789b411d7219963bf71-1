@@ -1,0 +1,7 @@
+MKCOL /s HTTP/1.1
+
+MKCOL /s HTTP/1.1
+
+PUT /p HTTP/1.1
+Content-Length:2
+

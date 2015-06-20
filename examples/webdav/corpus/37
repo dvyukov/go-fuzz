@@ -1,0 +1,16 @@
+PUT /litmus/ccsrc/foo.2 HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 32
+X-Litmus: copymove: 7 (copy_coll)
+
+This
+is
+a
+test
+file
+called
+foo
+

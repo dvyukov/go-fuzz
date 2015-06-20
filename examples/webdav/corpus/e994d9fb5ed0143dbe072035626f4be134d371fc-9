@@ -1,0 +1,4 @@
+LOCK /¹»¹»¹»¹»¹»¹±¹¹»¹»¹»»¹»¹»¹»¹»¹»¹»¹»¹±¹»¹»¹»¹»»¹»¹»¹»¹»¹»¹±¹»¹»¹»¹»¹»' HTTP/1.1
+Content-Length:174
+
+<lockinfo><lockscope><exclusive/></lockscope><locktype><write/></locktype></lockinfo>

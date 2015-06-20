@@ -1,0 +1,12 @@
+LOCK / HTTP/1.1
+Content-Length:174
+
+1.0"encoding="utf-8"?>
+<lockinfo xmlns=''>
+<lockscope><exclusive/></lockscope>
+<locktype><write/></locktype><owner>litmus test suite</owner>
+</lockinfo>OPTIONS / HTTP/1.1
+:
+
+DELETE / HTTP/1.1
+

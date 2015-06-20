@@ -1,0 +1,4 @@
+LOCK /ÿ½¡¡ø¡´…ø¡´…ÿ½½¡' HTTP/1.1
+Content-Length:174
+
+<lockinfo><lockscope><exclusive/></lockscope><locktype><write/></locktype></lockinfo>

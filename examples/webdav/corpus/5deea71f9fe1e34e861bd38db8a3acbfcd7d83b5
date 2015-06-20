@@ -1,0 +1,9 @@
+MKCOL / HTTP/1.1
+:6
+:E
+:s
+Host:9
+:2
+Content-Length:8
+:)
+

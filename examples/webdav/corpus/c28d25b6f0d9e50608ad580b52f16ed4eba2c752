@@ -1,0 +1,7 @@
+MKCOL /litmus/mvsrc/ HTTP/1.1
+:6
+n:E
+E:s
+t:9
+s:)
+

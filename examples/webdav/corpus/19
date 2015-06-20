@@ -1,0 +1,10 @@
+MKCOL /litmus/mkcolbody HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Type: xzy-foo/bar-512
+Content-Length: 8
+X-Litmus: basic: 14 (mkcol_with_body)
+
+afafafaf

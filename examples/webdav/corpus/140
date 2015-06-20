@@ -1,0 +1,9 @@
+PROPPATCH /litmus/prop2 HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 203
+X-Litmus: props: 23 (propvalnspace)
+
+<?xml version="1.0" encoding="utf-8" ?><propertyupdate xmlns='DAV:'><set><prop><t:valnspace xmlns:t='http://example.com/neon/litmus/'><foo xmlns='http://bar'/></t:valnspace></prop></set></propertyupdate>

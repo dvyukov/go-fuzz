@@ -1,0 +1,25 @@
+MOVE / HTTP/1.1
+:
+:
+:
+:
+Destination:httplocalhost:
+:
+:
+
+MOVE / HTTP/1.1
+:
+:
+:
+:
+Destination:http:
+:
+:
+:
+:
+:
+:
+:
+:
+:
+

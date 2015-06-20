@@ -1,0 +1,16 @@
+PUT /litmus/mvsrc/foo.8 HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 32
+X-Litmus: copymove: 10 (move_coll)
+
+This
+is
+a
+test
+file
+called
+foo
+

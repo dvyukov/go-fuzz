@@ -1,0 +1,4 @@
+ L: HTTP/3.1
+Connection:clos*
+Connection:close
+

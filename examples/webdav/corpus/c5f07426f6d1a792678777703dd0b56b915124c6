@@ -1,0 +1,35 @@
+LOCK /litmus/lockme HTTP/1.9
+Content-Length: 174
+Content-Type: application/xml
+Depth: 0
+Timeout: Second-3600
+X-Litmus: locks: 6 (lock_
+
+<?xml version="1.0" encoding="utf-8"?>
+<lockinfo xmlns='DAV:'>
+ <lockscope><exclusive/></lockscope>
+<locktype><write/></locktype><owner>litmus test suite</owner>
+</lockinfo>
+LOCK /litmus/lockme HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 174
+Content-Type: application/xml
+Depth: 0
+Timeout: Second-3600
+X-Litmus: locks: 6 (lock_excl)
+
+<?xml version="1.0" encoding="utf-8"?>
+<lockinfo xmlns='DAV:'>
+ <lockscope><exclusive/></lockscope>
+<locktype><write/></locktype><owner>litmus test suite</owner>
+</lockinfo>
+OPTIONS /litmus/ HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+X-Litmus: locks: 2 (options)
+

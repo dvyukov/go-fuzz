@@ -1,0 +1,4 @@
+MOVE /.t HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/..s
+

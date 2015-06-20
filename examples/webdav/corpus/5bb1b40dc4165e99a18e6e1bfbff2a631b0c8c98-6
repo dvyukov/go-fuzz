@@ -1,0 +1,12 @@
+HEAD /e HTTP/0.1
+
+GET /p HTTP/1.1
+
+HEAD /e HTTP/0.1
+
+GET /e HTTP/1.1
+
+HEAD /e HTTP/1.1
+
+HEAD /e HTTP/0.1
+

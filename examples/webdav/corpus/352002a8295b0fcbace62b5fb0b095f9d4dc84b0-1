@@ -1,0 +1,4 @@
+MOVE /s/2/ HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/s/://localhost:9999/:/st:9999/s/e
+

@@ -1,0 +1,23 @@
+MKCOL /s HTTP/1.1
+User-Agent:
+Connection:
+ s
+Host:
+ )
+
+MKCOL /s HTTP/1.1
+User-Agent:
+Connection:
+ s
+Host:
+ )
+
+PUT /s/p HTTP/1.1
+User-Agent:
+Connection:
+ s
+Host:
+Content-Length:
+:)
+
+h

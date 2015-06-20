@@ -1,0 +1,14 @@
+PROPFIND /litmus/lockme HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Depth: 0
+Content-Length: 118
+Content-Type: application/xml
+X-Litmus: locks: 7 (discover)
+
+<?xml version="1.0" encoding="utf-8"?>
+<propfind xmlns="DAV:"><prop>
+<lockdiscovery xmlns="DAV:"/>
+</prop></propfind>

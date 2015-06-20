@@ -1,0 +1,7 @@
+MKCOL /litmus/copycoll/ HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+X-Litmus: copymove: 2 (copy_init)
+

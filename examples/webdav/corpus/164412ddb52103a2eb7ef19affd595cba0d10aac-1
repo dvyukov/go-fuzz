@@ -1,0 +1,10 @@
+COPY /litmus/copysrc HTTP/1.1
+:
+n:
+E:
+Host:9
+h:
+Destination:h9999/litmus/copycoll/
+e:
+X:
+

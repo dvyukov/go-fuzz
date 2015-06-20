@@ -1,0 +1,139 @@
+COPY / HTTP/1.1
+Destination:9
+
+COPY / HTTP/1.1
+Destination:9
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.2
+
+COPY / HTTP/1.1
+Destination:1
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.2
+Destination:t
+
+COPY / HTTP/1.1
+Destination:1
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.2
+Destination:t
+
+COPY / HTTP/1.1
+Destination:1
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+:
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+:
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+
+COPY / HTTP/1.1
+:
+Destination:t
+

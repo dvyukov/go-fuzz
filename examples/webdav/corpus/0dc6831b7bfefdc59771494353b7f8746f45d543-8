@@ -1,0 +1,93 @@
+GET / HTTP/1.1
+
+GET / HTTP/1.1
+
+HEAD / HTTP/1.1
+
+GETOPY / HTTP/1.1
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Destination:t/localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+:
+
+ / HTTP/1.1
+l:
+
+COPY / HTTP/1.1
+Host:localhosU:9999
+:
+Destination://localhost:9999/:
+
+ / HTTP/1.1
+:
+
+ / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+:
+Des/ination://localhost:9999/e
+
+ / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+:
+
+ / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+:
+Destination://localhost:9999/:
+
+ / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+

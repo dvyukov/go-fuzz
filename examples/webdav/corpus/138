@@ -1,0 +1,9 @@
+PROPPATCH /litmus/prop2 HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 255
+X-Litmus: props: 21 (propsetremove)
+
+<?xml version="1.0" encoding="utf-8" ?><propertyupdate xmlns='DAV:'><set><prop><removeset xmlns='http://example.com/neon/litmus/'>x</removeset></prop></set><remove><prop><removeset xmlns='http://example.com/neon/litmus/'/></prop></remove></propertyupdate>

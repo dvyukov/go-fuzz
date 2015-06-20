@@ -1,0 +1,17 @@
+PUT /litmus/lockme HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 32
+If: (<DAV:no-lock> ["13e931f2c5a5b06c20"])
+X-Litmus: locks: 16 (fail_cond_put)
+
+This
+is
+a
+test
+file
+called
+foo
+

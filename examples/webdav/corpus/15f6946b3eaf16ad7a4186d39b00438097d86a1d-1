@@ -1,0 +1,23 @@
+LOCK /s/e HTTP/1.1
+Content-Length:170
+Timeout:Second-6
+
+<?xml version="1.0"encoding="utf-8"?>
+<lockinfo xmlns=':'>
+ <lockscope><exclusive/></lockscope>
+<locktype><write/></locktype><owner>litmus test suite</owner>
+</lockinfo>
+HEAD / HTTP/1.1
+:
+
+LOCK /s/e HTTP/1.1
+:
+Content-Length:174
+:
+Depth:0
+Timeout:Second-6
+:
+
+<?xml version="1.0"encoding="utf-8"?>
+<lockinfo xmlns><write/></locktype><owner>e</owner>
+</lockinfo>

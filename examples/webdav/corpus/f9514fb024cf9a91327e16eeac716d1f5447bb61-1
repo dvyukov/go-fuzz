@@ -1,0 +1,20 @@
+LOCK / HTTP/1.1
+Content-Length:174
+
+<?xml version="1.0" encoding="utf-8"?>
+<lockinfo xmlns='DAV:'>
+ <lockscope><exclusive/></lockssope>
+<locktype><write/></locktype><owner>litmus test suite</owner>
+</lockinfo>
+LOCK / HTTP/1.1
+Content-Length:174
+
+<?xml versio<="1.0" encoding="utf-8"?>
+<lockinfo xmlns='DAV:'>
+ <lockscope><exclusive/></lockscope>
+<locktype><write/>n/locktype><owner>litmus test suite</owner>
+</lockinfo>
+LOCK / HTTP/1.1
+Content-Length:174
+
+<lockinfo></e>

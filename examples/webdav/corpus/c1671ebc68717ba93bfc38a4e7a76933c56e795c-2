@@ -1,0 +1,6 @@
+LOCK / HTTP/9.6
+Timeout:9
+
+LOCK / HTTP/1.1
+Timeout:6
+

@@ -1,0 +1,9 @@
+PROPFIND /litmus/prop HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 92
+X-Litmus: props: 8 (propextended)
+
+<?xml version="1.0" encoding="utf-8" ?><propfind xmlns="DAV:"><foobar/><allprop/></propfind>

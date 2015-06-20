@@ -1,0 +1,8 @@
+HEAD /s/e HTTP/1.1
+
+PUT /s/p HTTP/1.1
+
+HEAD /s/e HTTP/1.1
+
+PUT /s/p HTTP/1.1
+

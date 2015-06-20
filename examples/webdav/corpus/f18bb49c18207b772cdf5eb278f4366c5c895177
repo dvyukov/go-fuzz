@@ -1,0 +1,7 @@
+DELETE /litmus/mvdest/foo.2 HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: 9
+X-Litmus: )
+

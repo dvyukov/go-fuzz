@@ -1,0 +1,72 @@
+COPY / HTTP/1.1
+es:
+
+COPY / HTTP/1.1
+Ho:
+
+COPY / HTTP/1.1
+os:
+
+COPY / HTTP/1.1
+Ho:
+
+COPY / HTTP/1.1
+:99
+
+COPY / HTTP/1.1
+De:
+
+COPY / HTTP/1.1
+De:
+
+COPY / HTTP/1.1
+De:
+
+COPY / HTTP/1.1
+
+COPY / HTTP/1.1
+De:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+ost:localhost:9999
+Depth:
+Destination://local√ost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:
+Destination://localhost:9999/:
+

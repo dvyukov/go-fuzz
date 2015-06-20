@@ -1,0 +1,21 @@
+PROPPATCH /litmus/prop HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 1070
+Content-Type: application/xml
+X-Litmus: props: 26 (propmanyns)
+
+<?xml version="1.0" encoding="utf-8" ?>
+<D:propertyupdate xmlns:D="DAV:"><D:set><D:prop><somename xmlns="http://example.com/alpha">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/beta">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/gamma">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/delta">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/epsilon">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/zeta">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/eta">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/theta">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/iota">manynsvalue</somename></D:prop></D:set>
+<D:set><D:prop><somename xmlns="http://example.com/kappa">manynsvalue</somename></D:prop></D:set>
+</D:propertyupdate>

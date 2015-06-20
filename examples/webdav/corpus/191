@@ -1,0 +1,17 @@
+PUT /litmus/lockcoll/lockme.txt HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Content-Length: 32
+X-Litmus: locks: 32 (lock_collection)
+If: <http://localhost:9999/litmus/lockcoll/> (<1434733007>)
+
+This
+is
+a
+test
+file
+called
+foo
+

@@ -1,0 +1,15 @@
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:e
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:e
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Depth:10
+Destination://localhost:9999/e
+

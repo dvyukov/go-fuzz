@@ -1,0 +1,2 @@
+PUT //lockcoll/lockme.txt HTTP/1.1
+

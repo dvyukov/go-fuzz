@@ -1,0 +1,4 @@
+PUT /s HTTP/1.1
+
+PUT /p HTTP/1.1
+

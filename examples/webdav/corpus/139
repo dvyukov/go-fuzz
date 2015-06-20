@@ -1,0 +1,14 @@
+PROPFIND /litmus/prop2 HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Connection: TE
+TE: trailers
+Host: localhost:9999
+Depth: 0
+Content-Length: 141
+Content-Type: application/xml
+X-Litmus: props: 22 (propget)
+
+<?xml version="1.0" encoding="utf-8"?>
+<propfind xmlns="DAV:"><prop>
+<removeset xmlns="http://example.com/neon/litmus/"/>
+</prop></propfind>

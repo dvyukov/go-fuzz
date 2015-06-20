@@ -1,0 +1,26 @@
+PROPFIND /s HTTP/1.1
+User-Agent: 6
+Connection: E
+E: s
+Host: 9
+Content-Length: 5
+h: 0
+s: )
+
+ / HTTP/1.1
+User-Agent: 6
+Connection: E
+E: s
+Host: 9
+s: )
+
+PROPFIND /s/ HTTP/1.1
+User-Agent: 6
+Connection: E
+E: t
+Host: 9
+Content-Length: 5
+h: 0
+s: )
+
+<

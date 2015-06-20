@@ -1,0 +1,24 @@
+PROPFIND / HTTP/9.6
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/:
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+Destination:1
+
+COPY / HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/e
+
+COPY / HTTP/1.1
+Destination:‹
+

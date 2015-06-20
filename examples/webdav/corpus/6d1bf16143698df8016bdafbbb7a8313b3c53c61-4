@@ -1,0 +1,5 @@
+LOCK / HTTP/9.6
+Content-Length:171
+
+<lockinfo s=''><lockscope><d/></lockscope>locktype><e/>/locktype><owner>litmus test suite</owner>
+<o>

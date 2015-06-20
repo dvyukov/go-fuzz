@@ -1,0 +1,22 @@
+OPTIONS /s HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: 9
+X-Litmus: )
+
+DELETE /s HTTP/1.1
+User-Agent: 6
+Keep-Alive: 
+Connection: , e
+TE: s
+Host: 9
+X-Litmus: )
+
+HEAD /e HTTP/1.1
+User-Agent: 6
+Connection: E
+TE: s
+Host: 9
+X-Litmus: )
+

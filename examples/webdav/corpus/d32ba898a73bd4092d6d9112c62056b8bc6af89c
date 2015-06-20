@@ -1,0 +1,6 @@
+COPY /c HTTP/1.1
+Host:localhost:9999
+Depth:infinity
+Destination://localhost:9999/
+Overwrite:
+

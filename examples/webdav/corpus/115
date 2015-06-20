@@ -1,0 +1,8 @@
+DELETE /litmus/ HTTP/1.1
+User-Agent: litmus/0.13 neon/0.29.6
+Keep-Alive: 
+Connection: TE, Keep-Alive
+TE: trailers
+Host: localhost:9999
+X-Litmus: props: 1 (begin)
+

@@ -1,0 +1,13 @@
+UNLOCK / HTTP/1.1
+Lock-Token:<>
+
+MOVE /litmus/2 HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/litmus/l
+
+MOVE /litmus/2 HTTP/1.1
+Host:localhost:9999
+Destination://localhost:9999/litmus/l
+
+DELETE / HTTP/1.1
+

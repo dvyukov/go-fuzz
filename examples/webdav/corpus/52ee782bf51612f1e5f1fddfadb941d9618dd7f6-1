@@ -1,0 +1,2 @@
+DELETE //mvdest/foo.2 HTTP/1.1
+

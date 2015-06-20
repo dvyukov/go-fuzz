@@ -1,0 +1,4 @@
+COPY /litmus/notlocked HTTP/1.1
+Destination:p/calhost:9999/lit /litmus/lockme HTTP/1.:
+
+ /litmus/ HTTP/1.1

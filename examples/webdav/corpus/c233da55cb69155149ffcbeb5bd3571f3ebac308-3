@@ -1,0 +1,18 @@
+UNLOCK / HTTP/1.1
+Lock-Token:<1
+
+UNLOCK / HTTP/1.1
+Lock-Token:<>
+
+UNLOCK / HTTP/1.1
+Lock-Token:<5
+
+UNLOCK / HTTP/1.1
+Lock-Token:<>
+
+UNLOCK / HTTP/1.1
+Lock-Token:<>
+
+UNLOCK / HTTP/1.1
+Lock-Token:<>
+
