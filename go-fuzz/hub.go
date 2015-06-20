@@ -154,7 +154,7 @@ func (hub *Hub) loop() {
 				ID:            hub.id,
 				Execs:         hub.stats.execs,
 				Restarts:      hub.stats.restarts,
-				CoverFullness: float64(hub.corpusCoverSize) / CoverSize,
+				CoverFullness: hub.corpusCoverSize,
 			}
 			hub.stats.execs = 0
 			hub.stats.restarts = 0
