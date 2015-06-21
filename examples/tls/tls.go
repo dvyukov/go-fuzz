@@ -4,6 +4,8 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"io"
+	"io/ioutil"
+	"log"
 	"math/rand"
 	"net"
 	"net/http"
@@ -94,7 +96,10 @@ func init() {
 	tlsListener := tls.NewListener(ln, tlsConfig)
 	http.HandleFunc("/", handler)
 	go func() {
-		if err := http.Serve(tlsListener, nil); err != nil {
+		s := &http.Server{
+			ErrorLog: log.New(ioutil.Discard, "", 0),
+		}
+		if err := s.Serve(tlsListener); err != nil {
 			panic(err)
 		}
 	}()
