@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/hex"
 	"io"
+	"math/rand"
 	"net"
 	"net/http"
 	"time"
@@ -68,20 +69,31 @@ func (c *MyConn) SetWriteDeadline(t time.Time) error {
 	return nil
 }
 
+type MathRandReader int
+
+func (MathRandReader) Read(buf []byte) (int, error) {
+	for i := range buf {
+		buf[i] = byte(rand.Intn(256))
+	}
+	return len(buf), nil
+}
+
 func init() {
+	c, _ := hex.DecodeString(cert)
+	k, _ := hex.DecodeString(key)
+	cert, err := tls.X509KeyPair(c, k)
+	if err != nil {
+		panic(err)
+	}
+	tlsConfig := &tls.Config{
+		NextProtos:   []string{"http/1.1"},
+		Certificates: []tls.Certificate{cert},
+		Rand:         MathRandReader(0),
+		Time:         func() time.Time { return time.Date(2000, 1, 1, 1, 1, 1, 1, nil) },
+	}
+	tlsListener := tls.NewListener(ln, tlsConfig)
+	http.HandleFunc("/", handler)
 	go func() {
-		c, _ := hex.DecodeString(cert)
-		k, _ := hex.DecodeString(key)
-		cert, err := tls.X509KeyPair(c, k)
-		if err != nil {
-			panic(err)
-		}
-		tlsConfig := &tls.Config{
-			NextProtos:   []string{"http/1.1"},
-			Certificates: []tls.Certificate{cert},
-		}
-		tlsListener := tls.NewListener(ln, tlsConfig)
-		http.HandleFunc("/", handler)
 		if err := http.Serve(tlsListener, nil); err != nil {
 			panic(err)
 		}
@@ -95,6 +107,7 @@ func handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func Fuzz(data []byte) int {
+	rand.Seed(0)
 	done := make(chan bool)
 	ln <- &MyConn{data, done}
 	<-done
