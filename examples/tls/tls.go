@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
-	"math/rand"
 	"net"
 	"net/http"
 	"time"
@@ -75,7 +74,7 @@ type MathRandReader int
 
 func (MathRandReader) Read(buf []byte) (int, error) {
 	for i := range buf {
-		buf[i] = byte(rand.Intn(256))
+		buf[i] = 0
 	}
 	return len(buf), nil
 }
@@ -112,7 +111,6 @@ func handler(w http.ResponseWriter, req *http.Request) {
 }
 
 func Fuzz(data []byte) int {
-	rand.Seed(0)
 	done := make(chan bool)
 	ln <- &MyConn{data, done}
 	<-done
