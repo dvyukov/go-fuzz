@@ -1,0 +1,55 @@
+panic: 9614531781/1280 not an Int [recovered]
+	panic: 9614531781/1280 not an Int
+
+goroutine 1 [running]:
+golang.org/x/tools/go/types.(*Checker).handleBailout(0xc8200485b0, 0xc820485cb0)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/check.go:271 +0x16d
+golang.org/x/tools/go/exact.Uint64Val(0x7feb85e4b240, 0xc82004b7c0, 0x7feb85e3c2b8, 0x940520)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/exact/exact.go:322 +0x5ad
+golang.org/x/tools/go/types.(*Checker).shift(0xc8200485b0, 0xc82004b6c0, 0xc82004b780, 0x14)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:954 +0x413
+golang.org/x/tools/go/types.(*Checker).binary(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c890, 0xc820406120, 0x7feb85e3c890, 0xc820406140, 0x14)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:1072 +0x2c4
+golang.org/x/tools/go/types.(*Checker).exprInternal(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac900, 0x0, 0x0, 0x7e)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:2142 +0x49f5
+golang.org/x/tools/go/types.(*Checker).rawExpr(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac900, 0x0, 0x0, 0x0)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:1380 +0x116
+golang.org/x/tools/go/types.(*Checker).expr(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac900)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:2206 +0x82
+golang.org/x/tools/go/types.(*Checker).binary(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac900, 0x7feb85e3c890, 0xc820406160, 0xe)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:1050 +0xa4
+golang.org/x/tools/go/types.(*Checker).exprInternal(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac930, 0x0, 0x0, 0x7e)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:2142 +0x49f5
+golang.org/x/tools/go/types.(*Checker).rawExpr(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac930, 0x0, 0x0, 0x0)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:1380 +0x116
+golang.org/x/tools/go/types.(*Checker).expr(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac930)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:2206 +0x82
+golang.org/x/tools/go/types.(*Checker).binary(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac930, 0x7feb85e3c890, 0xc820406180, 0xe)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:1050 +0xa4
+golang.org/x/tools/go/types.(*Checker).exprInternal(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac960, 0x0, 0x0, 0x7e)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:2142 +0x49f5
+golang.org/x/tools/go/types.(*Checker).rawExpr(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac960, 0x0, 0x0, 0x0)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:1380 +0x116
+golang.org/x/tools/go/types.(*Checker).expr(0xc8200485b0, 0xc82004b6c0, 0x7feb85e3c8c8, 0xc8203ac960)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/expr.go:2206 +0x82
+golang.org/x/tools/go/types.(*Checker).varDecl(0xc8200485b0, 0xc8202bf810, 0xc82042f270, 0x1, 0x1, 0x0, 0x0, 0x7feb85e3c8c8, 0xc8203ac960)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/decl.go:221 +0x7a2
+golang.org/x/tools/go/types.(*Checker).objDecl(0xc8200485b0, 0x7feb85e3c9a0, 0xc8202bf810, 0x0, 0xc820485bd8, 0x0, 0x8)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/decl.go:105 +0x659
+golang.org/x/tools/go/types.(*Checker).packageObjects(0xc8200485b0, 0xc8200471f0, 0x1, 0x1)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/resolver.go:569 +0x35d
+golang.org/x/tools/go/types.(*Checker).Files(0xc8200485b0, 0xc820485d80, 0x1, 0x1, 0x0, 0x0)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/check.go:284 +0x12f
+golang.org/x/tools/go/types.(*Config).Check(0xc82004b600, 0x7bcf90, 0x3, 0xc82004b580, 0xc820485d80, 0x1, 0x1, 0x0, 0x7feb85c38000, 0x0, ...)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/api.go:391 +0xdd
+golang.org/x/tools/go/types.Check(0x7bcf90, 0x3, 0xc82004b580, 0xc820485d80, 0x1, 0x1, 0xc820093f80, 0x0, 0x0)
+	/tmp/go-fuzz-build090950180/src/golang.org/x/tools/go/types/api.go:45 +0xc5
+github.com/dvyukov/go-fuzz/examples/gotypes.gotypes(0x7feb85c38000, 0x2a, 0x200000, 0x0, 0x0)
+	/tmp/go-fuzz-build090950180/src/github.com/dvyukov/go-fuzz/examples/gotypes/main.go:52 +0x2b0
+github.com/dvyukov/go-fuzz/examples/gotypes.Fuzz(0x7feb85c38000, 0x2a, 0x200000, 0x3)
+	/tmp/go-fuzz-build090950180/src/github.com/dvyukov/go-fuzz/examples/gotypes/main.go:20 +0x7d
+github.com/dvyukov/go-fuzz/go-fuzz-dep.Main(0x8350a0)
+	/home/dvyukov/src/gopath/src/github.com/dvyukov/go-fuzz/go-fuzz-dep/main.go:44 +0x14c
+main.main()
+	/tmp/go-fuzz-build090950180/src/go-fuzz-main/main.go:10 +0x23
+exit status 2

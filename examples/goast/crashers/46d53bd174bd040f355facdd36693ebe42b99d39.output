@@ -1,0 +1,14 @@
+go/types result: <nil>
+gc result: /tmp/fuzz.gc488591421:2: stupid shift: 1001
+
+exit status 2
+panic: gc and go/types disagree
+
+goroutine 1 [running]:
+github.com/dvyukov/go-fuzz/examples/gotypes.Fuzz(0x7f5524f86000, 0x17, 0x200000, 0x40cd87)
+	/tmp/go-fuzz-build090950180/src/github.com/dvyukov/go-fuzz/examples/gotypes/main.go:26 +0x2f1
+github.com/dvyukov/go-fuzz/go-fuzz-dep.Main(0x8350a0)
+	/home/dvyukov/src/gopath/src/github.com/dvyukov/go-fuzz/go-fuzz-dep/main.go:44 +0x14c
+main.main()
+	/tmp/go-fuzz-build090950180/src/go-fuzz-main/main.go:10 +0x23
+exit status 2
