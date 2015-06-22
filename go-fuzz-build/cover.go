@@ -620,11 +620,20 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 			// Replace:
 			//	x && y
 			// with:
-			//	x && func() bool { return y }
+			//	bool(x) && func() bool { return bool(y) }
+			//
+			// Conversions to bool are required for the following code:
+			//	type MyBool bool
+			//	var x, y MyBool
+			//	x && y
+			// Compilation will still fail because we change type of expression
+			// from MyBool to bool. But at least it is possible to fix the code as:
+			//	MyBool(x && y)
+			n.X = &ast.CallExpr{Fun: &ast.Ident{Name: "bool"}, Args: []ast.Expr{n.X}}
 			n.Y = &ast.CallExpr{
 				Fun: &ast.FuncLit{
 					Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "bool"}}}}},
-					Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ReturnStmt{Results: []ast.Expr{n.Y}}}},
+					Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ReturnStmt{Results: []ast.Expr{&ast.CallExpr{Fun: &ast.Ident{Name: "bool"}, Args: []ast.Expr{n.Y}}}}}},
 				},
 			}
 		}
