@@ -262,6 +262,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/net/spdy: processing of 35 bytes takes 7 seconds](https://github.com/golang/go/issues/10544) **fixed**
 - [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545) **fixed**
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547) **fixed**
+- [x/tools/go/types: panics on invalid constant](https://github.com/golang/go/issues/11325)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
