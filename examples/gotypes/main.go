@@ -1,6 +1,7 @@
 package gotypes
 
 import (
+	"errors"
 	"fmt"
 	"go/ast"
 	"go/parser"
@@ -8,14 +9,23 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 
-	"golang.org/x/tools/go/types"
 	_ "golang.org/x/tools/go/gcimporter"
+	"golang.org/x/tools/go/types"
 )
 
 func Fuzz(data []byte) int {
 	goErr := gotypes(data)
 	gcErr := gc(data)
+	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "line number out of range") {
+		// https://github.com/golang/go/issues/11329
+		return 0
+	}
+	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "stupid shift:") {
+		// https://github.com/golang/go/issues/11328
+		return 0
+	}
 	if (goErr == nil) != (gcErr == nil) {
 		fmt.Printf("go/types result: %v\n", goErr)
 		fmt.Printf("gc result: %v\n", gcErr)
@@ -27,17 +37,29 @@ func Fuzz(data []byte) int {
 	return 1
 }
 
-func gotypes(data []byte) error {
+func gotypes(data []byte) (err error) {
+	defer func() {
+		x := recover()
+		if x != nil {
+			if str, ok := x.(string); ok && strings.Contains(str, "not an Int") {
+				// https://github.com/golang/go/issues/11325
+				err = errors.New(str)
+				return
+			}
+			panic(x)
+		}
+	}()
 	fset := token.NewFileSet()
-	f, err := parser.ParseFile(fset, "src.go", data, parser.ParseComments|parser.DeclarationErrors|parser.AllErrors)
+	var f *ast.File
+	f, err = parser.ParseFile(fset, "src.go", data, parser.ParseComments|parser.DeclarationErrors|parser.AllErrors)
 	if err != nil {
-		return err
+		return
 	}
 	_, err = types.Check("pkg", fset, []*ast.File{f})
 	if err != nil {
-		return err
+		return
 	}
-	return nil
+	return
 }
 
 func gc(data []byte) error {
