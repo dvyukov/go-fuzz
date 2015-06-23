@@ -859,7 +859,12 @@ func (f *File) newCounter(start, end token.Pos, numStmt int) ast.Stmt {
 }
 
 func (f *File) print(w io.Writer) {
-	printer.Fprint(w, f.fset, f.astFile)
+	cfg := printer.Config{
+		Mode:     printer.SourcePos,
+		Tabwidth: 8,
+		Indent:   0,
+	}
+	cfg.Fprint(w, f.fset, f.astFile)
 }
 
 type funcLitFinder token.Pos
