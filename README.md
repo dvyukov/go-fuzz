@@ -279,8 +279,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: stupid shift](https://github.com/golang/go/issues/11328)
 - [x/tools/go/types: line number out of range](https://github.com/golang/go/issues/11329)
 - [x/tools/go/types: assertion failed](https://github.com/golang/go/issues/11347)
-- [x/tools/go/types: converts fp constant to string](https://github.com/golang/go/issues/11353)
-- [x/tools/go/types: converts complex constant to string](https://github.com/golang/go/issues/11357)
+- [x/tools/go/types: converts fp constant to string](https://github.com/golang/go/issues/11353) **fixed**
+- [x/tools/go/types: converts complex constant to string](https://github.com/golang/go/issues/11357) **fixed**
 - [x/tools/go/types: misses '-' in error message](https://github.com/golang/go/issues/11367) **fixed**
 - [x/tools/go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
 - [https://github.com/golang/go/issues/11329](https://github.com/golang/go/issues/11329)
