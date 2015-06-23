@@ -159,6 +159,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: bad HMUL](https://github.com/golang/go/issues/11358)
 - [cmd/compile: treecopy Name](https://github.com/golang/go/issues/11361)
 - [cmd/compile: accepts invalid identifiers](https://github.com/golang/go/issues/11359)
+- [cmd/compile: hangs compiling hex fp constant](https://github.com/golang/go/issues/11364)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
