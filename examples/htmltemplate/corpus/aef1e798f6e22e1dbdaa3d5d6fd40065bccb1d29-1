@@ -1,0 +1,1 @@
+<a href="/search?q={{. | urlquery}}">{{. html}}

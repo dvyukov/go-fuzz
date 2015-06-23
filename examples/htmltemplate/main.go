@@ -4,9 +4,16 @@ import (
 	"errors"
 	"html/template"
 	"io/ioutil"
+	"regexp"
 )
 
+// Huge padding
+var fmtHang = regexp.MustCompile("%[-+# 0]*(((([0-9]{3,})|[*]))|([0-9]*\\.(([0-9]{3,})|[*])))")
+
 func Fuzz(data []byte) int {
+	if fmtHang.Match(data) {
+		return 0
+	}
 	t, err := template.New("foo").Funcs(funcs).Parse(string(data))
 	if err != nil {
 		if t != nil {
@@ -21,6 +28,16 @@ func Fuzz(data []byte) int {
 		D: map[int]string{1: "foo", 2: "bar"},
 		E: Data1{42, "foo"},
 	}
+	defer func() {
+		x := recover()
+		if x != nil {
+			if str, ok := x.(string); ok && str == "unidentified node type in allIdents" {
+				// https://github.com/golang/go/issues/11356
+				return
+			}
+			panic(x)
+		}
+	}()
 	t.Execute(ioutil.Discard, d)
 	return 1
 }

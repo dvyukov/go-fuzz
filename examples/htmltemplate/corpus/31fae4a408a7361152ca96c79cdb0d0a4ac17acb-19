@@ -1,0 +1,1 @@
+{{printf "%.15" 4-8i 3e2 8E2 8E2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 8E2 8E2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e2 3e3}}

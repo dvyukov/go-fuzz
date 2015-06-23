@@ -1,0 +1,1 @@
+{{printf "%,%h" 8i	5i}}{{printf "%ý%l" 8i 5i}}{{printf "%,%ý%l" 8i 8i 5i}}

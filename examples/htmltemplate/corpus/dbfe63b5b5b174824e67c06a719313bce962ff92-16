@@ -1,0 +1,1 @@
+{{range.C}}{{or 0i 0i 0i 0i 0i 0i 0i 0i 0i 0i 0i}}{{end}}

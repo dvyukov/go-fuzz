@@ -1,0 +1,1 @@
+{{range.C}}{{printf	"%c" $}}{{printf	"%c" $}}{{end}}
