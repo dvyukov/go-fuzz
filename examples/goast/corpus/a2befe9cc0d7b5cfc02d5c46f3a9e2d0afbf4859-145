@@ -1,0 +1,644 @@
+packageA
+B
+type l struct{c t
+c t}
+func(v*l)s()t{((v)
+}
+func l(c t)(v l 9/3)type s struct{h t
+r r
+e t}type d struct{l r
+h r
+t t
+h t
+t e}type n struct{t t
+n t
+h t
+e t}type e struct{e t
+e t}//
+func(t*e)s()t{e h	return }
+func e(c t)(t e 2&f)type n struct{s t
+e e
+e e
+e e
+h t
+w t
+d t
+d t
+e[]6
+e[]
+}type n struct{s t
+e e
+e e
+e e
+h t
+w t
+d t
+d t
+e[]6
+e[]
+}
+func a,c* be NUL.
+	copy(dst.FileName[:], src.FileName[:])
+	copy(dst.AlternateFileName[:], src.AlternateFileName[:])
+}
+
+type ByHandleFileInformation struct {
+	FileAttributes     uint32
+	CreationTime       Filetime
+	LastAccessTime     Filetime
+	LastWriteTime      Filetime
+	VolumeSerialNumber uint32
+	FileSizeHigh       uint32
+	FileSizeLow        uint32
+	NumberOfLinks      uint32
+	FileIndexHigh      uint32
+	FileIndexLow       uint32
+}
+
+const (
+	GetFileExInfoStandard = 0
+	GetFileExMaxInfoLevel = 1
+)
+
+type Win32FileAttributeData struct {
+	FileAttributes uint32
+	CreationTime   Filetime
+	LastAccessTime Filetime
+	LastWriteTime  Filetime
+	FileSizeHigh   uint32
+	FileSizeLow    uint32
+}
+
+// ShowWindow constants
+const (
+	// winuser.h
+	SW_HIDE            = 0
+	SW_NORMAL          = 1
+	SW_SHOWNORMAL      = 1
+	SW_SHOWMINIMIZED   = 2
+	SW_SHOWMAXIMIZED   = 3
+	SW_MAXIMIZE        = 3
+	SW_SHOWNOACTIVATE  = 4
+	SW_SHOW            = 5
+	SW_MINIMIZE        = 6
+	SW_SHOWMINNOACTIVE = 7
+	SW_SHOWNA          = 8
+	SW_RESTORE         = 9
+	SW_SHOWDEFAULT     = 10
+	SW_FORCEMINIMIZE   = 11
+)
+
+type StartupInfo struct {
+	Cb            uint32
+	_             *uint16
+	Desktop       *uint16
+	Title         *uint16
+	X             uint32
+	Y             uint32
+	XSize         uint32
+	YSize         uint32
+	XCountChars   uint32
+	YCountChars   uint32
+	FillAttribute uint32
+	Flags         uint32
+	ShowWindow    uint16
+	_             uint16
+	_             *byte
+	StdInput      Handle
+	StdOutput     Handle
+	StdErr        Handle
+}
+
+type ProcessInformation struct {
+	Process   Handle
+	Thread    Handle
+	ProcessId uint32
+	ThreadId  uint32
+}
+
+type ProcessEntry32 struct {
+	Size            uint32
+	Usage           uint32
+	ProcessID       uint32
+	DefaultHeapID   uintptr
+	ModuleID        uint32
+	Threads         uint32
+	ParentProcessID uint32
+	PriClassBase    int32
+	Flags           uint32
+	ExeFile         [MAX_PATH]uint16
+}
+
+type Systemtime struct {
+	Year         uint16
+	Month        uint16
+	DayOfWeek    uint16
+	Day          uint16
+	Hour         uint16
+	Minute       uint16
+	Second       uint16
+	Milliseconds uint16
+}
+
+type Timezoneinformation struct {
+	Bias         int32
+	StandardName [32]uint16
+	StandardDate Systemtime
+	StandardBias int32
+	DaylightName [32]uint16
+	DaylightDate Systemtime
+	DaylightBias int32
+}
+
+// Socket related.
+
+const (
+	AF_UNSPEC  = 0
+	AF_UNIX    = 1
+	AF_INET    = 2
+	AF_INET6   = 23
+	AF_NETBIOS = 17
+
+	SOCK_STREAM    = 1
+	SOCK_DGRAM     = 2
+	SOCK_RAW       = 3
+	SOCK_SEQPACKET = 5
+
+	IPPROTO_IP   = 0
+	IPPROTO_IPV6 = 0x29
+	IPPROTO_TCP  = 6
+	IPPROTO_UDP  = 17
+
+	SOL_SOCKET                = 0xffff
+	SO_REUSEADDR              = 4
+	SO_KEEPALIVE              = 8
+	SO_DONTROUTE              = 16
+	SO_BROADCAST              = 32
+	SO_LINGER                 = 128
+	SO_RCVBUF                 = 0x1002
+	SO_SNDBUF                 = 0x1001
+	SO_UPDATE_ACCEPT_CONTEXT  = 0x700b
+	SO_UPDATE_CONNECT_CONTEXT = 0x7010
+
+	IOC_OUT                            = 0x40000000
+	IOC_IN                             = 0x80000000
+	IOC_VENDOR                         = 0x18000000
+	IOC_INOUT                          = IOC_IN | IOC_OUT
+	IOC_WS2                            = 0x08000000
+	SIO_GET_EXTENSION_FUNCTION_POINTER = IOC_INOUT | IOC_WS2 | 6
+	SIO_KEEPALIVE_VALS                 = IOC_IN | IOC_VENDOR | 4
+	SIO_UDP_CONNRESET                  = IOC_IN | IOC_VENDOR | 12
+
+	// cf. http://support.microsoft.com/default.aspx?scid=kb;en-us;257460
+
+	IP_TOS             = 0x3
+	IP_TTL             = 0x4
+	IP_MULTICAST_IF    = 0x9
+	IP_MULTICAST_TTL   = 0xa
+	IP_MULTICAST_LOOP  = 0xb
+	IP_ADD_MEMBERSHIP  = 0xc
+	IP_DROP_MEMBERSHIP = 0xd
+
+	IPV6_V6ONLY         = 0x1b
+	IPV6_UNICAST_HOPS   = 0x4
+	IPV6_MULTICAST_IF   = 0x9
+	IPV6_MULTICAST_HOPS = 0xa
+	IPV6_MULTICAST_LOOP = 0xb
+	IPV6_JOIN_GROUP     = 0xc
+	IPV6_LEAVE_GROUP    = 0xd
+
+	SOMAXCONN = 0x7fffffff
+
+	TCP_NODELAY = 1
+
+	SHUT_RD   = 0
+	SHUT_WR   = 1
+	SHUT_RDWR = 2
+
+	WSADESCRIPTION_LEN = 256
+	WSASYS_STATUS_LEN  = 128
+)
+
+type WSABuf struct {
+	Len uint32
+	Buf *byte
+}
+
+// Invented values to support what package os expects.
+const (
+	S_IFMT   = 0x1f000
+	S_IFIFO  = 0x1000
+	S_IFCHR  = 0x2000
+	S_IFDIR  = 0x4000
+	S_IFBLK  = 0x6000
+	S_IFREG  = 0x8000
+	S_IFLNK  = 0xa000
+	S_IFSOCK = 0xc000
+	S_ISUID  = 0x800
+	S_ISGID  = 0x400
+	S_ISVTX  = 0x200
+	S_IRUSR  = 0x100
+	S_IWRITE = 0x80
+	S_IWUSR  = 0x80
+	S_IXUSR  = 0x40
+)
+
+const (
+	FILE_TYPE_CHAR    = 0x0002
+	FILE_TYPE_DISK    = 0x0001
+	FILE_TYPE_PIPE    = 0x0003
+	FILE_TYPE_REMOTE  = 0x8000
+	FILE_TYPE_UNKNOWN = 0x0000
+)
+
+type Hostent struct {
+	Name     *byte
+	Aliases  **byte
+	AddrType uint16
+	Length   uint16
+	AddrList **byte
+}
+
+type Protoent struct {
+	Name    *byte
+	Aliases **byte
+	Proto   uint16
+}
+
+const (
+	DNS_TYPE_A       = 0x0001
+	DNS_TYPE_NS      = 0x0002
+	DNS_TYPE_MD      = 0x0003
+	DNS_TYPE_MF      = 0x0004
+	DNS_TYPE_CNAME   = 0x0005
+	DNS_TYPE_SOA     = 0x0006
+	DNS_TYPE_MB      = 0x0007
+	DNS_TYPE_MG      = 0x0008
+	DNS_TYPE_MR      = 0x0009
+	DNS_TYPE_NULL    = 0x000a
+	DNS_TYPE_WKS     = 0x000b
+	DNS_TYPE_PTR     = 0x000c
+	DNS_TYPE_HINFO   = 0x000d
+	DNS_TYPE_MINFO   = 0x000e
+	DNS_TYPE_MX      = 0x000f
+	DNS_TYPE_TEXT    = 0x0010
+	DNS_TYPE_RP      = 0x0011
+	DNS_TYPE_AFSDB   = 0x0012
+	DNS_TYPE_X25     = 0x0013
+	DNS_TYPE_ISDN    = 0x0014
+	DNS_TYPE_RT      = 0x0015
+	DNS_TYPE_NSAP    = 0x0016
+	DNS_TYPE_NSAPPTR = 0x0017
+	DNS_TYPE_SIG     = 0x0018
+	DNS_TYPE_KEY     = 0x0019
+	DNS_TYPE_PX      = 0x001a
+	DNS_TYPE_GPOS    = 0x001b
+	DNS_TYPE_AAAA    = 0x001c
+	DNS_TYPE_LOC     = 0x001d
+	DNS_TYPE_NXT     = 0x001e
+	DNS_TYPE_EID     = 0x001f
+	DNS_TYPE_NIMLOC  = 0x0020
+	DNS_TYPE_SRV     = 0x0021
+	DNS_TYPE_ATMA    = 0x0022
+	DNS_TYPE_NAPTR   = 0x0023
+	DNS_TYPE_KX      = 0x0024
+	DNS_TYPE_CERT    = 0x0025
+	DNS_TYPE_A6      = 0x0026
+	DNS_TYPE_DNAME   = 0x0027
+	DNS_TYPE_SINK    = 0x0028
+	DNS_TYPE_OPT     = 0x0029
+	DNS_TYPE_DS      = 0x002B
+	DNS_TYPE_RRSIG   = 0x002E
+	DNS_TYPE_NSEC    = 0x002F
+	DNS_TYPE_DNSKEY  = 0x0030
+	DNS_TYPE_DHCID   = 0x0031
+	DNS_TYPE_UINFO   = 0x0064
+	DNS_TYPE_UID     = 0x0065
+	DNS_TYPE_GID     = 0x0066
+	DNS_TYPE_UNSPEC  = 0x0067
+	DNS_TYPE_ADDRS   = 0x00f8
+	DNS_TYPE_TKEY    = 0x00f9
+	DNS_TYPE_TSIG    = 0x00fa
+	DNS_TYPE_IXFR    = 0x00fb
+	DNS_TYPE_AXFR    = 0x00fc
+	DNS_TYPE_MAILB   = 0x00fd
+	DNS_TYPE_MAILA   = 0x00fe
+	DNS_TYPE_ALL     = 0x00ff
+	DNS_TYPE_ANY     = 0x00ff
+	DNS_TYPE_WINS    = 0xff01
+	DNS_TYPE_WINSR   = 0xff02
+	DNS_TYPE_NBSTAT  = 0xff01
+)
+
+const (
+	DNS_INFO_NO_RECORDS = 0x251D
+)
+
+const (
+	// flags inside DNSRecord.Dw
+	DnsSectionQuestion   = 0x0000
+	DnsSectionAnswer     = 0x0001
+	DnsSectionAuthority  = 0x0002
+	DnsSectionAdditional = 0x0003
+)
+
+type DNSSRVData struct {
+	Target   *uint16
+	Priority uint16
+	Weight   uint16
+	Port     uint16
+	Pad      uint16
+}
+
+type DNSPTRData struct {
+	Host *uint16
+}
+
+type DNSMXData struct {
+	NameExchange *uint16
+	Preference   uint16
+	Pad          uint16
+}
+
+type DNSTXTData struct {
+	StringCount uint16
+	StringArray [1]*uint16
+}
+
+type DNSRecord struct {
+	Next     *DNSRecord
+	Name     *uint16
+	Type     uint16
+	Length   uint16
+	Dw       uint32
+	Ttl      uint32
+	Reserved uint32
+	Data     [40]byte
+}
+
+const (
+	TF_DISCONNECT         = 1
+	TF_REUSE_SOCKET       = 2
+	TF_WRITE_BEHIND       = 4
+	TF_USE_DEFAULT_WORKER = 0
+	TF_USE_SYSTEM_THREAD  = 16
+	TF_USE_KERNEL_APC     = 32
+)
+
+type TransmitFileBuffers struct {
+	Head       uintptr
+	HeadLength uint32
+	Tail       uintptr
+	TailLength uint32
+}
+
+const (
+	IFF_UP           = 1
+	IFF_BROADCAST    = 2
+	IFF_LOOPBACK     = 4
+	IFF_POINTTOPOINT = 8
+	IFF_MULTICAST    = 16
+)
+
+const SIO_GET_INTERFACE_LIST = 0x4004747F
+
+// TODO(mattn): SockaddrGen is union of sockaddr/sockaddr_in/sockaddr_in6_old.
+// will be fixed to change variable type as suitable.
+
+type SockaddrGen [24]byte
+
+type InterfaceInfo struct {
+	Flags            uint32
+	Address          SockaddrGen
+	BroadcastAddress SockaddrGen
+	Netmask          SockaddrGen
+}
+
+type IpAddressString struct {
+	String [16]byte
+}
+
+type IpMaskString IpAddressString
+
+type IpAddrString struct {
+	Next      *IpAddrString
+	IpAddress IpAddressString
+	IpMask    IpMaskString
+	Context   uint32
+}
+
+const MAX_ADAPTER_NAME_LENGTH = 256
+const MAX_ADAPTER_DESCRIPTION_LENGTH = 128
+const MAX_ADAPTER_ADDRESS_LENGTH = 8
+
+type IpAdapterInfo struct {
+	Next                *IpAdapterInfo
+	ComboIndex          uint32
+	AdapterName         [MAX_ADAPTER_NAME_LENGTH + 4]byte
+	Description         [MAX_ADAPTER_DESCRIPTION_LENGTH + 4]byte
+	AddressLength       uint32
+	Address             [MAX_ADAPTER_ADDRESS_LENGTH]byte
+	Index               uint32
+	Type                uint32
+	DhcpEnabled         uint32
+	CurrentIpAddress    *IpAddrString
+	IpAddressList       IpAddrString
+	GatewayList         IpAddrString
+	DhcpServer          IpAddrString
+	HaveWins            bool
+	PrimaryWinsServer   IpAddrString
+	SecondaryWinsServer IpAddrString
+	LeaseObtained       int64
+	LeaseExpires        int64
+}
+
+const MAXLEN_PHYSADDR = 8
+const MAX_INTERFACE_NAME_LEN = 256
+const MAXLEN_IFDESCR = 256
+
+type MibIfRow struct {
+	Name            [MAX_INTERFACE_NAME_LEN]uint16
+	Index           uint32
+	Type            uint32
+	Mtu             uint32
+	Speed           uint32
+	PhysAddrLe€     uint32
+	PhysAddr        [MAXLEN_PHYSADDR]byte
+	AdminStatus     uint32
+	OperStatus      uint32
+	LastChange      uint32
+	InOctets        uint32
+	InUcastPkts     uint32
+	InNUcastPkts    uint32
+	InDiscards      uint32
+	InErrors        uint32
+	InUnknownProtos uint32
+	OutOctets       uint32
+	OutUcastPkts    uint32
+	OutNUcastPkts   uint32
+	OutDiscards     uint32
+	OutErrors       uint32
+	OutQLen         uint32
+	DescrLen        uint32
+	Descr           [MAXLEN_IFDESCR]byte
+}
+
+type CertContext struct {
+	EncodingType uint32
+	EncodedCert  *byte
+	Length       uint32
+	CertInfo     uintptr
+	Store        Handle
+}
+
+type CertChainContext struct {
+	Size                       uint32
+	TrustStatus                CertTrustStatus
+	ChainCount                 uint32
+	Chains                     **CertSimpleChain
+	LowerQualityChainCount     uint32
+	LowerQualityChains         **CertChainContext
+	HasRevocationFreshnessTime uint32
+	RevocationFreshnessTime    uint32
+}
+
+type CertSimpleChain struct {
+	Size                       uint32
+	TrustStatus                CertTrustStatus
+	NumElements                uint32
+	Elements                   **CertChainElement
+	TrustListInfo              uintptr
+	HasRevocationFreshnessTime uint32
+	RevocationFreshnessTime    uint32
+}
+
+type CertChainElement struct {
+	Size              uint32
+	CertContext       *CertContext
+	TrustStatus       CertTrustStatus
+	RevocationInfo    *CertRevocationInfo
+	IssuanceUsage     *CertEnhKeyUsage
+	ApplicationUsage  *CertEnhKeyUsage
+	ExtendedErrorInfo *uint16
+}
+
+type CertRevocationInfo struct {
+	Size             uint32
+	RevocationResult uint32
+	RevocationOid    *byte
+	OidSpecificInfo  uintptr
+	HasFreshnessTime uint32
+	FreshnessTime    uint32
+	CrlInfo          uintptr // *CertRevocationCrlInfo
+}
+
+type CertTrustStatus struct {
+	ErrorStatus uint32
+	InfoStatus  uint32
+}
+
+type CertUsageMatch struct {
+	Type  uint32
+	Usage CertEnhKeyUsage
+}
+
+type CertEnhKeyUsage struct {
+	Length           uint32
+	UsageIdentifiers **byte
+}
+
+type CertChainPara struct {
+	Size                         uint32
+	RequestedUsage               CertUsageMatch
+	RequstedIssuancePolicy       CertUsageMatch
+	URLRetrievalTimeout          uint32
+	CheckRevocationFreshnessTime uint32
+	RevocationFreshnessTime      uint32
+	CacheResync                  *Filetime
+}
+
+type CertChainPolicyPara struct {
+	Size            uint32
+	Flags           uint32
+	ExtraPolicyPara uintptr
+}
+
+type SSLExtraCertChainPolicyPara struct {
+	Size       uint32
+	AuthType   uint32
+	Checks     uint32
+	ServerName *uint16
+}
+
+type CertChainPolicyStatus struct {
+	Size              uint32
+	Error             uint32
+	ChainIndex        uint32
+	ElementIndex      uint32
+	ExtraPolicyStatus uintptr
+}
+
+const (
+	// do not reorder
+	HKEY_CLASSES_ROOT = 0x80000000 + iota
+	HKEY_CURRENT_USER
+	HKEY_LOCAL_MACHINE
+	HKEY_USERS
+	HKEY_PERFORMANCE_DATA
+	HKEY_CURRENT_CONFIG
+	HKEY_DYN_DATA
+
+	KEY_QUERY_VALUE        = 1
+	KEY_SET_VALUE          = 2
+	KEY_CREATE_SUB_KEY     = 4
+	KEY_ENUMERATE_SUB_KEYS = 8
+	KEY_NOTIFY             = 16
+	KEY_CREATE_LINK        = 32
+	KEY_WRITE              = 0x20006
+	KEY_EXECUTE            = 0x20019
+	KEY_READ               = 0x20019
+	KEY_WOW64_64KEY        = 0x0100
+	KEY_WOW64_32KEY        = 0x0200
+	KEY_ALL_ACCESS         = 0xf003f
+)
+
+const (
+	// do not reorder
+	REG_NONE = iota
+	REG_SZ
+	REG_EXPAND_SZ
+	REG_BINARY
+	REG_DWORD_LITTLE_ENDIAN
+	REG_DWORD_BIG_ENDIAN
+	REG_LINK
+	REG_MULTI_SZ
+	REG_RESOURCE_LIST
+	REG_FULL_RESOURCE_DESCRIPTOR
+	REG_RESOURCE_REQUIREMENTS_LIST
+	REG_QWORD_LITTLE_ENDIAN
+	REG_DWORD = REG_DWORD_LITTLE_ENDIAN
+	REG_QWORD = REG_QWORD_LITTLE_ENDIAN
+)
+
+type AddrinfoW struct {
+	Flags     int32
+	Family    int32
+	Socktype  int32
+	Protocol  int32
+	Addrlen   uintptr
+	Canonname *uint16
+	Addr      uintptr
+	Next      *AddrinfoW
+}
+
+const (
+	AI_PASSIVE     = 1
+	AI_CANONNAME   = 2
+	AI_NUMERICHOST = 4
+)
+
+type GUID struct {
+	Data1 uint32
+	Data2 uint16
+	Data3 uint16
+	Data4 [

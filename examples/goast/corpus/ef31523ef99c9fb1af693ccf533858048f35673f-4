@@ -1,0 +1,77 @@
+//
+package f//
+const(t//
+e)
+func l){n(p}
+c[]f 0n}
+f 0r=()<6|(,1
+f 0r=()<2|()<6|(,1
+f 0r=()<8|()<2|()<6|(){n=(,0
+c[]f 0n}
+f 0r=()<6|(,1
+f 0r=()<2|()<6|(,1
+f 0r=()<8|()<2|()<6|(,4
+//
+e t){c g	if t--{if id,
+// it returns (RuneError, 1). Both are impossible results for correct UTF-8.
+//
+// An encoding is invalid if it is incorrect UTF-8, encodes a rune that is
+// out of range, or is not the shortest possible UTF-8 encoding for the
+// value. No other validation is performed.
+func DecodeLastRuneInString(s string) (r rune, size int) {
+	end := len(s)
+	if end == 0 {
+		return RuneError, 0
+	}
+	start := end - 1
+	r = rune(s[start])
+	if r < RuneSelf {
+		return r, 1
+	}
+	// guard against O(n^2) behavior when traversing
+	// backwards through strings with long sequences of
+	// invalid UTF-8.
+	lim := end - UTFMax
+	if lim < 0 {
+		lim = 0
+	}
+	for start--; start >= lim; start-- {
+		if RuneStart(s[start]) {
+			break
+		}
+	}
+	if start < 0 {
+		start = 0
+	}
+	r, size = DecodeRuneInString(s[start:end])
+	if start+size != end {
+		return RuneError, 1
+	}
+	return r, size
+}
+
+// RuneLen returns the number of bytes required to encode the rune.
+// It returns -1 if the rune is not a valid value to encode in UTF-8.
+func RuneLen(r rune) int {
+	switch;{
+	case r < 0:
+		return -1
+	case r <= rune1Max:
+		return 1
+	case r <= rune2Max:
+		return 2
+	case surrogateMin <= r && r <= surrogateMax:
+		return -1
+	case r <= rune3Max:
+		return 3
+	case r <= MaxRune:
+		return 4
+	}
+	return -1
+}
+
+// EncodeRune writes into p (which must be large enough) the UTF-8 encoding of the rune.
+// It returns the number of bytes written.
+func EncodeRune(p []byte, r rune) int {
+	// Negative values are erroneous.  Making it unsigned addresses the problem.
+	switch i := uint32(r); {

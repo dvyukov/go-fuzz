@@ -1,0 +1,6 @@
+package n
+type T struct{m func()string}
+func ff()string{return""}
+func n(){var tt T
+tt._=ff
+if t()!=""{n(t(),"\"")}}

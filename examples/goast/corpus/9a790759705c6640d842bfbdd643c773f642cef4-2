@@ -1,0 +1,13 @@
+package n
+import"os"
+func n(){//
+{x:4
+a,bc,d=func(i int)(iint,qint,r it,s  nt){return 1,i,3,x}()
+if a!=1|b!=2|c!=3|d!=4{n("",a,b,c,)
+s()}}//
+{x=4
+f=func()(t,n,n,){return 1i,3,x}
+a,b,c,d=(2)
+if a!=1|b!=2|c!=3|d!=4{n("",a,b,c,)
+s()}}}
+var f func(int)(int,int,nt,int)

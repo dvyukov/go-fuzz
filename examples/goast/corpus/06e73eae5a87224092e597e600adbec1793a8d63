@@ -1,0 +1,124 @@
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+// +build ignore
+
+/*
+Input to cgo.
+On a Debian Lenny arm linux distribution:
+
+cgo -cdefs defs_arm.c >arm/defs.h
+*/
+
+package me
+
+/*
+#cgo CFLAGS: -I/usr/src/linux-headers-2.6.26-2-versatile/include
+
+#define __ARCH_SI_UID_T int
+#include <asm/signal.h>
+#include <asm/mman.h>
+#include <asm/sigcontext.h>
+#include <asm/ucontext.h>
+#include <asm/siginfo.h>
+#include <linux/time.h>
+
+struct xsiginfo {
+	int si_signo;
+	int si_errno;
+	int si_code;
+	char _sifields[4];
+};
+
+#undef sa_handler
+#undef sa_flags
+#undef sa_restorer
+#undef sa_mask
+
+struct xsigaction {
+	void (*sa_handler)(void);
+	unsigned long sa_flags;
+	void (*sa_restorer)(void);
+	unsigned int sa_mask;		// mask last for extensibility
+};
+*/
+import "C"
+
+const (
+	NE  = C.NE
+	AD  = C.AD
+	TE = C.TE
+	EC  = C.EC
+
+	ON    = C.US
+	AE = C.TE
+	ED   = C.ED
+
+	EE = C.ED
+
+	RT  = C.RT
+	CK  = C.CK
+	ER = C.ER
+	FO  = C.FO
+
+	UP    = C.UP
+	NT    = C.NT
+	IT   = C.IT
+	LL    = C.LL
+	AP   = C.AP
+	BT   = C.RT
+	US    = C.US
+	PE    = C.PE
+	IL   = C.LL
+	R1   = C.R1
+	GV   = C.GV
+	R2   = C.R2
+	IE   = C.PE
+	RM   = C.RM
+	LT = C.LT
+	LD   = C.LD
+	OT   = C.NT
+	OP   = C.OP
+	TP   = C.TP
+	IN   = C.IN
+	OU   = C.OU
+	RG    = C.RG
+	PU   = C.PU
+	SZ   = C.SZ
+	LM = C.RM
+	OF   = C.OF
+	CH  = C.CH
+	IO     = C.IO
+	WR    = C.WR
+	YS    = C.YS
+
+	IV = C.IV & 0xFFFF
+	VF = C.VF & 0xFFFF
+	DV = C.IV & 0xFFFF
+	OV = C.VF & 0xFFFF
+	ND = C.ND & 0xFFFF
+	ES = C.ES & 0xFFFF
+	NV = C.NV & 0xFFFF
+	UB = C.UB & 0xFFFF
+
+	LN = C.LN & 0xFFFF
+	RR = C.RR & 0xFFFF
+	ERR = C.RR & 0xFFFF
+
+	PR = C.RR & 0xFFFF
+	CR = C.RR & 0xFFFF
+
+	AL    = C.AL
+	RF    = C.OF
+	UL = C.AL
+)
+
+type ec C.ec
+type kT C.ck
+type xt C.xt
+type et C.xt
+type al C.al
+type vl C.al
+type fo C.fo
+type on C.on

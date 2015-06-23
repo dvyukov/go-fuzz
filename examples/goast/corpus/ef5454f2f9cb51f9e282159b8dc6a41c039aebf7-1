@@ -1,0 +1,161 @@
+//©©©©©©©©
+package m
+j
+const(/**/C_SCON/*OK
+
+	C_NCLASS /* must be the last */
+)
+
+const (
+	AAND = obj.ABaseARM + obj.A_ARCHSPECIFIC + iota
+	AEOR
+	ASUB
+	ARSB
+	AADD
+	AADC
+	ASBC
+	ARSC
+	ATST
+	ATEQ
+	ACMP
+	ACMN
+	AORR
+	ABIC
+
+	AMVN
+
+	/*
+	 * Do not reorder or fragment the conditional branch
+	 * opcodes, or the predication code will break
+	 */
+	ABEQ
+	ABNE
+	ABCS
+	ABHS
+	ABCC
+	ABLO
+	ABMI
+	ABPL
+	ABVS
+	ABVC
+	ABHI
+	ABLS
+	ABGE
+	ABLT
+	ABGT
+	ABLE
+
+	AMOVWD
+	AMOVWF
+	AMOVDW
+	AMOVFW
+	AMOVFD
+	AMOVDF
+	AMOVF
+	AMOVD
+
+	ACMPF
+	ACMPD
+	AADDF
+	AADDD
+	ASUBF
+	ASUBD
+	AMULF
+	AMULD
+	ADIVF
+	ADIVD
+	ASQRTF
+	ASQRTD
+	AABSF
+	AABSD
+
+	ASRL
+	ASRA
+	ASLL
+	AMULU
+	ADIVU
+	AMUL
+	ADIV
+	AMOD
+	AMODU
+
+	AMOVB
+	AMOVBS
+	AMOVBU
+	AMOVH
+	AMOVHS
+	AMOVHU
+	AMOVW
+	AMOVM
+	ASWPBU
+	ASWPW
+
+	ARFE
+	ASWI
+	AMULA
+
+	AWORD
+	ABCASE
+	ACASE
+
+	AMULL
+	AMULAL
+	AMULLU
+	AMULALU
+
+	ABX
+	ABXRET
+	ADWORD
+
+	ALDREX
+	ASTREX
+	ALDREXD
+	ASTREXD
+
+	APLD
+
+	ACLZ
+
+	AMULWT
+	AMULWB
+	AMULAWT
+	AMULAWB
+
+	ADATABUNDLE
+	ADATABUNDLEEND
+
+	AMRC // MRC/MCR
+
+	ALAST
+
+	// aliases
+	AB  = obj.AJMP
+	ABL = obj.ACALL
+)
+
+/* scond byte */
+const (
+	C_SCOND = (1 << 4) - 1
+	C_SBIT  = 1 << 4
+	C_PBIT  = 1 << 5
+	C_WBIT  = 1 << 6
+	C_FBIT  = 1 << 7 /* psr flags-only */
+	C_UBIT  = 1 << 7 /* up bit, unsigned bit */
+
+	// These constants are the ARM condition codes encodings,
+	// XORed with 14 so that C_SCOND_NONE has value 0,
+	// so that a zeroed Prog.scond means "always execute".
+	C_SCOND_XOR = 14
+
+	C_SCOND_EQ   = 0 ^ C_SCOND_XOR
+	C_SCOND_NE   = 1 ^ C_SCOND_XOR
+	C_SCOND_HS   = 2 ^ C_SCOND_XOR
+	C_SCOND_LO   = 3 ^ C_SCOND_XOR
+	C_SCOND_MI   = 4 ^ C_SCOND_XOR
+	C_SCOND_PL   = 5 ^ C_SCOND_XOR
+	C_SCOND_VS   = 6 ^ C_SCOND_XOR
+	C_SCOND_VC   = 7 ^ C_SCOND_XOR
+	C_SCOND_HI   = 8 ^ C_SCOND_XOR
+	C_SCOND_LS   = 9 ^ C_SCOND_XOR
+	C_SCOND_GE   = 10 ^ C_SCOND_XOR
+	C_SCON

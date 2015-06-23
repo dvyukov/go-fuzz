@@ -1,0 +1,2 @@
+package n
+func n(){print(chan(chan int)(nil),1)}

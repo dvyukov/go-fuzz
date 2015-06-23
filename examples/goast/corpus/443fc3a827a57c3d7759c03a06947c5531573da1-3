@@ -1,0 +1,2 @@
+package t
+type T interface{r.R}

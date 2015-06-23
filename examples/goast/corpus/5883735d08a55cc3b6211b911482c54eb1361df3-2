@@ -1,0 +1,3 @@
+package n
+type R int
+type T interface{R;}

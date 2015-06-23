@@ -1,0 +1,3 @@
+package n
+func n(){print((chan int)(nil),[]int(nil)<(map[string]int)(nil),(c())()())()//
+}

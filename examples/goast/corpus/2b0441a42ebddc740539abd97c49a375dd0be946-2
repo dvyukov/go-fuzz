@@ -1,0 +1,3 @@
+package n
+type T struct{}
+func n(){var t T=0}

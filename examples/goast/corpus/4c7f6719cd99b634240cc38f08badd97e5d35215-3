@@ -1,0 +1,3 @@
+package n
+type l interface{i}
+type T interface{R;S}

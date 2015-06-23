@@ -1,0 +1,4 @@
+package p
+func r(){f:=func(){}
+foo(f)}
+func foo(*func())

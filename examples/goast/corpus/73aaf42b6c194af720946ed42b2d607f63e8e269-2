@@ -1,0 +1,3 @@
+package n
+var indent=0
+func n(){for""{}}

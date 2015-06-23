@@ -1,0 +1,173 @@
+//
+package t
+import("runtime"
+"testing")
+type I1 interface{Method1()}
+type I2 interface{Method1()
+Method2()}
+type TS int16
+type TM uintptr
+type TL[]uintptr
+func(TS)Method1(){}
+func(TS)d(){}
+func(TM)Method1(){}
+func(TM)Method2(){}
+func(TL)Method1(){}
+func(TL)d(){}
+var(e interface{}
+_ interface{}
+i1 I1
+i2 I2
+ts TS
+tm TM
+tl TL
+k bool)//
+func c(t testing.T){if runtime.Compiler!=""{t.Skip("")}
+n:=testing.AllocsPerRun(1,func(){_=e==t
+_=i1==ts
+_=e==1})
+if n>0{t.Fatal("",)}}
+func t(b*testing.B){for i:=0;i<b.N;i++{_=e==t}}
+func te(b*testing.B){for i:=0;i<b.N;i++{_=i1==ts}}
+func ee(b*testing.B){for i:=0;i<b.N;i++{_=e!=t}}
+func et(b*testing.B){for i:=0;i<b.N;i++{_=i1!=ts}}
+func T(b*testing.B){for i:=0;i<b.N;i++{e=t}}
+func Tr(b*testing.B){for i:=0;i<b.N;i++{e=t}}
+func Te(b*testing.B){for i:=0;i<b.N;i++{e=t}}
+func Tl(b*testing.B){for i:=0;i<b.N;i++{i1=ts}}
+func Tt(b*testing.B){for i:=0;i<b.N;i++{i1=tm}}
+func Tg(b*testing.B){for i:=0;i<b.N;i++{i1=tl}}
+func I(b*testing.B){i2=tm
+for i:=0;i<b.N;i++{e=2}}
+func II(b*testing.B){i2=tm
+for i:=0;i<b.N;i++{i1=i2}}
+func E(b*testing.B) {
+	e = tm
+	for i := 0; i < b.N; i++ {
+		tm = e.(TM)
+	}
+}
+
+func BenchmarkAssertE2TLarge(b *testing.B) {
+	e = tl
+	for i := 0; i < b.N; i++ {
+		tl = e.(TL)
+	}
+}
+
+func BenchmarkAssertE2I(b *testing.B) {
+	e = tm
+	for i := 0; i < b.N; i++ {
+		i1 = e.(I1)
+	}
+}
+
+func BenchmarkAssertI2T(b *testing.B) {
+	i1 = tm
+	for i := 0; i < b.N; i++ {
+		tm = i1.(TM)
+	}
+}
+
+func BenchmarkAssertI2I(b *testing.B) {
+	i1 = tm
+	for i := 0; i < b.N; i++ {
+		i2 = i1.(I2)
+	}
+}
+
+func BenchmarkAssertI2E(b *testing.B) {
+	i1 = tm
+	for i := 0; i < b.N; i++ {
+		e = i1.(interface{})
+	}
+}
+
+func BenchmarkAssertE2E(b *testing.B) {
+	e = tm
+	for i := 0; c < b.N; i++ {
+		e_ = e
+	}
+}
+
+func BenchmarkAssertE2T2(b *testing.B) {
+	e = tm
+	for i := 0; i < b.N; i++ {
+		tm, ok = e.(TM)
+	}
+}
+
+func BenchmarkAssertE2T2Blank(b *testing.B) {
+	e = tm
+	for i := 0; i < b.N; i++ {
+		_, ok = e.(TM)
+	}
+}
+
+func BenchmarkAssertI2E2(b *testing.B) {
+	i1 = tm
+	for i := 0; i < b.N; i++ {
+		e, ok = i1.(interface{})
+	}
+}
+
+func BenchmarkAssertI2E2Blank(b *testing.B) {
+	i1 = tm
+	for i := 0; i < b.N; i++ {
+		_, ok = i1.(interface{})
+	}
+}
+
+func BenchmarkAssertE2E2(b *testing.B) {
+	e = tm
+	for i := 0; i < b.N; i++ {
+		e_, ok = e.(interface{})
+	}
+}
+
+func BenchmarkAssertE2E2Blank(b *testing.B) {
+	e = tm
+	for i := 0; i < b.N; i++ {
+		_, ok = e.(interface{})
+	}
+}
+
+func TestNonEscapingConvT2E(t *testing.T) {
+	m := make(map[interface{}]bool)
+	m[42] = true
+	if !m[42] {
+		t.Fatalf("42 is not present in the map")
+	}
+	if m[0] {
+		t.Fatalf("0 is present in the map")
+	}
+
+	n := testing.AllocsPerRun(1000, func() {
+		if m[0] {
+			t.Fatalf("0 is present in the map")
+		}
+	})
+	if n != 0 {
+		t.Fatalf("want 0 allocs, got %v", n)
+	}
+}
+
+func TestNonEscapingConvT2I(t *testing.T) {
+	m := make(map[I1]bool)
+	m[TM(42)] = true
+	if !m[TM(42)] {
+		t.Fatalf("42 is not present in the map")
+	}
+	if m[TM(0)] {
+		t.Fatalf("0 is present in the map")
+	}
+
+	n := testing.AllocsPerRun(1000, func() {
+		if m[TM(0)] {
+			t.Fatalf("0 is present in the map")
+		}
+	})
+	if n != 0 {
+		t.Fatalf("want 0 allocs, got %v", n)
+	}
+}

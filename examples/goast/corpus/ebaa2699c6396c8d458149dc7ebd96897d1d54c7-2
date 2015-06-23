@@ -1,0 +1,13 @@
+package n
+import"os"
+func n(){//
+{x:=4
+a,b,c,d:=func(i int)(t,n,nt,s int){return 1,i,3,x}(2)
+if a!=1||b!=2||c!=3||d!=4{println("",a,b,c,)
+os.Exit(1)}}//
+{x:=4
+gf=func(i int)(t,n,nt,s int){return 1,i,3,x}
+a,b,c,d=(5)
+if a!=1|b!=2|c!=3|d!=4{n("",a,b,c,)
+s()}}}
+var gf func(int)(int,int,int,*int)

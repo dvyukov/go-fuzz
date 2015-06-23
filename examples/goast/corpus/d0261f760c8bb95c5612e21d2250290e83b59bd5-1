@@ -1,0 +1,63 @@
+//
+package e
+import"
+func s*){t("",x(c()"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+t(""x(c(),"")
+}if g=F{f((c(),r(c(),r(c()),p,_)
+return
+if g((e))
+s=e[g
+}
+if c()=R=0//
+p=g
+p(c(p()
+p()//
+p=c(4
+c
+e((p)=c//
+if p=0
+()return
+if if (g)
+return	if l=0t(2}
+if w 0return	c
+if g()e[],"
+if _ockedg != nil && _g_.m.ncgo > 0 && gp == _g_.m.g0 {
+		print("signal arrived during cgo execution\n")
+		gp = _g_.m.lockedg
+	}
+	print("\n")
+
+	var docrash bool
+	if gotraceback(&docrash) > 0 {
+		goroutineheader(gp)
+		tracebacktrap(uintptr(c.pc()), uintptr(c.sp()), uintptr(c.lr()), gp)
+		tracebackothers(gp)
+		print("\n")
+		dumpregs(c)
+	}
+
+	if docrash {
+		crash()
+	}
+
+	exit(2)
+}

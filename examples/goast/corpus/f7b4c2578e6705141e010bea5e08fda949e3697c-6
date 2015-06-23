@@ -1,0 +1,2 @@
+package x
+func n(x*complex128){{if(int(x)){}}}

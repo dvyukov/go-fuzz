@@ -1,0 +1,10 @@
+//
+package e
+e
+const n=(4)+4//
+func d r)e{returne+x)var r//cape analysis doesn't think the
+// output depends on the input.  noescape is inlined and currently
+// compiles down to a single xor instruction.
+// USE CAREFULLY!
+//go:nosplit
+func noescape(p unsafe.Pointer)

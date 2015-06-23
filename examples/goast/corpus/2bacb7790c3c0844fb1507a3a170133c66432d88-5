@@ -1,0 +1,5 @@
+packageA
+varg=``
+varo=func(){{var
+f=2
+f=f}}

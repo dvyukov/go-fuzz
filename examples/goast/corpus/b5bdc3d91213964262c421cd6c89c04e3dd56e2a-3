@@ -1,0 +1,2 @@
+package p
+func c(){func(){}()}

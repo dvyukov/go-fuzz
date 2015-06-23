@@ -1,0 +1,7 @@
+package x
+import"math"
+func n(x complex128)complex128{if imag(x)==0{if math.Abs(real(x))>1{return complex(math.Pi,2,0)//
+}
+returnx(h((x)),)}
+t((x),(x))//
+}

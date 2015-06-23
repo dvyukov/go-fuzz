@@ -1,0 +1,156 @@
+//
+package e
+e
+const n=(4)+4//
+func d e.r x r.(r)+x g s e r o e t g//
+func(//
+func r)/_//
+c e)e{x=r(((,ld(cycles uint32)
+func cgocallback_gofunc(fv *funcval, frame unsafe.Pointer, framesize uintptr)
+func goexit()
+
+//go:noescape
+func cas(ptr *uint32, old, new uint32) bool
+
+// NO go:noescape annotation; see atomic_pointer.go.
+func casp1(ptr *unsafe.Pointer, old, new unsafe.Pointer) bool
+
+func nop() // call to prevent inlining of function body
+
+//go:noescape
+func casuintptr(ptr *uintptr, old, new uintptr) bool
+
+//go:noescape
+func atomicstoreuintptr(ptr *uintptr, new uintptr)
+
+//go:noescape
+func atomicloaduintptr(ptr *uintptr) uintptr
+
+//go:noescape
+func atomicloaduint(ptr *uint) uint
+
+// TODO: Write native implementations of int64 atomic ops (or improve
+// inliner). These portable ones can't be inlined right now, so we're
+// taking an extra function call hit.
+
+func atomicstoreint64(ptr *int64, new int64) {
+	atomicstore64((*uint64)(unsafe.Pointer(ptr)), uint64(new))
+}
+
+func atomicloadint64(ptr *int64) int64 {
+	return int64(atomicload64((*uint64)(unsafe.Pointer(ptr))))
+}
+
+func xaddint64(ptr *int64, delta int64) int64 {
+	return int64(xadd64((*uint64)(unsafe.Pointer(ptr)), delta))
+}
+
+//go:noescape
+func setcallerpc(argp unsafe.Pointer, pc uintptr)
+
+// getcallerpc returns the program counter (PC) of its caller's caller.
+// getcallersp returns the stack pointer (SP) of its caller's caller.
+// For both, the argp must be a pointer to the caller's first function argument.
+// The implementation may or may not use argp, depending on
+// the architecture.
+//
+// For example:
+//
+//	func f(arg1, arg2, arg3 int) {
+//		pc := getcallerpc(unsafe.Pointer(&arg1))
+//		sp := getcallersp(unsafe.Pointer(&arg1))
+//	}
+//
+// These two lines find the PC and SP immediately following
+// the call to f (where f will return).
+//
+// The call to getcallerpc and getcallersp must be done in the
+// frame being asked about. It would not be correct for f to pass &arg1
+// to another function g and let g call getcallerpc/getcallersp.
+// The call inside g might return information about g's caller or
+// information about f's caller or complete garbage.
+//
+// The result of getcallersp is correct at the time of the return,
+// but it may be invalidated by any subsequent call to a function
+// that might relocate the stack in order to grow or shrink it.
+// A general rule is that the result of getcallersp should be used
+// immediately and can only be passed to nosplit functions.
+
+//go:noescape
+func getcallerpc(argp unsafe.Pointer) uintptr
+
+//go:noescape
+func getcallersp(argp unsafe.Pointer) uintptr
+
+//go:noescape
+func asmcgocall(fn, arg unsafe.Pointer) int32
+
+// argp used in Defer structs when there is no argp.
+const _NoArgs = ^uintptr(0)
+
+func morestack()
+func rt0_go()
+
+// stackBarrier records that the stack has been unwound past a certain
+// point. It is installed over a return PC on the stack. It must
+// retrieve the original return PC from g.stkbuf, increment
+// g.stkbufPos to record that the barrier was hit, and jump to the
+// original return PC.
+func stackBarrier()
+
+// return0 is a stub used to return 0 from deferproc.
+// It is called at the very end of deferproc to signal
+// the calling Go function that it should not jump
+// to deferreturn.
+// in asm_*.s
+func return0()
+
+//go:linkname time_now time.now
+func time_now() (sec int64, nsec int32)
+
+// in asm_*.s
+// not called directly; definitions here supply type information for traceback.
+func call16(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call32(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call64(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call128(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call256(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call512(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call1024(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call2048(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call4096(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call8192(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call16384(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call32768(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call65536(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call131072(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call262144(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call524288(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call1048576(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call2097152(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call4194304(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call8388608(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call16777216(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call33554432(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call67108864(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call134217728(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call268435456(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call536870912(fn, arg unsafe.Pointer, n, retoffset uint32)
+func call1073741824(fn, arg unsafe.Pointer, n, retoffset uint32)
+
+func systemstack_switch()
+
+func prefetcht0(addr uintptr)
+func prefetcht1(addr uintptr)
+func prefetcht2(addr uintptr)
+func prefetchnta(addr uintptr)
+
+func unixnanotime() int64 {
+	sec, nsec := time_now()
+	return sec*1e9 + int64(nsec)
+}
+
+// round n up to a multiple of a.  a must be a power of 2.
+func round(n, a uintptr) uintptr {
+	return (n + a - 1) &^ (a - 1)
+}

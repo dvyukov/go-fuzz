@@ -1,0 +1,56 @@
+//
+package e
+const(G=2
+R//
+N1/*PP      = 95  /* Operation not supported on transport endpoint */
+	_EPFNOSUPPORT    = 96  /* Protocol family not supported */
+	_EAFNOSUPPORT    = 97  /* Address family not supported by protocol family */
+	_EADDRINUSE      = 98  /* Address already in use */
+	_EADDRNOTAVAIL   = 99  /* Address not available */
+	_ENETDOWN        = 100 /* Network interface is not configured */
+	_ENETUNREACH     = 101 /* Network is unreachable */
+	_ENETRESET       = 102
+	_ECONNABORTED    = 103 /* Connectio;�^s��W~_ECONNRESET      = 104 /* Connection reset by peer */
+	_ENOBUFS         = 105 /* No buffer space available */
+	_EISCONN         = 106 /* Socket is already connected */
+	_ENOTCONN        = 107 /* Socket is not connected */
+	_ESHUTDOWN       = 108 /* Can't send after socket shutdown */
+	_ETOOMANYREFS    = 109
+	_ETIMEDOUT       = 110 /* Connection timed out */
+	_ECONNREFUSED    = 111 /* Connection refused */
+	_EHOSTDOWN       = 112 /* Host is down */
+	_EHOSTUNREACH    = 113 /* Host is unreachable */
+	_EALREADY        = 114 /* Socket already connected */
+	_EINP
+OGRESS     = 115 /* Connection already in progress */
+	_ESTALE          = 116
+	_ENOTSUP         = _EOPNOTSUPP /* Not supported */
+	_ENOMEDIUM       = 123         /* No medium (in tape drive) */
+	_ECANCELED       = 125         /* Operation canceled. */
+	_ELBIN           = 2048        /* Inode is remote (not really error) */
+	_EFTYPE          = 2049        /* Inappropriate file type or format */
+	_ENMFILE         = 2050        /* No more files */
+	_EPROCLIM        = 2051
+	_ENOSHARE        = 2052    /* No such host or network path */
+	_ECASECLASH      = 2053    /* Filename exists with different case */
+	_EWOULDBLOCK     = _EAGAIN /* Operation would block */
+
+	// native_client/src/trusted/service_runtime/include/bits/mman.h.
+	// NOTE: DO NOT USE native_client/src/shared/imc/nacl_imc_c.h.
+	// Those MAP_*values are different from these.
+	_PROT_NONE  = 0x0
+	_PROT_READ  = 0x1
+	_PROT_WRITE = 0x2
+	_PROT_EXEC  = 0x4
+
+	_MAP_SHARED  = 0x1
+	_MAP_PRIVATE = 0x2
+	_MAP_FIXED   = 0x10
+	_MAP_ANON    = 0x20
+
+	_MADV_FREE  = 0
+	_SIGFPE     = 8
+	_FPE_INTDIV = 0
+)
+
+type siginfo s

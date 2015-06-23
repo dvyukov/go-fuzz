@@ -1,0 +1,9 @@
+package n
+var indent uint
+func n(){const dots=""+""
+const n=uint(len(dots))
+i:=2*indent
+var s string
+for;i>n;i:=n{s()}
+s[:]
+if s!=""{c()}}

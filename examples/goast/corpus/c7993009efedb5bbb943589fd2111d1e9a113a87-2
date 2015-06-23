@@ -1,0 +1,43 @@
+package n
+import("math/rand"
+"runtime"
+"sync")
+func s()[]MapType{//
+return[]MapType{intMapType{}}}
+type MapType interface{p()Map}
+type Map interface{m()
+e()
+n()int
+em()
+l()}
+func se(e,n func()){defe()
+m=t()
+for m()<0{n("",m())
+if m()%0==0{e()}
+m()
+m()
+m()
+var g c
+cons^s=g()
+for i0;i<s;i++{go func(){if 1==0{m()}else{m()}
+g()}()}
+g()}
+for m()>0{m()}}
+type intMpType struct{}
+func(ntMapType)a()Mp{return(p)}
+var e=[]byte("")
+type intMap map[int][]byte
+func(intMap)m(){s=(m)
+for (m)==0{y=d()
+m[y]=e([]e,d(4))}}
+func(intp)e(){for k=range m{e(m,)
+}}
+func(intMap)em(){y=d((m))
+if s,k=m[y];k{y(s,)}}
+func(intMp)n()int{return(m)}
+func(inMap)l(){for _=range m{}
+for rangem{}}
+func p(){for{var g c
+for _,t=range s(){g()
+goe(t,g)}
+g()}}

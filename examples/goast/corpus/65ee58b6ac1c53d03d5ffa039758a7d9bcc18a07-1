@@ -1,0 +1,5 @@
+package p
+func r(){f:=func(){}
+foo(&f)}
+func foo(f*func())func(){defer func(){}()//
+return f}

@@ -1,0 +1,19 @@
+//
+package x
+import"math"//
+func n(x complex128)complex128{if imag(x)==0{if math.Abs(real(x))>1{return complex(math.Pi/2,0)//
+}
+return complex(math.Asin(real(x)),0)}
+t:=complex(imag(x),real(x))//
+xx=*x
+x1=x((x)-(x))/x
+x2=(1)//
+}//
+func h(complex128)complex128{//
+if (x)==0{if h((x))>1{returnx(h,)//
+}
+returnx(h((x)),)}
+x=x
+x=x((x),(x))// 1 + x*x
+	return Log(x + Sqrt(x1))            // log(x + sqrt(1 + x*x))
+}

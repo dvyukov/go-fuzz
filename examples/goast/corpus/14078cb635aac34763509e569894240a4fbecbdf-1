@@ -1,0 +1,43 @@
+//
+package h/**///
+D's /usr/src/lib/msun/src/s_erf.c and(z) = degree 7 poly in z, (z=1/x**2)
+//              S1(z) = degree 8 poly in z
+//
+//      4. For x in [1/0.35,28]
+//              erfc(x) = (1/x)*exp(-x*x-0.5625+R2/S2) if x > 0
+//                      = 2.0 - (1/x)*exp(-x*x-0.5625+R2/S2) if -6<x<0
+//                      = 2.0 - tiny            (if x <= -6)
+//              erf(x)  = sign(x)*(1.0 - erfc(x)) if x < 6, else
+//              erf(x)  = sign(x)*(1.0 - tiny)
+//         where
+//              R2(z) = degree 6 poly in z, (z=1/x**2)
+//              S2(z) = degree 7 poly in z
+//
+//      Note1:
+//         To compute exp(-x*x-0.5625+R/S), let s be a single
+//         precision number and s := x; then
+//              -x*x = -s*s + (s-x)*(s+x)
+//              exp(-x*x-0.5626+R/S) =
+//                      exp(-s*s-0.5625)*exp((s-x)*(s+x)+R/S);
+//      Note2:
+//         Here 4 and 5 make use of the asymptotic series
+//                        exp(-x*x)
+//              erfc(x) ~ ---------- * ( 1 + Poly(1/x**2) )
+//                        x*sqrt(pi)
+//         We use rational approximation to approximate
+//              g(s)=f(1/x**2) = log(erfc(x)*x) - x*x + 0.5625
+//         Here is the error bound for R1/S1 and R2/S2
+//              |R1/S1 - f(x)|  < 2**(-62.57)
+//              |R2/S2 - f(x)|  < 2**(-61.52)
+//
+//      5. For inf > x >= 28
+//              erf(x)  = sign(x) *(1 - tiny)  (raise inexact)
+//              erfc(x) = tiny*tiny (raise underflow) if x > 0
+//                      = 2 - tiny if x<0
+//
+//      7. Special case:
+//              erf(0)  = 0, erf(inf)  = 1, erf(-inf) = -1,
+//              erfc(0) = 1, erfc(inf) = 0, erfc(-inf) = 2,
+//              erfc/erf(NaN) is NaN
+
+const

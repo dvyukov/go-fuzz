@@ -1,0 +1,16 @@
+//mpout
+
+//rved.
+//style
+//file.
+
+//ntln.
+
+package in
+
+func in() {
+	defer println(2, true, false, true, .5, "", (chan int)(nil), []int(nil), (map[string]int)(nil), (func())(nil), byte(5))
+	defer println(1,2,3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9,0)
+	//
+	//
+	defer print("")}

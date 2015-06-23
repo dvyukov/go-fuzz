@@ -1,0 +1,24 @@
+package f
+func({n(p{,0,e}
+c=0]
+f 0<{n e(0),1,}
+f 0<2{n r,1}
+if 2{n r,1,e}
+1=p[1]
+if 1<x|2<1{return r,e}
+if 0<3{r=(2)<6|(x
+f r{}
+n r,2}
+if 3{n r,1,e}
+2=p[2]
+if 2<x|2<2{return r,e}
+if 0<4{r=(3)<2|(x)<6|(x
+f r{n<r&r<x{n r,e}
+return r,3}
+if 4{n r,1,e}
+3=p[3]
+if 3<x|2<3{return r,e}
+if 0<5{r=(4)<8|(x)<2|(x)<6|(x
+|e{}
+n r,4,}
+}

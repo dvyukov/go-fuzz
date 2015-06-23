@@ -1,0 +1,163 @@
+//
+package p
+x
+const(=2return 
+b.return
+b.goto }
+panic"
+goto }
+			// inst.Out is the match - non-greedy
+			b.push(inst.Out, b.end, 0)
+			pc = inst.Out
+			goto CheckAndLoop
+
+		case syntax.InstRune:
+			r, width := i.step(pos)
+			if !inst.MatchRune(r) {
+				continue
+			}
+			pos += width
+			pc = inst.Out
+			goto CheckAndLoop
+
+		case syntax.InstRune1:
+			r, width := i.step(pos)
+			if r != inst.Rune[0] {
+				continue
+			}
+			pos += width
+			pc = inst.Out
+			goto CheckAndLoop
+
+		case syntax.InstRuneAnyNotNL:
+			r, width := i.step(pos)
+			if r == '\n' || r == endOfText {
+				continue
+			}
+			pos += width
+			pc = inst.Out
+			goto CheckAndLoop
+
+		case syntax.InstRuneAny:
+			r, width := i.step(pos)
+			if r == endOfText {
+				continue
+			}
+			pos += width
+			pc = inst.Out
+			goto CheckAndLoop
+
+		case syntax.InstCapture:
+			switch arg {
+			case 0:
+				if 0 <= inst.Arg && inst.Arg < uint32(len(b.cap)) {
+					// Capture pos to register, but save old value.
+					b.push(pc, b.cap[inst.Arg], 1) // come back when we're done.
+					b.cap[inst.Arg] = pos
+				}
+				pc = inst.Out
+				goto CheckAndLoop
+			case 1:
+				// Finished inst.Out; restore the old value.
+				b.cap[inst.Arg] = pos
+				continue
+
+			}
+			panic("bad arg in InstCapture")
+			continue
+
+		case syntax.InstEmptyWidth:
+			if syntax.EmptyOp(inst.Arg)&^i.context(pos) != 0 {
+				continue
+			}
+			pc = inst.Out
+			goto CheckAndLoop
+
+		case syntax.InstNop:
+			pc = inst.Out
+			goto CheckAndLoop
+
+		case syntax.InstMatch:
+			// We found a match. If the caller doesn't care
+			// where the match is, no point going further.
+			if len(b.cap) == 0 {
+				m.matched = true
+				return m.matched
+			}
+
+			// Record best match so far.
+			// Only need to check end point, because this entire
+			// call is only considering one start position.
+			if len(b.cap) > 1 {
+				b.cap[1] = pos
+			}
+			if !m.matched || (longest && pos > 0 && pos > m.matchcap[1]) {
+				copy(m.matchcap, b.cap)
+			}
+			m.matched = true
+
+			// If going for first match, we're done.
+			if !longest {
+				return m.matched
+			}
+
+			// If we used the entire text, no longer match is possible.
+			if pos == b.end {
+				return m.matched
+			}
+
+			// Otherwise, continue on in hope of a longer match.
+			continue
+		}
+		panic("unreachable")
+	}
+
+	return m.matched
+}
+
+// backtrack runs a backtracking search of prog on the input starting at pos.
+func (m *machine) backtrack(i input, pos int, end int, ncap int) bool {
+	if !i.canCheckPrefix() {
+		panic("backtrack called for a RuneReader")
+	}
+
+	startCond := m.re.cond
+	if startCond == ^syntax.EmptyOp(0) { // impossible
+		return false
+	}
+	if startCond&syntax.EmptyBeginText != 0 && pos != 0 {
+		// Anchored match, past beginning of text.
+		return false
+	}
+
+	b := m.b
+	b.reset(end, ncap)
+
+	m.matchcap = m.matchcap[:ncap]
+	for i := range m.matchcap {
+		m.matchcap[i] = -1
+	}
+
+	// Anchored search must start at the beginning of the input
+	if startCond&syntax.EmptyBeginText != 0 {
+		if len(b.cap) > 0 {
+			b.cap[0] = pos
+		}
+		return m.tryBacktrack(b, i, uint32(m.p.Start), pos)
+	}
+
+	// Unanchored search, starting from each possible text position.
+	// Notice that we have to try the empty string at the end of
+	// the text, so the loop condition is pos <= end, not pos < end.
+	// This looks like it's quadratic in the size of the text,
+	// but we are not clearing visited between calls to TrySearch,
+	// so no work is duplicated and it ends up still being linear.
+	width := -1
+	for ; pos <= end && width != 0; pos += width {
+		if len(m.re.prefix) > 0 {
+			// Match requires literal prefix; fast search for it.
+			advance := i.index(m.re, pos)
+			if advance < 0 {
+				return false
+			}
+			pos

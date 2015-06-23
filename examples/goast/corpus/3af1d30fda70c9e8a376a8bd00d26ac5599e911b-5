@@ -1,0 +1,6 @@
+package x
+import"math"
+func n(x complex128){{if(int(x)){}
+(((x)))}
+((x)())//
+}

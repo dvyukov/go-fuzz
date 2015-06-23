@@ -1,0 +1,72 @@
+//
+package e
+const(G=2
+R//
+_EAGAIN=1/**/
+K=5/*   = 78       /* Remote address changed */
+C=9/**/
+D=0/* lib */
+N=1/* .lib section in a.out corrupted */
+X=2/*ibs */
+E=3/**/
+Q=4
+S=7
+CK=8/**/
+EQ=9/**/
+Z=0/*g */
+P=1/* Protocol wrong type for socket */
+T=2/* Protocol not available */
+RT=3/* Unknown protocol */
+O=4/**/
+_EOPNOTSUPP=5/**/
+OT=6/**/
+OR=7/**/
+SE=8/**/
+_EADDRNOTAVAIL=9/**/
+W=0/*gured */
+H=101/* Network is unreachable */
+ET=102
+ED=3/* Connectio;�^s��W~_ECONNRESET      = 104 /* Connection reset by peer */
+F=5/* No buffer space available */
+NN=6/* Socket is already connected */
+ON=7/* Socket is not connected */
+WN=108/* Can't send after socket shutdown */
+FS=109
+U=0/**/
+SD=1/* Connection refused */
+OW=2/* Host is down */
+CH=3/* Host is unreachable */
+Y=114/* Socket already connected */
+_EINP
+SS=115/* Connection already in progress */
+L=116
+UP=_EOPNOTSUPP/* Not supported */
+ENOMEDIUM=123/* No medium (in tape drive) */
+_ECANCELED=125/* Operation canceled. */
+_ELBIN=2048/* Inode is remote (not really error) */
+_EFTYPE=2049/* Inappropriate file type or format */
+_ENMFILE=2050/* No more files */
+_EPROCLIM=2051
+_ENOSHARE=2052/* No such host or network path */
+_ECASECLASH      = 2053    /* Filename exists with different case */
+	_EWOULDBLOCK     = _EAGAIN /* Operation would block */
+FP
+	// native_client/src/trusted/service_runtime/include/bits/mman.h.
+	// NOTE: DO NOT USE native_client/src/shared/imc/nacl_imc_c.h.
+	// Those MAP_*values are different from these.
+	_PROT_NONE  = 0x0
+	_PROT_READ  = 0x1
+	_PROT_WRITE = 0x2
+	_PROT_EXEC  = 0x4
+
+	_MAP_SHARED  = 0x1
+	_MAP_PRIVATE = 0x2
+	_MAP_FIXED   = 0x10
+	_MAP_ANON    = 0x20
+
+	_MADV_FREE  = 0
+	_SIGFPE     = 8
+	_FPE_INTDIV = 0
+)
+
+type siginfo struct{}

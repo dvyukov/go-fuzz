@@ -1,0 +1,4 @@
+package n
+func s(int int){switch{default:returnG()}
+return 0,0}
+func k(a,b int)

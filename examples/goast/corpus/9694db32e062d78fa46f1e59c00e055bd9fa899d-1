@@ -1,0 +1,10 @@
+package n
+import"fmt"
+var indent uint=0
+func n(){const dots="a"+""
+const n=uint(len(dots))
+i:=2*indent
+var s string
+for;i>n;i=n{s=fmt.Sprint(dots)}
+s=dots[:]
+if s!=""{c()}}

@@ -1,0 +1,42 @@
+package a
+import"sync"
+func x(){var mu sync.Mutex
+var i int
+var s[]sync.Mutex
+for range s{}
+for i=range s{}
+for i=range s{}
+for i,_=range s{}
+for i,_=range s{}
+for _,mu=range s{//
+}
+for _m:=range s{//
+}
+for i,mu=range s{//
+}
+for i=range s{//
+}
+var a[]sync.Mutex
+for _m:=range a{//
+}
+var m map[sync.Mutex]sync.Mutex
+for k:=range m{//
+}
+for mu,_=range m{//
+}
+for k:=range m{//
+}
+for _,mu=range m{//
+}
+for _v:=range m{//
+}
+var c chan sync.Mutex
+for range c{}
+for mu=range c{//
+}
+for v:=range c{//
+}//
+var t struct{int
+sync.Mutex}
+for t.i,t=range s{//
+}}

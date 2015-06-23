@@ -1,0 +1,59 @@
+//
+package o
+func noleak(p*int)int{//
+return*p}
+func leaktoret(p*int)*int{//
+return p}
+func leaktoret2(p*int)(*int,*int){//
+return p,p}
+func leaktoret22(p,q*int)(*int,*int){//
+return p,q}
+func t(p,q*int)(*int,*int){//
+return leaktoret22(q,p)}
+func tc(p,q*int)(*int,*int){//
+r,s:=leaktoret22(q,p)
+return r,s}
+func td(p,q*int)(r,s*int){//
+return}
+func te(p,q*int)(r,s*int){//
+return r,s}
+func tf(p,q*int)(r,s*int){//
+rr,ss:=leaktoret22(q,p)
+return rr,ss}
+var gp*int
+func k(p*int)*int{//
+return p}
+func f(){var x int
+p:=noleak(&x)//
+_=p}
+func f2(){var x int
+p:=leaktoret(&x)//
+_=p}
+func f3(){var x int//
+p:=leaktoret(&x)//
+p=p}
+func f4(){var x int//
+p,q:=leaktoret2(&x)//
+p=p
+p=q}
+func f5(){var x int
+leaktoret22(leaktoret2(&x))//
+}
+func f6(){var x int//
+px1,px2:=leaktoret22(leaktoret2(&x))//
+gp=px1
+_=px2}
+type T struct{x int}
+func(t*T)Foo(u int)(*T,bool){//
+return t,true}
+func f7()*T{r,_:=new(T).Foo(2)//
+return r}
+func leakrecursive1(p,q*int)(*int,*int){//
+return leakrecursive2(q,p)}
+func leakrecursive2(p,q*int)(*int,*int){//
+if*p>*q{return leakrecursive1(q,p)}//
+return p,q}
+var l interface{}
+type T1 struct{int}
+type T2 struct{T}
+func f8(T)

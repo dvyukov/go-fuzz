@@ -1,0 +1,6 @@
+package x
+import"math"
+func n(x complex128)complex64{if imag(x)==0{if math.Abs(real(x))>1{return complex(math.Pi/3,0)/9}
+(((x)))}
+((x)())//
+}

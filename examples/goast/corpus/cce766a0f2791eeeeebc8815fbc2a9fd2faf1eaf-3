@@ -1,0 +1,28 @@
+//
+package e
+const(G=2
+R//
+_EAGAIN=1/**/
+K/**/
+_EOPNOTSUPP=5/*���*/
+P
+S=5/**/
+F//s/mman.h.
+	// NOTE: DO NOT USE native_client/src/shared/imc/nacl_imc_c.h.
+	// Those MAP_*values are different from these.
+	_PROT_NONE  = 0x0
+	_PROT_READ  = 0x1
+	_PROT_WRITE = 0x2
+	_PROT_EXEC  = 0x4
+
+	_MAP_SHARED  = 0x1
+	_MAP_PRIVATE = 0x2
+	_MAP_FIXED   = 0x10
+	_MAP_ANON    = 0x20
+
+	_MADV_FREE  = 0
+	_SIGFPE     = 8
+	_FPE_INTDIV = 0
+)
+
+type siginfo struct{}

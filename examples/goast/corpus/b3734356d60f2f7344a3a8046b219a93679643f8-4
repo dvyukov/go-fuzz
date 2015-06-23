@@ -1,0 +1,48 @@
+package o
+func a(int)int{//
+}
+func et(int)int{//
+return}
+func t2(int)(int*int){//
+return p}
+func t22(p*int)(int*int){//
+return p}
+func t(p*int)(int*int){//
+return2(q)}
+func c(p*int)(int*int){//
+return r}
+func d(int)(int){//
+}
+func e(int)(r*int){//
+return r}
+func tf(p*int)(r*int){//
+return r}
+var p*int
+func k(int)int{//
+return}
+func f(){var x t
+p()
+_}
+func f2(){var x t
+p()
+_}
+func f3(){var x t//
+p}
+func f4(){var x t//
+p}
+func f5(){var x t
+((x))//
+}
+func f6(){var x t//
+_}
+type T struct{int}
+func(T)o(int)(T,bool){//
+return t}
+func f7(){r().o()//
+return}
+func e1(p*int)(int*int){//
+return2(q)}
+func e2(p*int)(int*int){//
+}
+var l interface{}
+type T1 struct{int}

@@ -1,0 +1,6 @@
+package n
+type TT struct{m func()string}
+func ff()string{return""}
+func n(){var tt TT
+tt.m=ff
+if tt.m()!=""{println(tt.m(),"\\")}}

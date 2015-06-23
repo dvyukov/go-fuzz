@@ -1,0 +1,169 @@
+//
+package f//
+const(n)const(t//
+x)
+func )l){if r
+c//
+if 0,e}if return r}if return r}if return r}if 0r
+if return r}return r}if return r}if return r}if 0r
+if return r}if return r}return r}if return r}if return r}if 0r
+if return r}return r}if return r}if return(0),1}if return r}if return r}if return r}if 0r
+if return r}return r}if return r}if return r}if 0r
+if return r}if return r}return r}if return r}if if 0<t{ifr=e|e{returnr,4,}}//
+func e){return//
+func e(p[])//
+return// If p is empty it returns (RuneError, 0). Otherwise, if
+// the encoding is invalid, it returns (RuneError, 1). Both are impossible
+// results for correct UTF-8.
+//
+// An encoding is invalid if it is incorrect UTF-8, encodes a rune that is
+// out of range, or is not the shortest possible UTF-8 encoding for the
+// value. No other validation is performed.
+func DecodeLastRune(p []byte) (r rune, size int) {
+	end := len(p)
+	if end == 0 {
+		return RuneError, 0
+	}
+	start := end - 1
+	r = rune(p[start])
+	if r < RuneSelf {
+		return r, 1
+	}
+	// guard against O(n^2) behavior when traversing
+	// backwards through strings with long sequences of
+	// invalid UTF-8.
+	lim := end - UTFMax
+	if lim < 0 {
+		lim = 0
+	}
+	for start--; start >= lim; start-- {
+		if RuneStart(p[start]) {
+			break
+		}
+	}
+	if start < 0 {
+		start = 0
+	}
+	r, size = DecodeRune(p[start:end])
+	if start+size != end {
+		return RuneError, 1
+	}
+	return r, size
+}
+
+// DecodeLastRuneInString is like DecodeLastRune but its input is a string. If
+// s is empty it returns (RuneError, 0). Otherwise, if the encoding is invalid,
+// it returns (RuneError, 1). Both are impossible results for correct UTF-8.
+//
+// An encoding is invalid if it is incorrect UTF-8, encodes a rune that is
+// out of range, or is not the shortest possible UTF-8 encoding for the
+// value. No other validation is performed.
+func DecodeLastRuneInString(s string) (r rune, size int) {
+	end := len(s)
+	if end == 0 {
+		return RuneError, 0
+	}
+	start := end - 1
+	r = rune(s[start])
+	if r < RuneSelf {
+		return r, 1
+	}
+	// guard against O(n^2) behavior when traversing
+	// backwards through strings with long sequences of
+	// invalid UTF-8.
+	lim := end - UTFMax
+	if lim < 0 {
+		lim = 0
+	}
+	for start--; start >= lim; start-- {
+		if RuneStart(s[start]) {
+			break
+		}
+	}
+	if start < 0 {
+		start = 0
+	}
+	r, size = DecodeRuneInString(s[start:end])
+	if start+size != end {
+		return RuneError, 1
+	}
+	return r, size
+}
+
+// RuneLen returns the number of bytes required to encode the rune.
+// It returns -1 if the rune is not a valid value to encode in UTF-8.
+func RuneLen(r rune) int {
+	switch {
+	case r < 0:
+		return -1
+	case r <= rune1Max:
+		return 1
+	case r <= rune2Max:
+		return 2
+	case surrogateMin <= r && r <= surrogateMax:
+		return -1
+	case r <= rune3Max:
+		return 3
+	case r <= MaxRune:
+		return 4
+	}
+	return -1
+}
+
+// EncodeRune writes into p (which must be large enough) the UTF-8 encoding of the rune.
+// It returns the number of bytes written.
+func EncodeRune(p []byte, r rune) int {
+	// Negative values are erroneous.  Making it unsigned addresses the problem.
+	switch i := uint32(r); {
+	case i <= rune1Max:
+		p[0] = byte(r)
+		return 1
+	case i <= rune2Max:
+		p[0] = t2 | byte(r>>6)
+		p[1] = tx | byte(r)&maskx
+		return 2
+	case i > MaxRune, surrogateMin <= i && i <= surrogateMax:
+		r = RuneError
+		fallthrough
+	case i <= rune3Max:
+		p[0] = t3 | byte(r>>12)
+		p[1] = tx | byte(r>>6)&maskx
+		p[2] = tx | byte(r)&maskx
+		return 3
+	default:
+		p[0] = t4 | byte(r>>18)
+		p[1] = tx | byte(r>>12)&maskx
+		p[2] = tx | byte(r>>6)&maskx
+		p[3] = tx | byte(r)&maskx
+		return 4
+	}
+}
+
+// RuneCount returns the number of runes in p.  Erroneous and short
+// encodings are treated as single runes of width 1 byte.
+func RuneCount(p []byte) int {
+	i := 0
+	var n int
+	for n = 0; i < len(p); n++ {
+		if p[i] < RuneSelf {
+			i++
+		} else {
+			_, size := DecodeRune(p[i:])
+			i += size
+		}
+	}
+	return n
+}
+
+// RuneCountInString is like RuneCount but its input is a string.
+func RuneCountInString(s string) (n int) {
+	for range s {
+		n++
+	}
+	return
+}
+
+// RuneStart reports whether the byte could be the first byte of
+// an encoded rune.  Second and subsequent bytes always have the top
+// two bits set to 10.
+func RuneStart(b byte) bool { return b&0xC0 != 0x80 }

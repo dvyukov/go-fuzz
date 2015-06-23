@@ -1,0 +1,8 @@
+package n
+func s2()(int int){switch{default:return(3)}
+return 0,0}
+func s3(interface{})(int int){switch{default:returnG()}
+return 0,0}
+func s4()(int int){switch{default:returnG()}
+return 0,0}
+func k(a,b int)

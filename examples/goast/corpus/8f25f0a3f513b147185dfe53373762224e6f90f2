@@ -1,0 +1,97 @@
+//
+package o
+func noleak(p*int)int{//
+return*p}
+func leaktoret(p*int)*int{//
+return p}
+func leaktoret2(p*int)(*int,*int){//
+return p,p}
+func leaktoret22(p,q*int)(*int,*int){//
+return p,q}
+func t(p,q*int)(*int,*int){//
+return leaktoret22(q,p)}
+func tc(p,q*int)(*int,*int){//
+r,s:=leaktoret22(q,p)
+return r,s}
+func td(p,q*int)(r,s*int){//
+r,s=leaktoret22(q,p)
+return}
+func te(p,q*int)(r,s*int){//
+r,s=leaktoret22(q,p)
+return r,s}
+func tf(p,q*int)(r,s*int){//
+rr,ss:=leaktoret22(q,p)
+return rr,ss}
+var gp*int
+func k(p*int)*int{//
+gp=p
+return p}
+func f(){var x int
+p:=noleak(&x)//
+_=p}
+func f2(){var x int
+p:=leaktoret(&x)//
+_=p}
+func f3(){var x int//
+p:=leaktoret(&x)//
+gp=p}
+func f4(){var x int//
+p,q:=leaktoret2(&x)//
+gp=p
+p=q}
+func f5(){var x int
+leaktoret22(leaktoret2(&x))//
+}
+func f6(){var x int//
+px1,px2:=leaktoret22(leaktoret2(&x))//
+gp=px1
+_=px2}
+type T struct{x int}
+func(t*T)Foo(u int)(*T,bool){//
+return t,true}
+func f7()*T{r,_:=new(T).Foo(2)//
+return r}
+func leakrecursive1(p,q*int)(*int,*int){//"
+	return leakrecursive2(q, p)
+}
+
+func leakrecursive2(p, q *int) (*int, *int) { // ERROR "leaking param: p" "leaking param: q"
+	if *p > *q {
+		return leakrecursive1(q, p)
+	}
+	// without this, leakrecursive? are safe for p and q, b/c in fact their graph does not have leaking edges.
+	return p, q
+}
+
+var global interface{}
+
+type T1 struct {
+	X *int
+}
+
+type T2 struct {
+	Y *T1
+}
+
+func f8(p *T1) (k T2) { // ERROR "leaking param: p to result k" "leaking param: p"
+	if p == nil {
+		k = T2{}
+		return
+	}
+
+	// should make p leak always
+	global = p // ERROR "p escapes to heap"
+	return T2{p}
+}
+
+func f9() {
+	var j T1 // ERROR "moved to heap: j"
+	f8(&j)   // ERROR "&j escapes to heap"
+}
+
+func f10() {
+	// These don't escape but are too big for the stack
+	var x [1 << 30]byte         // ERROR "moved to heap: x"
+	var y = make([]byte, 1<<30) // ERROR "make\(\[\]byte, 1 << 30\) escapes to heap"
+	_ = x[0] + y[0]
+}

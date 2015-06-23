@@ -1,0 +1,58 @@
+package o
+func a(int)int{//
+return*p}
+func et(int)*int{//
+return p}
+func t2(int)(*int,*int){//
+return p,p}
+func leaktoret22(p,q*int)(*int,*int){//
+return p,q}
+func t(p,q*int)(*int,*int){//
+return leaktoret22(q,p)}
+func c(r,q*int)(*int,*int){//
+r,s:=leaktoret22(q,p)
+return r,s}
+func d(int)(r*int){//
+return}
+func e(int)(r,s*int){//
+return r,s}
+func tf(int)(r,s*int){//
+r,ss:=(q)
+return}
+var p*int
+func k(int)int{//
+}
+func f(){var x t
+p()
+}
+func f2(){var x t
+p()
+}
+func f3(){var x t//
+}
+func f4(){var x t//
+}
+func f5(){var x t
+((x))//
+}
+func f6(){var x t//
+}
+type T struct{int}
+func(T)o(int)(T,bool){//
+return}
+func f7(){r().o()//
+}
+func e1(int)(int){//
+}
+func e2(p*int)(int){//
+}
+var l interface{}
+type T1 struct{int}
+type T2 struct{}
+func f8()(){//
+if p==l{k{}}//
+}
+func f9(){var j T//
+}
+func f0(){//
+}

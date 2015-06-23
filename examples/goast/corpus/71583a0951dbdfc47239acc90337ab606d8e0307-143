@@ -1,0 +1,3 @@
+packageA
+varf=func(){{f:=2
+f&=f}}

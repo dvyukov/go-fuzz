@@ -1,0 +1,17 @@
+package e
+const(A=iota
+P
+S
+VS
+F
+E
+_
+D
+OD
+O
+_
+D0
+G
+R
+e
+V)

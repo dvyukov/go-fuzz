@@ -1,0 +1,4 @@
+package r
+type T int
+func(T)m()int
+var x T.m

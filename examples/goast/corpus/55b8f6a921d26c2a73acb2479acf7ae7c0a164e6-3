@@ -1,0 +1,42 @@
+package n
+import("math/rand"
+"runtime"
+"c")
+func s()[]e{//
+return[]e{{}}}
+type pe interface{p()}
+type a interface{m()
+e()
+n()
+em()
+l()}
+func se(e func()){e()
+m()
+for m()<0{n("",m())
+if m()%0==0{e()}
+m()
+m()
+m()
+var g c
+s()
+for i;i;i++{go func(){if 1==0{m()}else{m()}
+g()}()}
+g()}
+for m()>0{m()}}
+type y struct{}
+func()a(){(p)}
+var e=[]e("")
+type ap[][]e
+func()m(){s()
+for(m)==0{y()
+m[y]=e([]e())}}
+func()e(){for k=range m{e(m)}}
+func()m(){y((m))
+ifs[y];{y(s)}}
+func()n(){(m)}
+func()l(){for _=range m{}
+for{}}
+func p(){for{var g c
+for _=range s(){g()
+e(t)}
+g()}}
