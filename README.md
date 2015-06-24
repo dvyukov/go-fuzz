@@ -251,7 +251,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [go/parser: eats \r in comments](https://github.com/golang/go/issues/11151)
 - [go/format: turns correct program into incorrect one](https://github.com/golang/go/issues/11274)
 - [go/format: non-idempotent format](https://github.com/golang/go/issues/11275)
-- [go/format: adds }](https://github.com/golang/go/issues/11276)
+- [go/format: adds }](https://github.com/golang/go/issues/11276) **fixed**
 - [debug/elf: index out of range](https://github.com/golang/go/issues/10996)
 - [debug/elf: makeslice: len out of range](https://github.com/golang/go/issues/10997)
 - [debug/elf: slice bounds out of range](https://github.com/golang/go/issues/10999)
