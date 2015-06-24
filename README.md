@@ -170,6 +170,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [fmt: index out of range (3)](https://github.com/golang/go/issues/10770) **fixed**
 - [fmt: index out of range (4)](https://github.com/golang/go/issues/10771) **fixed**
 - [fmt: index out of range (5)](https://github.com/golang/go/issues/10945) **fixed**
+- [fmt: index out of range (6)](https://github.com/golang/go/issues/11376)
 - [regexp: slice bounds out of range](https://github.com/golang/go/issues/11176)
 - [regexp: slice bounds out of range (2)](https://github.com/golang/go/issues/11178)
 - [regexp: LiteralPrefix lies about completeness](https://github.com/golang/go/issues/11172)
