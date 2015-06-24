@@ -4,12 +4,13 @@ package regexp
 import "C"
 
 import (
-	"fmt"
+	//"fmt"
 	"regexp"
-	"strings"
-	"unsafe"
+	//"strings"
+	//"unsafe"
 )
 
+/*
 func RE2Match(restr, str []byte) (ok, matched bool, err string) {
 	var rep, strp *C.char
 	relen, strlen := C.int(len(restr)), C.int(len(str))
@@ -44,11 +45,12 @@ func isAscii(b []byte) bool {
 	}
 	return true
 }
+*/
 
 func Fuzz(data []byte) int {
 	str := data[:len(data)/2]
 	sstr := string(str)
-	restrb := data[len(data)/2:]
+	//restrb := data[len(data)/2:]
 	restr := string(data[len(data)/2:])
 
 	quoted := regexp.QuoteMeta(sstr)
@@ -59,6 +61,7 @@ func Fuzz(data []byte) int {
 		}
 	}
 
+	/*
 	if isAscii(restrb) && isAscii(str) {
 		re2ok, re2matched, re2err := RE2Match(restrb, str)
 		re, err := regexp.Compile(restr)
@@ -78,6 +81,7 @@ func Fuzz(data []byte) int {
 			}
 		}
 	}
+	*/
 
 	score := 0
 	for _, ctor := range []func(string) (*regexp.Regexp, error){

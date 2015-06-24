@@ -1,3 +1,4 @@
+/*
 #include <re2/re2.h>
 #include <string.h>
 
@@ -14,3 +15,4 @@ int RE2Match(char* restr, int restrlen, char* str, int strlen, int* matched, cha
 	*matched = RE2::PartialMatch(std::string(str, strlen), re);
 	return 1;
 }
+*/
