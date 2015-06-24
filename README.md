@@ -152,7 +152,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 
 ## Trophies
 
-- [spec: non-integral constant can be converted to int](https://github.com/golang/go/issues/11350)
+- [spec: non-integral constant can be converted to int](https://github.com/golang/go/issues/11350) **fixed**
 - [cmd/compile: out of fixed registers](https://github.com/golang/go/issues/11352)
 - [cmd/compile: truncates constants](https://github.com/golang/go/issues/11326)
 - [cmd/compile: overflow in int -> string](https://github.com/golang/go/issues/11330)
