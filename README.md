@@ -235,6 +235,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [html/template: unidentified node type in allIdents](https://github.com/golang/go/issues/10610) **fixed**
 - [html/template: unidentified node type in allIdents (2)](https://github.com/golang/go/issues/10801) **fixed**
 - [html/template: unidentified node type in allIdents (3)](https://github.com/golang/go/issues/11118)
+- [html/template: unidentified node type in allIdents (4)](https://github.com/golang/go/issues/11356)
 - [html/template: escaping {{else}} is unimplemented](https://github.com/golang/go/issues/10611) **fixed**
 - [html/template: runtime error: slice bounds out of range](https://github.com/golang/go/issues/10612) **fixed**
 - [html/template: runtime error: slice bounds out of range (2)](https://github.com/golang/go/issues/10613) **fixed**
