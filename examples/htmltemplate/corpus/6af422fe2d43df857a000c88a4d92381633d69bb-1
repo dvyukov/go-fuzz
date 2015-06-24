@@ -1,0 +1,1 @@
+{{printf "%69"  $ $|printf|printf|printf|printf|printf|printf|printf}}
