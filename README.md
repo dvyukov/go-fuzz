@@ -179,7 +179,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [regexp: confusing behavior on invalid utf-8 sequences](https://github.com/golang/go/issues/11185)
 - [time: allows signs for year/tz in format string](https://github.com/golang/go/issues/11128)
 - [math/big: incorrect string->Float conversion](https://github.com/golang/go/issues/11341)
-- [net/http: can't send star request](https://github.com/golang/go/issues/11202)
+- [net/http: can't send star request](https://github.com/golang/go/issues/11202) **fixed**
 - [net/http: allows empty header names](https://github.com/golang/go/issues/11205) **fixed**
 - [net/http: allows invalid characters in header values](https://github.com/golang/go/issues/11207)
 - [net/http: allows %-encoding after \[\]](https://github.com/golang/go/issues/11208) **fixed**
