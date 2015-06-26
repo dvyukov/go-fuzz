@@ -214,7 +214,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/asn1: call of reflect.Value.Type on zero Value](https://github.com/golang/go/issues/11127)
 - [encoding/asn1: Unmarshal accepts negative dates](https://github.com/golang/go/issues/11134)
 - [encoding/pem: can't decode encoded message](https://github.com/golang/go/issues/10980) **fixed**
-- [crypto:x509: input not full blocks](https://github.com/golang/go/issues/11215)
+- [crypto:x509: input not full blocks](https://github.com/golang/go/issues/11215) **fixed**
 - [crypto/x509: division by zero](https://github.com/golang/go/issues/11233)
 - [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387) **fixed**
 - [image/jpeg: index out of range](https://github.com/golang/go/issues/10388) **fixed**
