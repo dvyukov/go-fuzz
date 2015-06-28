@@ -143,6 +143,31 @@ func (s *Slave) loop() {
 			continue
 		}
 
+		select {
+		case input := <-s.hub.triageC:
+			if *flagV >= 2 {
+				log.Printf("slave %v triages master input [%v]%v minimized=%v smashed=%v", s.id, len(input.Data), hash(input.Data), input.Minimized, input.Smashed)
+			}
+			s.triageInput(input)
+			for {
+				x := atomic.LoadUint32(&s.hub.initialTriage)
+				if x == 0 || atomic.CompareAndSwapUint32(&s.hub.initialTriage, x, x-1) {
+					break
+				}
+			}
+			continue
+		default:
+		}
+
+		if atomic.LoadUint32(&s.hub.initialTriage) != 0 {
+			// Other slaves are still triaging initial inputs.
+			// Wait until they finish, otherwise we can generate
+			// as if new interesting inputs that are not actually new
+			// and thus unnecessary inflate corpus on every run.
+			time.Sleep(100 * time.Millisecond)
+			continue
+		}
+
 		if len(s.triageQueue) > 0 {
 			n := len(s.triageQueue) - 1
 			input := s.triageQueue[n]
@@ -153,16 +178,6 @@ func (s *Slave) loop() {
 			}
 			s.triageInput(input)
 			continue
-		}
-
-		select {
-		case input := <-s.hub.triageC:
-			if *flagV >= 2 {
-				log.Printf("slave %v triages master input [%v]%v minimized=%v smashed=%v", s.id, len(input.Data), hash(input.Data), input.Minimized, input.Smashed)
-			}
-			s.triageInput(input)
-			continue
-		default:
 		}
 
 		ro := s.hub.ro.Load().(*ROData)
