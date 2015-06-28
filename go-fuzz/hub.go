@@ -34,6 +34,8 @@ type Hub struct {
 	maxCoverMu sync.Mutex
 	maxCover   atomic.Value // []byte
 
+	initialTriage uint32
+
 	corpusCoverSize int
 	corpusSigs      map[Sig]struct{}
 	corpusStale     bool
@@ -90,14 +92,15 @@ func newHub(metadata MetaData) *Hub {
 	}
 
 	hub := &Hub{
-		id:          res.ID,
-		master:      c,
-		corpusSigs:  make(map[Sig]struct{}),
-		triageQueue: res.Corpus,
-		triageC:     make(chan MasterInput, procs),
-		newInputC:   make(chan Input, procs),
-		newCrasherC: make(chan NewCrasherArgs, procs),
-		syncC:       make(chan Stats, procs),
+		id:            res.ID,
+		master:        c,
+		corpusSigs:    make(map[Sig]struct{}),
+		initialTriage: uint32(len(res.Corpus)),
+		triageQueue:   res.Corpus,
+		triageC:       make(chan MasterInput, procs),
+		newInputC:     make(chan Input, procs),
+		newCrasherC:   make(chan NewCrasherArgs, procs),
+		syncC:         make(chan Stats, procs),
 	}
 	hub.maxCover.Store(make([]byte, CoverSize))
 
