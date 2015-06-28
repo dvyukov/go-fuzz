@@ -3,7 +3,6 @@ package tlsclient
 import (
 	"crypto/tls"
 	"io"
-	"math/rand"
 	"net"
 	"time"
 )
@@ -53,13 +52,12 @@ type MathRandReader int
 
 func (MathRandReader) Read(buf []byte) (int, error) {
 	for i := range buf {
-		buf[i] = byte(rand.Intn(256))
+		buf[i] = 0
 	}
 	return len(buf), nil
 }
 
 func Fuzz(data []byte) int {
-	rand.Seed(0)
 	c := &MyConn{data}
 	tc := tls.Client(c, &tls.Config{
 		InsecureSkipVerify: true,
