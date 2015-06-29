@@ -282,7 +282,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/net/spdy: processing of 35 bytes takes 7 seconds](https://github.com/golang/go/issues/10544) **fixed**
 - [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545) **fixed**
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547) **fixed**
-- [x/crypto/ssh: Server panic on invalid input](https://github.com/golang/go/issues/11348)
+- [x/crypto/ssh: Server panic on invalid input](https://github.com/golang/go/issues/11348) **fixed**
 - [x/tools/go/types: panics on invalid constant](https://github.com/golang/go/issues/11325) **fixed**
 - [x/tools/go/types: compiling hangs](https://github.com/golang/go/issues/11327)
 - [x/tools/go/types: stupid shift](https://github.com/golang/go/issues/11328)
