@@ -209,7 +209,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/gob: pointers to zero values are not initialized in Decode](https://github.com/golang/go/issues/11119)
 - [encoding/xml: allows invalid comments](https://github.com/golang/go/issues/11112)
 - [encoding/asn1: index out of range](https://github.com/golang/go/issues/11129)
-- [encoding/asn1: incorrectly handles incorrect utf8 strings](https://github.com/golang/go/issues/11126)
+- [encoding/asn1: incorrectly handles incorrect utf8 strings](https://github.com/golang/go/issues/11126) **fixed**
 - [encoding/asn1: slice is lost during marshal/unmarshal](https://github.com/golang/go/issues/11130)
 - [encoding/asn1: call of reflect.Value.Type on zero Value](https://github.com/golang/go/issues/11127)
 - [encoding/asn1: Unmarshal accepts negative dates](https://github.com/golang/go/issues/11134) **fixed**
