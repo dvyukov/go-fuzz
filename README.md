@@ -216,7 +216,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/asn1: Unmarshal accepts negative dates](https://github.com/golang/go/issues/11134) **fixed**
 - [encoding/pem: can't decode encoded message](https://github.com/golang/go/issues/10980) **fixed**
 - [crypto:x509: input not full blocks](https://github.com/golang/go/issues/11215) **fixed**
-- [crypto/x509: division by zero](https://github.com/golang/go/issues/11233)
+- [crypto/x509: division by zero](https://github.com/golang/go/issues/11233) **fixed**
 - [image/jpeg: unreadByteStuffedByte call cannot be fulfilled](https://github.com/golang/go/issues/10387) **fixed**
 - [image/jpeg: index out of range](https://github.com/golang/go/issues/10388) **fixed**
 - [image/jpeg: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10389) **fixed**
