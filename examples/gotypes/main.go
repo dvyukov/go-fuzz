@@ -45,14 +45,6 @@ func Fuzz(data []byte) int {
 		// https://github.com/golang/go/issues/11350
 		return 0
 	}
-	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "(type float64) to type string") {
-		// https://github.com/golang/go/issues/11353
-		return 0
-	}
-	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "(type complex128) to type string") {
-		// https://github.com/golang/go/issues/11357
-		return 0
-	}
 	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "overflow in int -> string") {
 		// https://github.com/golang/go/issues/11330
 		return 0
@@ -72,10 +64,6 @@ func Fuzz(data []byte) int {
 	if gcErr != nil && gcCrash.MatchString(gcErr.Error()) {
 		if strings.Contains(gcErr.Error(), "internal compiler error: out of fixed registers") {
 			// https://github.com/golang/go/issues/11352
-			return 0
-		}
-		if strings.Contains(gcErr.Error(), "internal compiler error: naddr: bad HMUL") {
-			// https://github.com/golang/go/issues/11358
 			return 0
 		}
 		if strings.Contains(gcErr.Error(), "internal compiler error: treecopy Name") {
