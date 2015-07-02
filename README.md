@@ -317,6 +317,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: rejects valid imaginary literal](https://github.com/golang/go/issues/11532)
 - [gccgo: rejects valid fp literal](https://github.com/golang/go/issues/11533)
 - [gccgo: accepts program with invalid identifier](https://github.com/golang/go/issues/11535)
+- [gccgo: accepts program with invalid identifier (2)](https://github.com/golang/go/issues/11547)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
