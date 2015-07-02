@@ -307,6 +307,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in record_var_depends_on](https://github.com/golang/go/issues/11543)
 - [gccgo: internal compiler error in Builtin_call_expression](https://github.com/golang/go/issues/11544)
 - [gccgo: internal compiler error in check_bounds](https://github.com/golang/go/issues/11545)
+- [gccgo: internal compiler error in do_determine_type](https://github.com/golang/go/issues/11546)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527)
 - [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528)
 - [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529)
