@@ -163,6 +163,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: mishandles int->complex conversion](https://github.com/golang/go/issues/11365)
 - [cmd/compile: allows to define blank methods on builtin types](https://github.com/golang/go/issues/11366)
 - [cmd/compile: mis-calculates a constant](https://github.com/golang/go/issues/11369) **fixed**
+- [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
