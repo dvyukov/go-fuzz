@@ -283,6 +283,9 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/net/spdy: makemap: size out of range](https://github.com/golang/go/issues/10545) **fixed**
 - [x/net/spdy: makeslice: len out of range](https://github.com/golang/go/issues/10547) **fixed**
 - [x/crypto/ssh: Server panic on invalid input](https://github.com/golang/go/issues/11348) **fixed**
+- [x/crypto/openpgp: ReadMessage(): Panic on invalid input in packet.nextSubpacket](https://github.com/golang/go/issues/11503)
+- [x/crypto/openpgp: ReadMessage(): Panic on invalid input in packet.PublicKeyV3.setFingerPrintAndKeyId](https://github.com/golang/go/issues/11504)
+- [x/crypto/openpgp: ReadMessage(): Panic on invalid input in math/big.nat.div](https://github.com/golang/go/issues/11505)
 - [x/tools/go/types: panics on invalid constant](https://github.com/golang/go/issues/11325) **fixed**
 - [x/tools/go/types: compiling hangs](https://github.com/golang/go/issues/11327)
 - [x/tools/go/types: stupid shift](https://github.com/golang/go/issues/11328)
