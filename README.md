@@ -300,6 +300,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
 - [gccgo: segmentation fault](https://github.com/golang/go/issues/11526)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527)
+- [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
