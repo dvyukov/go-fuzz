@@ -299,6 +299,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
 - [gccgo: segmentation fault](https://github.com/golang/go/issues/11526)
+- [gccgo: segmentation fault (2)](https://github.com/golang/go/issues/11536)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527)
 - [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528)
 - [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529)
