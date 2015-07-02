@@ -295,7 +295,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: converts complex constant to string](https://github.com/golang/go/issues/11357) **fixed**
 - [x/tools/go/types: misses '-' in error message](https://github.com/golang/go/issues/11367) **fixed**
 - [x/tools/go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
-- [https://github.com/golang/go/issues/11329](https://github.com/golang/go/issues/11329)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
