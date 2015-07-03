@@ -332,6 +332,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: can do bitwise or on fp constants](https://github.com/golang/go/issues/11566)
 - [gccgo: treats nil as type](https://github.com/golang/go/issues/11567)
 - [gccgo: does not understand greek capiltal letter yot](https://github.com/golang/go/issues/11569)
+- [gccgo: allows to refer to builtin function not in call expression](https://github.com/golang/go/issues/11570)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
