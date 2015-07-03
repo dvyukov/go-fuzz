@@ -1,0 +1,5 @@
+220 smtpserver ESMTP
+250-smtpserver 250-AUTH LOGIN PLAIN 250-8BITMIME 250 PIPELINING
+235 Authentication succeeded.ed.
+250 Recipient pted.
+354 End250 Acced messageye.

@@ -1,0 +1,4 @@
+220 golang.org ESMTP Postfix
+250 Hello localhost with <C>.<CR><LF>
+250 Ok: queued as 45334
+221 Bye
