@@ -298,6 +298,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: misses '-' in error message](https://github.com/golang/go/issues/11367) **fixed**
 - [x/tools/go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
 - [x/tools/go/types: treats complex constant as integer](https://github.com/golang/go/issues/11564)
+- [x/tools/go/types: allows duplicate switch cases](https://github.com/golang/go/issues/11578)
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522)
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
