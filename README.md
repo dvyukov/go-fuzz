@@ -164,7 +164,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: allows to define blank methods on builtin types](https://github.com/golang/go/issues/11366)
 - [cmd/compile: mis-calculates a constant](https://github.com/golang/go/issues/11369) **fixed**
 - [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540)
-- [cmd/compile: treats complex constant as integer](https://github.com/golang/go/issues/11563)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
@@ -341,6 +340,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: knowns unknown escape sequence](https://github.com/golang/go/issues/11575)
 - [gccgo: internal compiler error in start_function](https://github.com/golang/go/issues/11576)
 - [gccgo: heap-buffer-overflow in Lex::skip_cpp_comment](https://github.com/golang/go/issues/11577)
+- [gccgo: does not convert untyped complex 0i to int in binary operation involving an int](https://github.com/golang/go/issues/11563)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
