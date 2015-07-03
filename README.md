@@ -314,6 +314,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in type_size](https://github.com/golang/go/issues/11554)
 - [gccgo: internal compiler error in type_size (2)](https://github.com/golang/go/issues/11555)
 - [gccgo: internal compiler error in type_size (3)](https://github.com/golang/go/issues/11556)
+- [gccgo: internal compiler error in do_get_backend](https://github.com/golang/go/issues/11560)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527)
 - [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528)
 - [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529)
