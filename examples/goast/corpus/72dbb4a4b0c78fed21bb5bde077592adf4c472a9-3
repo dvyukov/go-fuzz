@@ -1,0 +1,3 @@
+package n
+type S interface{T;S}
+type T interface{S;}

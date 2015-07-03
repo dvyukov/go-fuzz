@@ -1,0 +1,2 @@
+package f0i
+func n(){print()}
