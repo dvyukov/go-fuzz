@@ -336,6 +336,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: bogus incompatible types in binary expression error](https://github.com/golang/go/issues/11572)
 - [gccgo: allows multiple definitions of a function](https://github.com/golang/go/issues/11573)
 - [gccgo: can shift by complex number](https://github.com/golang/go/issues/11574)
+- [gccgo: knowns unknown escape sequence](https://github.com/golang/go/issues/11575)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
