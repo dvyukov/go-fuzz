@@ -164,6 +164,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: allows to define blank methods on builtin types](https://github.com/golang/go/issues/11366)
 - [cmd/compile: mis-calculates a constant](https://github.com/golang/go/issues/11369) **fixed**
 - [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540)
+- [cmd/compile: treats complex constant as integer](https://github.com/golang/go/issues/11563)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
@@ -296,6 +297,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: converts complex constant to string](https://github.com/golang/go/issues/11357) **fixed**
 - [x/tools/go/types: misses '-' in error message](https://github.com/golang/go/issues/11367) **fixed**
 - [x/tools/go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
+- [x/tools/go/types: treats complex constant as integer](https://github.com/golang/go/issues/11564)
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522)
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
