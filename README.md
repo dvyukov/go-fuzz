@@ -301,6 +301,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
 - [gccgo: segmentation fault](https://github.com/golang/go/issues/11526)
 - [gccgo: segmentation fault (2)](https://github.com/golang/go/issues/11536)
+- [gccgo: segmentation fault (3)](https://github.com/golang/go/issues/11558)
 - [gccgo: internal compiler error in set_type](https://github.com/golang/go/issues/11537)
 - [gccgo: internal compiler error in global_variable_set_init](https://github.com/golang/go/issues/11541)
 - [gccgo: internal compiler error: in wide_int_to_tree](https://github.com/golang/go/issues/11542)
