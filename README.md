@@ -328,6 +328,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: accepts program with invalid identifier](https://github.com/golang/go/issues/11535)
 - [gccgo: accepts program with invalid identifier (2)](https://github.com/golang/go/issues/11547)
 - [gccgo: compiles weird construct](https://github.com/golang/go/issues/11561)
+- [gccgo: can do bitwise or on fp constants](https://github.com/golang/go/issues/11566)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
