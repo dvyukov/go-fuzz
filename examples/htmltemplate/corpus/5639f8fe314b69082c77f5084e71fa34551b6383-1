@@ -1,0 +1,1 @@
+<script>{{template	"foo"}}{{template ""}}{{define ``}}{{end}}

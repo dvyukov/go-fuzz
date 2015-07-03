@@ -1,0 +1,1 @@
+<style>''''''''''{{template "foo"""}}'''"''''''''''{{template ""}}{{template "foo"""}}'''"'''""{{template "foo"""}}{{define ``}}{{end}}?

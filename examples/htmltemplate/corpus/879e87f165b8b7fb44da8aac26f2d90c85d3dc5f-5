@@ -1,0 +1,1 @@
+{{printf "%f" 9.}}{{printf "%f" 1.}}{{printf "%f" 0.}}{{printf "%f" 1.}}{{printf "%f" 1.}}{{printf "%f" 1.}}{{printf "%f" 0.}}{{printf "%f" 1.}}{{printf "%f" 1.}}

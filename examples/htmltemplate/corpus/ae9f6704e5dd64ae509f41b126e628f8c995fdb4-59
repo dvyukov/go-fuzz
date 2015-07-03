@@ -1,0 +1,1 @@
+'{{template "foo"""}}'<style>url('{{template "foo"""}}url('{

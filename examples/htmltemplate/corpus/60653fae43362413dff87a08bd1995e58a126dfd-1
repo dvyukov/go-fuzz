@@ -1,0 +1,1 @@
+{{printf "%#o" .}}{{printf	"%#o" .}}{{printf	"%#o" .}}

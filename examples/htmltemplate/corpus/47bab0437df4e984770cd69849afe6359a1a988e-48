@@ -1,0 +1,1 @@
+<B{{template ""}}{{template ""}}{{template ""}}{{template ""}}{{template ""}}{{template "foo"""}}{{define ``}}{{end}}
