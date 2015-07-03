@@ -338,6 +338,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: can shift by complex number](https://github.com/golang/go/issues/11574)
 - [gccgo: knowns unknown escape sequence](https://github.com/golang/go/issues/11575)
 - [gccgo: internal compiler error in start_function](https://github.com/golang/go/issues/11576)
+- [gccgo: heap-buffer-overflow in Lex::skip_cpp_comment](https://github.com/golang/go/issues/11577)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
