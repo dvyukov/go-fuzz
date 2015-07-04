@@ -165,6 +165,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: mis-calculates a constant](https://github.com/golang/go/issues/11369) **fixed**
 - [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540)
 - [cmd/compile: nil pointer dereference](https://github.com/golang/go/issues/11588)
+- [cmd/compile: internal compiler error: plain block b3 len(Succs)==2, want 1](https://github.com/golang/go/issues/11589)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
