@@ -161,6 +161,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: accepts invalid identifiers](https://github.com/golang/go/issues/11359)
 - [cmd/compile: hangs compiling hex fp constant](https://github.com/golang/go/issues/11364)
 - [cmd/compile: mishandles int->complex conversion](https://github.com/golang/go/issues/11365)
+- [cmd/compile: does illegal int->complex conversion](https://github.com/golang/go/issues/11365)
 - [cmd/compile: allows to define blank methods on builtin types](https://github.com/golang/go/issues/11366)
 - [cmd/compile: mis-calculates a constant](https://github.com/golang/go/issues/11369) **fixed**
 - [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540)
