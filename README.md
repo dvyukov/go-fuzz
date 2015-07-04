@@ -168,6 +168,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: nil pointer dereference](https://github.com/golang/go/issues/11588)
 - [cmd/compile: internal compiler error: plain block b3 len(Succs)==2, want 1](https://github.com/golang/go/issues/11589)
 - [cmd/compile: internal compiler error: b3.Succs has duplicate block b3](https://github.com/golang/go/issues/11593)
+- [cmd/compile: accepts invalid function type](https://github.com/golang/go/issues/11595)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
