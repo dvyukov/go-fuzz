@@ -306,6 +306,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
 - [x/tools/go/types: allows duplicate switch cases](https://github.com/golang/go/issues/11578)
 - [x/tools/go/types: can shift complex numbers](https://github.com/golang/go/issues/11594)
+- [x/tools/go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611)
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522)
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
