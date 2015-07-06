@@ -161,7 +161,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: accepts invalid identifiers](https://github.com/golang/go/issues/11359)
 - [cmd/compile: hangs compiling hex fp constant](https://github.com/golang/go/issues/11364)
 - [cmd/compile: mishandles int->complex conversion](https://github.com/golang/go/issues/11365)
-- [cmd/compile: does illegal int->complex conversion](https://github.com/golang/go/issues/11590)
 - [cmd/compile: allows to define blank methods on builtin types](https://github.com/golang/go/issues/11366)
 - [cmd/compile: mis-calculates a constant](https://github.com/golang/go/issues/11369) **fixed**
 - [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540)
@@ -308,6 +307,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: allows duplicate switch cases](https://github.com/golang/go/issues/11578)
 - [x/tools/go/types: can shift complex numbers](https://github.com/golang/go/issues/11594)
 - [x/tools/go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611)
+- [go/types: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11590)
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522)
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
@@ -353,6 +353,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: heap-buffer-overflow in Lex::skip_cpp_comment](https://github.com/golang/go/issues/11577)
 - [gccgo: does not convert untyped complex 0i to int in binary operation involving an int](https://github.com/golang/go/issues/11563)
 - [gccgo: does not detect missing return](https://github.com/golang/go/issues/11591)
+- [gccgo: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11615)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
