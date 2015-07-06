@@ -168,6 +168,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: nil pointer dereference](https://github.com/golang/go/issues/11588)
 - [cmd/compile: internal compiler error: plain block b3 len(Succs)==2, want 1](https://github.com/golang/go/issues/11589)
 - [cmd/compile: internal compiler error: b3.Succs has duplicate block b3](https://github.com/golang/go/issues/11593)
+- [cmd/compile: internal compiler error: newname nil](https://github.com/golang/go/issues/11610)
 - [cmd/compile: accepts invalid function type](https://github.com/golang/go/issues/11595)
 - [cmd/compile: internal compiler error: getinarg: not a func int](https://github.com/golang/go/issues/11596)
 - [cmd/compile: hangs converting int const to complex64](https://github.com/golang/go/issues/11597)
