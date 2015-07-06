@@ -354,6 +354,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: does not convert untyped complex 0i to int in binary operation involving an int](https://github.com/golang/go/issues/11563)
 - [gccgo: does not detect missing return](https://github.com/golang/go/issues/11591)
 - [gccgo: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11615)
+- [gccgo: can shift complex numbers](https://github.com/golang/go/issues/11616)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
