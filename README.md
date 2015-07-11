@@ -371,9 +371,10 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/bkaradzic/go-lz4: slice bounds out of range](https://github.com/bkaradzic/go-lz4/commit/b8d4dc7b31511bf5f39dfdb02d2ea7662eb8407c) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/332853ab7b3c719dd67c657394139491c1f6deb7) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72) **fixed**
-- [github.com/tdewolff/minify: 8 crashers](https://github.com/tdewolff/minify/wiki) **fixed**
 - [github.com/russross/blackfriday: index out of range panic in scanLinkRef](https://github.com/russross/blackfriday/issues/172) **fixed**
 - [github.com/russross/blackfriday: index out of range panic in isReference](https://github.com/russross/blackfriday/issues/173) **fixed**
+- [github.com/rwcarlsen/goexif: index out of range](https://github.com/rwcarlsen/goexif/issues/39)
+- [github.com/tdewolff/minify: 8 crashers](https://github.com/tdewolff/minify/wiki) **fixed**
 - [github.com/youtube/vitess/go/vt/sqlparser: index out of range](https://github.com/youtube/vitess/issues/767) **fixed**
 - [github.com/youtube/vitess/go/vt/sqlparser: statement serialized incorrectly](https://github.com/youtube/vitess/issues/797)
 - [github.com/youtube/vitess/go/vt/sqlparser: statement serialized incorrectly (2)](https://github.com/youtube/vitess/issues/798)
