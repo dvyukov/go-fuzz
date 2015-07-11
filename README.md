@@ -174,6 +174,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: hangs converting int const to complex64](https://github.com/golang/go/issues/11597)
 - [cmd/compile: nil deref in error message](https://github.com/golang/go/issues/11614)
 - [cmd/compile: use of untyped nil in switch](https://github.com/golang/go/issues/11668)
+- [cmd/compile: implicitly converts complex constant to integer](https://github.com/golang/go/issues/11669)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
