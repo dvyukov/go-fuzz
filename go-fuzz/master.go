@@ -71,25 +71,58 @@ func masterLoop(m *Master) {
 			log.Printf("slave %v died", s.id)
 			delete(m.slaves, id)
 		}
+		m.mu.Unlock()
 
 		// Print stats line.
-		uptime := time.Since(m.startTime)
-		lastInput := time.Since(m.lastInput)
-		restarts := uint64(0)
-		if m.statExecs != 0 {
-			restarts = m.statExecs / m.statRestarts
-		}
-		procs := 0
-		for _, s := range m.slaves {
-			procs += s.procs
-		}
-		log.Printf("slaves: %v, corpus: %v (%v ago), crashers: %v,"+
-			" restarts: 1/%v, execs: %v (%.0f/sec), cover: %v, uptime: %v",
-			procs, len(m.corpus.m), fmtDuration(lastInput), len(m.crashers.m),
-			restarts, m.statExecs, float64(m.statExecs)*1e9/float64(uptime),
-			m.coverFullness, fmtDuration(uptime))
-		m.mu.Unlock()
+		stats := m.masterStats()
+		log.Println(stats.String())
+
+		broadcastStats(stats)
 	}
+}
+
+func (m *Master) masterStats() masterStats {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	stats := masterStats{
+		Corpus:           uint64(len(m.corpus.m)),
+		Crashers:         uint64(len(m.crashers.m)),
+		StartTime:        m.startTime,
+		LastMutationTime: m.lastInput,
+		Now:              time.Now(),
+		Execs:            m.statExecs,
+		Cover:            uint64(m.coverFullness),
+	}
+
+	// Print stats line.
+	if m.statExecs != 0 {
+		stats.RestartsDenom = m.statExecs / m.statRestarts
+	}
+
+	for _, s := range m.slaves {
+		stats.Slaves += uint64(s.procs)
+	}
+
+	return stats
+}
+
+type masterStats struct {
+	Slaves, Corpus, Crashers, Execs, Cover, RestartsDenom uint64
+	StartTime, LastMutationTime, Now                      time.Time
+}
+
+func (s masterStats) String() string {
+	return fmt.Sprintf("slaves: %v, corpus: %v (%v ago), crashers: %v,"+
+		" restarts: 1/%v, execs: %v (%.0f/sec), cover: %v, uptime: %v",
+		s.Slaves, s.Corpus, fmtDuration(time.Since(s.LastMutationTime)),
+		s.Crashers, s.RestartsDenom, s.Execs, s.ExecsPerSec(), s.Cover,
+		fmtDuration(time.Since(s.StartTime)),
+	)
+}
+
+func (s masterStats) ExecsPerSec() float64 {
+	return float64(s.Execs) * 1e9 / float64(time.Since(s.StartTime))
 }
 
 func fmtDuration(d time.Duration) string {
