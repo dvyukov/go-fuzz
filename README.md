@@ -177,6 +177,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: implicitly converts complex constant to integer](https://github.com/golang/go/issues/11669)
 - [cmd/compile: assignment to entry in nil map](https://github.com/golang/go/issues/11670)
 - [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674)
+- [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
