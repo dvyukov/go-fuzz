@@ -1,0 +1,10 @@
+package m
+import("io"
+"time"
+a"bytes"
+"encoding/hex"
+"flag"
+"fmt"
+"testing"
+encodin"bytes"
+"bytes")

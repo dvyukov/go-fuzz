@@ -1,0 +1,4 @@
+package f
+const(r='D')
+const(n=5)
+const(t=0)

@@ -1,0 +1,3 @@
+packageA
+vare,T struct{Map}
+type Map interface{}

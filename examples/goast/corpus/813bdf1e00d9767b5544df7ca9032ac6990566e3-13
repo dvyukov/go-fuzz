@@ -1,0 +1,15 @@
+package n
+func DontInline(){}
+func F(interface{G()})(int,int){DontInline()
+return 3,7}
+func G()(int,int){DontInline()
+return 3,7}
+func s(d interface{})(int,int){switch{default:return F(d)}
+return 0}
+func s2()(int,int){switch{default:return(3)}
+return 0}
+func s3(interface{})(int){switch{default:G()}
+}
+func s4()(int){switch{default:G()}
+}
+func k(int)

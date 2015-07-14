@@ -1,0 +1,4 @@
+package n
+type R interface{i()}
+type S interface{d()}
+type	T interface{S()}

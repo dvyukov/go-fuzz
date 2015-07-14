@@ -1,0 +1,16 @@
+package n
+func e(){}
+func F(interface{})(int,int){e()
+return 3}
+func G()(int,int){e()
+return 3}
+func s(interface{})(int,int){switch{default:return(d)}
+return 0}
+func s2()(int,int){switch{default:return(3)}
+return 0}
+func s3(interface{})(_ int){switch{default:G()}
+}
+func f()string{}
+func s4()(int){switch{default:G()}
+}
+func k(int)

@@ -1,0 +1,10 @@
+package n
+type e interface{p()
+n()int
+e()Map}
+type Map interface{m()
+e()
+n()int
+em()
+l()}
+func s(func())

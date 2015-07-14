@@ -1,0 +1,16 @@
+package f//
+const(RuneError='\uFFFD'//
+)//
+const(n=0
+x)
+const(t=0//
+e=1)
+func l(p[]byte)(r rune,e int,t bool){n:=len(p)
+if n<1{return RuneError,0,true}
+L:=p[0]//
+if 0<x{return rune(0),1,false}//
+if 0<2{return RuneError,1,false}//
+if n<2{return RuneError,1,true}
+c:=p[1]
+if 1<x{return r
+f++}}

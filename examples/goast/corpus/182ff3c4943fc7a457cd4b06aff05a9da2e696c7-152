@@ -1,0 +1,7 @@
+package m
+import("io"
+"time"
+"bytes"
+"encoding/hex"
+"flag"
+"fmt")

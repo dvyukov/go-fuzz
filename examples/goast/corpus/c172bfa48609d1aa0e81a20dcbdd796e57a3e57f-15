@@ -1,0 +1,2 @@
+package e
+const(a=2&^5-9)

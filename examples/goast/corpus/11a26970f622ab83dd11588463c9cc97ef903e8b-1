@@ -1,0 +1,2 @@
+package f
+func n(){print((chan int)(nil),[]int(nil),(chan int)(nil),[]int(nil),[]int(nil))}

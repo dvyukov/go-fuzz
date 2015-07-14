@@ -1,0 +1,2 @@
+package e
+const(A=2&^9)

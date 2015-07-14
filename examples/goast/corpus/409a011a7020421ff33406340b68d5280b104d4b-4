@@ -1,0 +1,38 @@
+package n
+type T struct{m func()string}
+func f()string{return""}
+func n(){{{}}}
+type pe interface{p()Map}
+type Map interface{m()
+e()
+n()int
+em()
+l()}
+func s(func()){e()
+m()
+for m()<0{n("",m())
+if m()%0==0{e()}
+m()
+m()
+m()
+c()
+for;;i++{go func(){if 1==0{m()}else{m()}
+g()}()}
+g()}
+for m()>0{m()}}
+type intMapType struct{}
+func(intMapType)a()Map{(p)}
+var e=[]byte("")
+type t map[int][]byte
+func()m(){s()
+for(m)==0{y()
+m[y]([]e())}}
+func(T)e(){for k=range m{(m)}}
+func()m(){((m))
+s[y];{(s)}}
+func()n(){(m)}
+func(t)l(){for _=range m{}
+{}}
+func p(){for{var g c
+for _=range s(){g()()}
+g()}}

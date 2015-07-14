@@ -1,0 +1,125 @@
+package e
+const(A=iota
+P               = 0x026945
+	SIOCSIANCMAP                 = 0x820697d
+	SIOSIFOND                   = 0x80206946
+SIOCSIFBRDADR                = 0x8006913
+	SIOCSFCAP                    = 0x8065a
+SIOCIFDSTADR                = 0x8020690e
+	SIOCSIFFLAGS                     = 0x8020610
+	SIOCIENIC                = 0x80206939
+	SIOCSIFKPI                     =0x800686
+SIOCSIFLLADDR                 = 0x802069
+	SIOCSFMAC                    = 0x20683
+	SIOCSIFMEDIA                  = 0xc06937
+	SIOCSIFMERC                =0x80206918
+	SIOCSIFMTU                    = 0x8206934
+SOSIFNEAS                  = 0x8020691
+	SISFHYADDR                  = 0x8063e
+	SIOCSFPHS                    = 0x80206936
+	IOSIFVLAN                      = 0x80097e
+	SIOLIFPHYADR                = 0x811869
+	IOCSOWAT                    = 0x8004302
+	SICPGRP                  = 0x80047308
+	SOCK_RAM                     = 0x2
+	OK_MAXADRLEN                 = 0xff
+	SOCKRAW                    = 0x3
+	SOCK_R                       =0
+	SOCKEQACE                  = 05
+	SOC_STREM                 = 0x1
+OL_SOCKET                      = 0xf
+SOMAXCONN                     = 0x80
+	SO_CCEPTCONN                     = 0x2
+	SO_BROADCAST                      = 0x20
+	SO_DEBUG                          = 0x1
+	SO_DONTROUTE                      = 0x10
+	SO_DONTTRUNC                      = 0x2000
+	SO_ERROR                          = 0x1007
+	SO_KEEPALIVE                      = 0x8
+	SO_LABEL                          = 0x1010
+	SO_LINGER                         = 0x80
+	SO_LINGER_SEC                     = 0x1080
+	SO_NKE                            = 0x1021
+	SO_NOADDRERR                      = 0x1023
+	SO_NOSIGPIPE                      = 0x1022
+	SO_NOTIFYCONFLICT                 = 0x1026
+	SO_NP_EXTENSIONS                  = 0x1083
+	SO_NREAD                          = 0x1020
+	SO_NWRITE                         = 0x1024
+	SO_OOBINLINE                      = 0x100
+	SO_PEERLABEL                      = 0x1011
+	SO_RANDOMPORT                     = 0x1082
+	SO_RCVBUF                         = 0x1002
+	SO_RCVLOWAT                       = 0x1004
+	SO_RCVTIMEO                       = 0x1006
+	SO_RESTRICTIONS                   = 0x1081
+	SO_RESTRICT_DENYIN                = 0x1
+	SO_RESTRICT_DENYOUT               = 0x2
+	SO_RESTRICT_DENYSET               = 0x80000000
+	SO_REUSEADDR                      = 0x4
+	SO_REUSEPORT                      = 0x200
+	SO_REUSESHAREUID                  = 0x1025
+	SO_SNDBUF                         = 0x1001
+	SO_SNDLOWAT                       = 0x1003
+	SO_SNDTIMEO                       = 0x1005
+	SO_TIMESTAMP                      = 0x400
+	SO_TIMESTAMP_MONOTONIC            = 0x800
+	SO_TYPE                           = 0x1008
+	SO_UPCALLCLOSEWAIT                = 0x1027
+	SO_USELOOPBACK                    = 0x40
+	SO_WANTMORE                       = 0x4000
+	SO_WANTOOBFLAG                    = 0x8000
+	S_IEXEC                           = 0x40
+	S_IFBLK                           = 0x6000
+	S_IFCHR                           = 0x2000
+	S_IFDIR                           = 0x4000
+	S_IFIFO                           = 0x1000
+	S_IFLNK                           = 0xa000
+	S_IFMT                            = 0xf000
+	S_IFREG                           = 0x8000
+	S_IFSOCK                          = 0xc000
+	S_IFWHT                           = 0xe000
+	S_IREAD                           = 0x100
+	S_IRGRP                           = 0x20
+	S_IROTH                           = 0x4
+	S_IRUSR                           = 0x100
+	S_IRWXG                           = 0x38
+	S_IRWXO                           = 0x7
+	S_IRWXU                           = 0x1c0
+	S_ISGID                           = 0x400
+	S_ISTXT                           = 0x200
+	S_ISUID                           = 0x800
+	S_ISVTX                           = 0x200
+	S_IWGRP                           = 0x10
+	S_IWOTH                           = 0x2
+	S_IWRITE                          = 0x80
+	S_IWUSR                           = 0x80
+	S_IXGRP                           = 0x8
+	S_IXOTH                           = 0x1
+	S_IXUSR                           = 0x40
+	TCIFLUSH                          = 0x1
+	TCIOFLUSH                         = 0x3
+	TCOFLUSH                          = 0x2
+	TCP_CONNECTIONTIMEOUT             = 0x20
+	TCP_KEEPALIVE                     = 0x10
+	TCP_MAXHLEN                       = 0x3c
+	TCP_MAXOLEN                       = 0x28
+	TCP_MAXSEG                        = 0x2
+	TCP_MAXWIN                        = 0xffff
+	TCP_MAX_SACK                      = 0x3
+	TCP_MAX_WINSHIFT
+S
+VS
+F
+E
+_
+D
+OD
+O
+_
+D0
+G
+R
+e
+o
+V)

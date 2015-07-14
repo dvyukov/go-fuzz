@@ -1,0 +1,8 @@
+package m
+import("io"
+"bytes"
+"encoding"
+"flag"
+"fmt"
+"i"
+"e")

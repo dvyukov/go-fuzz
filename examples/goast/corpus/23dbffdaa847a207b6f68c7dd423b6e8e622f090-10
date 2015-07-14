@@ -1,0 +1,3 @@
+package n
+func n(){_,f=<-((chan
+int)(nil))}

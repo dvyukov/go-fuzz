@@ -1,0 +1,3 @@
+package f
+const(r='D')
+const(n=4)

@@ -1,0 +1,3 @@
+package n
+type T struct{Map}
+type Map*int

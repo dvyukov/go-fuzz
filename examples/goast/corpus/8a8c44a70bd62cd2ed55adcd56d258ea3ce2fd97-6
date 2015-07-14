@@ -1,0 +1,39 @@
+package n
+import("math"
+"runtime"
+"c")
+func s()[]e{//
+return[]e{{}}}
+type pe interface{p()}
+type a interface{m()
+e()
+n()
+em()
+l()}
+func g(func()){e()
+m()
+for m()<0{n("",m())
+if m()%0==3{e()}
+m()
+m()
+m()
+c()
+for;;i++{go func(){if 1==0{m()}else{m()}
+g()}()}
+g()}
+for m()>0{m()}}
+type y struct{}
+func()_(){(p)}
+var e=[]e("")
+type ap[][]e
+func()m(){s()
+for(m)==0{y()
+m[y]([]e())}}
+func()_(){for k=range m{(m)}}
+func()m(){((m))[y];{(s)}}
+func()n(){(m)}
+func()l(){for _=range m{}
+{}}
+func p(){for{var g c
+for _=range s(){g()()}
+g()}}

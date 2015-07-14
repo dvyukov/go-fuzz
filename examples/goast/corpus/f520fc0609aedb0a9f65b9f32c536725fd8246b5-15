@@ -1,0 +1,10 @@
+packageA
+var R interface{s()}
+func F(interface{})(int,int){e()
+return}
+func G()(int,int){e()
+return}
+func s(interface{})(int,int){switch{default:(d)};return}
+func s2()(int,int){switch{default:(3)};return}
+func s3(interface{})(){switch{default:G()}
+return}

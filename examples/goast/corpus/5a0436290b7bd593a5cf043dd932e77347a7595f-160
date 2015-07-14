@@ -1,0 +1,12 @@
+packageA
+vare,f=f/func(){{f=f
+f=f
+f=3
+f=2
+f=2
++f=3
++f=2
+f/f=2
+f=f
+f=f
+f=0}}
