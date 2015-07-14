@@ -316,7 +316,13 @@ func gotypes(data []byte) (err error) {
 	if err != nil {
 		return
 	}
-	_, err = types.Check("pkg", fset, []*ast.File{f})
+	// provide error handler
+	// initialize maps in config
+	conf := &types.Config{
+		Error: func(err error) {},
+		Sizes: &types.StdSizes{4, 8},
+	}
+	_, err = conf.Check("pkg", fset, []*ast.File{f}, nil)
 	if err != nil {
 		return
 	}
