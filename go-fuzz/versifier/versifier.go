@@ -313,6 +313,32 @@ func (n *BracketNode) Generate(w io.Writer, v *Verse) {
 	}
 }
 
+type KeyValNode struct {
+	delim rune
+	key   *AlphaNumNode
+	value *AlphaNumNode
+}
+
+func (n *KeyValNode) Visit(f func(n Node)) {
+	f(n)
+	n.key.Visit(f)
+	n.value.Visit(f)
+}
+func (n *KeyValNode) Print(w io.Writer, ident int) {
+	fmt.Fprintf(w, "%skeyval\n", strings.Repeat("  ", ident))
+	n.key.Print(w, ident+1)
+	fmt.Fprintf(w, "%s%s\n", strings.Repeat("  ", ident+1), string(n.delim))
+	n.value.Print(w, ident+1)
+}
+
+func (n *KeyValNode) Generate(w io.Writer, v *Verse) {
+	delim := []rune{'=', ':'}
+	n.delim = delim[v.Rand(len(delim))]
+	n.key.Generate(w, v)
+	w.Write([]byte{byte(n.delim)})
+	n.value.Generate(w, v)
+}
+
 type ListNode struct {
 	delim  rune
 	blocks []*BlockNode
@@ -642,6 +668,37 @@ func extractNumbers(nn []Node) []Node {
 	return nn
 }
 
+func structureKeyValue(nn []Node) (res []Node) {
+	// TODO: extract numeric key-value pairs
+	delims := map[rune]bool{'=': true, ':': true}
+
+	for i := 0; i < len(nn); i++ {
+		n := nn[i]
+		ctrl, ok := n.(*ControlNode)
+		if !ok {
+			continue
+		}
+		if delims[ctrl.ch] {
+			var key, value *AlphaNumNode
+			if i > 0 {
+				key, ok = nn[i-1].(*AlphaNumNode)
+				if !ok {
+					continue
+				}
+			}
+			if i < len(nn)-1 {
+				value, ok = nn[i+1].(*AlphaNumNode)
+				if !ok {
+					continue
+				}
+			}
+			kv := &KeyValNode{ctrl.ch, key, value}
+			nn = append(nn[:i-1], append([]Node{kv}, nn[i+2:]...)...)
+		}
+	}
+	return nn
+}
+
 func structureBrackets(nn []Node) []Node {
 	type Brk struct {
 		open rune
@@ -810,12 +867,6 @@ func structureLists(nn []Node) (res []Node) {
 			i = start + 1
 		}
 	}
-	return nn
-}
-
-func structureKeyValue(nn []Node) (res []Node) {
-	// TODO: extract key-value pairs delimited by '=' and ':'.
-	// delims := map[rune]bool{'=': true, ':': true}
 	return nn
 }
 
