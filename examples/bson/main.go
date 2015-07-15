@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-mgo/mgo/bson"
+	"gopkg.in/mgo.v2/bson"
 	"github.com/dvyukov/go-fuzz/examples/fuzz"
 )
 
