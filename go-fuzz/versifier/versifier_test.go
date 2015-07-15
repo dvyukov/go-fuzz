@@ -21,3 +21,12 @@ func TestList1(t *testing.T) {
 func TestList2(t *testing.T) {
 	dump(`1,2.0,3e3`)
 }
+
+func TestBracket(t *testing.T) {
+	dump(`[] [afal] (  ) (afaf)`)
+}
+
+func TestKeyValue(t *testing.T) {
+	dump(`a=1 a=b   2  (aa=bb) a bb:cc`)
+
+}
