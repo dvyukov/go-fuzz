@@ -66,7 +66,32 @@ const statsPage = `<!DOCTYPE html>
 
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-<script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
+
+
+<!-- The following <style> and <script> blocks work around a specific bug with width
+in IE 10 in Windows 8 and Windows Phone 8. See:
+http://getbootstrap.com/getting-started/#support-ie10-width -->
+<style>
+@-webkit-viewport   { width: device-width; }
+@-moz-viewport      { width: device-width; }
+@-ms-viewport       { width: device-width; }
+@-o-viewport        { width: device-width; }
+@viewport           { width: device-width; }
+</style>
+<script>
+// Copyright 2014-2015 Twitter, Inc.
+// Licensed under MIT (https://github.com/twbs/bootstrap/blob/master/LICENSE)
+if (navigator.userAgent.match(/IEMobile\/10\.0/)) {
+	var msViewportStyle = document.createElement('style')
+	msViewportStyle.appendChild(
+		document.createTextNode(
+			'@-ms-viewport{width:auto!important}'
+		)
+	)
+	document.querySelector('head').appendChild(msViewportStyle)
+}
+</script>
+
 <script>
 // First, checks if it isn't implemented yet.
 if (!String.prototype.format) {

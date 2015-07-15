@@ -17,7 +17,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/stephens2424/writerset"
+	"github.com/dvyukov/go-fuzz/go-fuzz/internal/writerset"
 )
 
 var (
@@ -34,7 +34,7 @@ var (
 	flagCoverCounters = flag.Bool("covercounters", true, "use coverage hit counters")
 	flagSonar         = flag.Bool("sonar", true, "use sonar hints")
 	flagV             = flag.Int("v", 0, "verbosity level")
-	flagMasterStats   = flag.String("masterstats", "", "serve master stats handlers on that address")
+	flagMasterStats   = flag.String("masterstats", "", "masterstats HTTP server listen address")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})
@@ -52,7 +52,12 @@ func main() {
 		log.Fatalf("both -masterstats and -slave are specified")
 	}
 	if *flagPprof != "" {
-		go http.ListenAndServe(*flagPprof, nil)
+		go func() {
+			err := http.ListenAndServe(*flagPprof, nil)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	} else {
 		runtime.MemProfileRate = 0
 	}
@@ -106,13 +111,18 @@ func main() {
 			w.WriteHeader(http.StatusOK)
 			<-writerSet.Add(w)
 		})
-		evMux.HandleFunc("/stats", func(w http.ResponseWriter, r *http.Request) {
+		evMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "text/html")
 			w.WriteHeader(http.StatusOK)
 			io.WriteString(w, statsPage)
 		})
 
-		go http.ListenAndServe(*flagMasterStats, evMux)
+		go func() {
+			err := http.ListenAndServe(*flagMasterStats, evMux)
+			if err != nil {
+				panic(err)
+			}
+		}()
 	}
 
 	select {}
