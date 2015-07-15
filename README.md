@@ -312,7 +312,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: misses '-' in error message](https://github.com/golang/go/issues/11367) **fixed**
 - [x/tools/go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
 - [x/tools/go/types: allows duplicate switch cases](https://github.com/golang/go/issues/11578)
-- [x/tools/go/types: can shift complex numbers](https://github.com/golang/go/issues/11594)
+- [x/tools/go/types: can shift complex numbers](https://github.com/golang/go/issues/11594) **fixed**
 - [x/tools/go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611)
 - [x/tools/go/types: int overflow in switch expression](https://github.com/golang/go/issues/11667)
 - [go/types: allows multiple-value in switch and case](https://github.com/golang/go/issues/11687)
