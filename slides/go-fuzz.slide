@@ -1,0 +1,312 @@
+go-fuzz
+Randomized testing system for Go
+
+Dmitry Vyukov
+Google
+dvyukov@
+
+* Agenda
+
+- High-level architecture
+- Driver/program interface
+- Coverage
+- Mutations
+- Corpus management
+- Sonar
+- Versifier
+
+.image go-fuzz.png
+
+* Introduction
+
+A different appraoch to testing that finds [lots of] bugs that other testing approaches do not. Intended mostly for programs that parse complex inputs.
+
+Generate random blob -> feed into program -> see if it crashes -> profit!
+
+- cheap to use
+- does not have any bias
+
+Completely random blobs won't uncover lots of bugs.
+
+How can we generate diverse but meaningful inputs that will trigger
+nil derefs, off-by-ones, etc?
+
+* Coverage-guided fuzzing
+
+Genetic algorithms to the rescue!
+
+	Instrument program for code coverage
+	Collect initial corpus of inputs
+	for {
+		Randomly mutate an input from the corpus
+		Execute and collect coverage
+		If the input gives new coverage, add it to corpus
+	}
+
+* Example
+
+The following code wants "ABCD" input:
+
+	if input[0] == 'A' {
+		if input[1] == 'B' {
+			if input[2] == 'C' {
+				if input[3] == 'D' {
+					panic("input must not be ABCD")
+				}
+			}
+		}
+	}
+
+Corpus progression:
+
+	""
+	"", "A"
+	"", "A", "AB"
+	"", "A", "AB", "ABC"
+	"", "A", "AB", "ABC", "ABCD"
+
+* High-level architecture
+
+- Master: manages persistent artifacts
+- Hub: manages corpus in memory
+- Slave: manages a single testee subprocess
+- N slaves are collocated with Hub in a single process.
+- Master and Hub communicate via RPC
+- go-fuzz-build builds test binary
+
+* go-fuzz-build
+
+Creates a zip archive with:
+
+- coverage instrumented binary
+- sonar instrumented binary
+- coverage and sonar metadata
+- int and string literals 
+
+Also generates a bit of code to glue test and driver.
+
+* Master process
+
+- Persistent corpus (SHA-1 + input depth)
+- Persistent suppressions (SHA-1)
+- Persistent crashers (input, quoted input, output)
+- Final deduplication
+- Total stats
+
+* Hub/slace process
+
+- Does actual fuzzing
+
+* Driver/program interface
+
+- Input shared region (fd 3)
+- Coverage shared region (fixed size, 64K) (fd 4)
+- Output sonar data shared region (fd 5)
+- Input pipe: (input length)
+- Output pipe: (result, exec time, sonar data length)
+
+* Coverage
+
+- 64K of 8-bit counters
+- Counters are rounded up to: 0, 1, 2, 3, 4, 5, 8, 16, 32, 64, 255
+- Signal ID is hashed using SHA-1
+- Currently uses basic block ID (but adds missing else and default blocks, instruments || and &&)
+
+* Mutations
+
+Does N mutations with probability 1/2^N:
+
+- Insert/remove/duplicate/copy a random range of random bytes.
+- Bit flip.
+- Swap 2 bytes.
+- Set a byte to a random value.
+- Add/subtract from a byte/uint16/uint32/uint64 (le/be).
+- Replace a byte/uint16/uint32 with an interesting value (le/be).
+- Replace an ascii digit/number with another digit/number.
+- Splice another input.
+- Insert a part of another input.
+- Insert a string/int literal.
+- Replace with string/int literal.
+
+* Corpus management
+
+For input we know:
+
+- input data
+- coverage
+- result
+- mutation depth
+- execution time
+
+Inputs are minimized and prioritized.
+
+* Input prioritization
+
+Each input receives score 1..1000.
+
+- start with score 10
+- execution time multiplier 0.1-3x
+- coverage size multiplier 0.25-3x
+- input depth multiplier 1-5x
+- user boost multiplier 1-4x
+
+Then choose favored inputs: minimal set of highest-score inputs that give full counter coverage. The rest receive score 1 (can be discarded as well).
+During mutations inputs are selected accoring to the priority.
+
+
+* Game over
+
+CRC32 checksum verification in `image/png/reader.go`
+
+	func (d *decoder) verifyChecksum() error {
+		if binary.BigEndian.Uint32(d.tmp[:4]) != d.crc.Sum32() {
+			return FormatError("invalid checksum")
+		}
+		return nil
+	}
+
+Probability that random mutations will alter input in an interesting way and
+guess CRC32 at the same time is basically ZERO.
+
+* Sonar
+
+Don't need to guess, program knows it!
+
+	+ v1 := binary.BigEndian.Uint32(d.tmp[:4])
+	+ v2 := d.crc.Sum32()
+	+ __go_fuzz.Sonar(v1, v2, id, flags)
+	if v1 != v2 {
+		return FormatError("invalid checksum")
+	}
+
+Then, find v1 in the input and replace it with v2. Done!
+
+* Sonar (2)
+
+ID allows to identify a particular code site (and match with metadata).
+Flags: SonarEQL, SonarNEQ, SonarLSS, SonarGTR, SonarLEQ, SonarGEQ, SonarLength, SonarSigned, SonarString, SonarConst1, SonarConst2.
+
+Understands lower/upper-case, big-endian, base-128, ascii, hex.
+Also tried to increment/decrement the value.
+
+Evalues the comparison and counts number of times it is taken one way or another.
+Marks sites where both operands are dynamic (e.g. CRC check).
+Skips sites that are taken both ways enough times.
+
+Tried to match causes and effects. Turned out to be non-trivial.
+
+* Game over 2
+
+Mutations and sonar do low-level changes ("bit-flipping"):
+
+Original:
+
+	`<item name="foo"><prop name="price">100</prop></item>`
+
+Mutated:
+
+	`<item name="foo"><prop name="price">100</prop><<item>`
+
+Also want high-level changes!
+
+* Versifier
+
+Versifier reverse-engineers [text] protocol and learns its _structure_.
+
+	abc          -> alphanum token
+	123, 1e-2    -> number
+	"..."        -> quoted
+	[...]        -> parenthesized
+	...,...,...  -> list
+	...\n...\n   -> lines
+
+Then, applies _structural_ mutations to inputs.
+
+* Versifier example
+
+Original:
+
+	`<item name="foo"><prop name="price">100</prop></item>`
+
+Versified (all valid xml):
+
+	<item	name="rb54ana"><item  name="foo"><prop name="price"></prop><prop/></item></item>
+	<item name=""><prop name="price">=</prop><prop/> </item>
+	<item name=""><prop F="">-026023767521520230564132665e0333302100</prop><prop/></item>
+	<item SN="foo_P"><prop name="_G_nx">510</prop><prop name="vC">-9e-07036514</prop></item>
+	<item name="foo"><prop name="c8">prop name="p"</prop>/}<prop name="price">01e-6</prop></item>
+	<item name="foo"><item name="foo"><prop JY="">100</prop></item>8<prop/></item>
+
+* Algorithm
+
+.image algo.png
+
+* Cover profile demo
+
+[DEMO]
+
+* Achievements
+
+- 60 tests
+- 137 bugs in std lib (70 fixed)
+- 165 elsewhere (47 in gccgo, 30 in golang.org/x, 42 in freetype-go, protobuf, http2, bson)
+
+* Achievements
+
+	fmt.Sprintf("%.[]")
+	panic: runtime error: index out of range
+
+	regexp.MustCompile("((0(0){0}))").ReplaceAllString("00000", "00$00")
+	panic: runtime error: slice bounds out of range
+
+	ioutil.ReadAll(flate.NewReader(strings.NewReader("4LJNIMK\a\x00\x00\xff..\xff.....\xff")))
+	runs forever
+
+	var x = 1/"."[0]
+	crashes compiler
+
+	archive/tar: hang
+	archive/zip: cap out of range
+	encoding/gob: stack overflow
+	encoding/asn1: index out of range
+	image/jpeg: Decode hangs
+	image/png: nil deref
+	math/big: incorrect string->Float conversion
+	crypto/x509: division by zero
+	...
+
+* Usage
+
+- go get github.com/dvyukov/go-fuzz/...
+- write test:
+
+	func Fuzz(data []byte) int {
+		gob.NewDecoder(bytes.NewReader(data))
+		return 0
+	}
+
+- build
+
+	$ go-fuzz-build github.com/dvyukov/go-fuzz/examples/gob
+
+- collect corpus
+- run
+
+	$ go-fuzz -bin=gob-fuzz.zip -workdir=examples/gob
+
+* Areas for improvement
+
+- Better reverse engineering of text protocols (more constructs, recursive decomposition, several guesses)
+- Reverse engineering of binary protos (fields, message type, length, encoding of data, etc)
+- Better structural mutations
+- More compiler assists for sonar (x/3 > 100 --> x > 300, index expressions)
+- More encodings in sonar
+- Match causes and effects in sonar
+- Detect sonar sites that we don't affect
+- Mark fields and their meaning in inputs
+- Find non-meaningful bytes in inputs
+- Better corpus prioritization
+- What is a signal (bb, edge, path, stack+bb, type, index)
+
+
+
