@@ -179,6 +179,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674)
 - [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
 - [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699)
+- [cmd/asm: index out of range](https://github.com/golang/go/issues/11759)
+- [cmd/asm: slice bounds out of range](https://github.com/golang/go/issues/11760)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
