@@ -184,6 +184,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/asm: hang](https://github.com/golang/go/issues/11764)
 - [cmd/asm: nil deref](https://github.com/golang/go/issues/11765)
 - [internal/trace: index out of range](https://github.com/golang/go/issues/11766)
+- [internal/trace: nil deref](https://github.com/golang/go/issues/11767)
 - [fmt: Printf loops on invalid verb spec](https://github.com/golang/go/issues/10674) **fixed**
 - [fmt: incorrect overflow detection](https://github.com/golang/go/issues/10695) **fixed**
 - [fmt: index out of range](https://github.com/golang/go/issues/10675) **fixed**
