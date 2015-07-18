@@ -239,9 +239,10 @@ func clonePackage(workdir, pkg string, lits map[Literal]struct{}, blocks *[]Cove
 		"runtime/race":  true, // why would we instrument it?
 	}
 	if runtime.GOOS == "windows" {
-		// syscall depends on unicode/utf16.
 		// Cross-compilation is not implemented.
-		ignore["unicode/utf16"] = true
+		ignore["unicode/utf16"] = true                     // syscall depends on unicode/utf16
+		ignore["internal/syscall/windows/registry"] = true // time depends on this
+		ignore["io"] = true                                // internal/syscall/windows/registry depends on this
 	}
 	nolits := map[string]bool{
 		"math":    true,
