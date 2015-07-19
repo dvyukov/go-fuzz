@@ -2,15 +2,22 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
+	"net/http"
+	_ "net/http/pprof"
 	"net/rpc"
 	"path/filepath"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/stephens2424/writerset"
 )
 
 // Master manages persistent fuzzer state like input corpus and crashers.
@@ -27,6 +34,8 @@ type Master struct {
 	statExecs     uint64
 	statRestarts  uint64
 	coverFullness int
+
+	writerSet *writerset.WriterSet
 }
 
 // MasterSlave represents master's view of a slave.
@@ -40,6 +49,7 @@ type MasterSlave struct {
 // masterMain is entry function for master.
 func masterMain(ln net.Listener) {
 	m := &Master{}
+	m.writerSet = writerset.New()
 	m.startTime = time.Now()
 	m.lastInput = time.Now()
 	m.suppressions = newPersistentSet(filepath.Join(*flagWorkdir, "suppressions"))
@@ -50,11 +60,26 @@ func masterMain(ln net.Listener) {
 	}
 
 	m.slaves = make(map[int]*MasterSlave)
+	masterListen(m)
+
 	go masterLoop(m)
 
 	s := rpc.NewServer()
 	s.Register(m)
 	s.Accept(ln)
+}
+
+func masterListen(m *Master) {
+	if *flagHTTP != "" {
+		http.HandleFunc("/eventsource", m.eventSource)
+		http.HandleFunc("/", m.statsIndex)
+
+		go func() {
+			panic(http.ListenAndServe(*flagHTTP, nil))
+		}()
+	} else {
+		runtime.MemProfileRate = 0
+	}
 }
 
 func masterLoop(m *Master) {
@@ -73,12 +98,36 @@ func masterLoop(m *Master) {
 		}
 		m.mu.Unlock()
 
-		// Print stats line.
-		stats := m.masterStats()
-		log.Println(stats.String())
-
-		broadcastStats(stats)
+		m.broadcastStats()
 	}
+}
+
+func (m *Master) broadcastStats() {
+	stats := m.masterStats()
+
+	// log to stdout
+	log.Println(stats.String())
+
+	// write to any http clients
+	b, err := json.Marshal(stats)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Fprintf(m.writerSet, "event: ping\ndata: %s\n\n", string(b))
+	m.writerSet.Flush()
+}
+
+func (m *Master) eventSource(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.WriteHeader(http.StatusOK)
+	<-m.writerSet.Add(w)
+}
+
+func (m *Master) statsIndex(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, statsPage)
 }
 
 func (m *Master) masterStats() masterStats {
@@ -88,9 +137,9 @@ func (m *Master) masterStats() masterStats {
 	stats := masterStats{
 		Corpus:           uint64(len(m.corpus.m)),
 		Crashers:         uint64(len(m.crashers.m)),
+		Uptime:           fmtDuration(time.Since(m.startTime)),
 		StartTime:        m.startTime,
-		LastMutationTime: m.lastInput,
-		Now:              time.Now(),
+		LastNewInputTime: m.lastInput,
 		Execs:            m.statExecs,
 		Cover:            uint64(m.coverFullness),
 	}
@@ -109,15 +158,16 @@ func (m *Master) masterStats() masterStats {
 
 type masterStats struct {
 	Slaves, Corpus, Crashers, Execs, Cover, RestartsDenom uint64
-	StartTime, LastMutationTime, Now                      time.Time
+	LastNewInputTime, StartTime                           time.Time
+	Uptime                                                string
 }
 
 func (s masterStats) String() string {
 	return fmt.Sprintf("slaves: %v, corpus: %v (%v ago), crashers: %v,"+
 		" restarts: 1/%v, execs: %v (%.0f/sec), cover: %v, uptime: %v",
-		s.Slaves, s.Corpus, fmtDuration(time.Since(s.LastMutationTime)),
+		s.Slaves, s.Corpus, fmtDuration(time.Since(s.LastNewInputTime)),
 		s.Crashers, s.RestartsDenom, s.Execs, s.ExecsPerSec(), s.Cover,
-		fmtDuration(time.Since(s.StartTime)),
+		s.Uptime,
 	)
 }
 

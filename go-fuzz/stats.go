@@ -111,7 +111,6 @@ var rowFmt = "<tr><td>{0}</td><td>{1}</td><td>{2}</td><td>{3}</td><td>{4}</td><t
 var evtSource = new EventSource("/eventsource");
 evtSource.addEventListener("ping", function(e) {
 	var data = JSON.parse(e.data);
-	var uptime = formatDuration(Date.now() - Date.parse(data.StartTime))
 	$("tbody").prepend(rowFmt.format(
 		data.Slaves,
 		data.Corpus,
@@ -119,7 +118,7 @@ evtSource.addEventListener("ping", function(e) {
 		"1/" + data.RestartsDenom,
 		data.Execs,
 		data.Cover,
-		uptime
+		data.Uptime
 	));
 
 	$("#slaves").text(data.Slaves)
@@ -128,38 +127,8 @@ evtSource.addEventListener("ping", function(e) {
 	$("#restarts").text("1/" + data.RestartsDenom)
 	$("#execs").text(data.Execs)
 	$("#cover").text(data.Cover)
-	$("#uptime").text(uptime)
+	$("#uptime").text(data.Uptime)
 });
-
-function formatDuration(ms) {
-	str = "";
-
-	days = Math.floor(ms / 1000 / 60 / 60 / 24)
-	ms -=  days * 100 * 60 * 60 * 24
-
-	if (days > 0) {
-		str += days + "d "
-	}
-
-	hrs = Math.floor(ms / 1000 / 60 / 60)
-	ms -= hrs * 100 * 60 * 60
-
-	if (hrs > 0) {
-		str += hrs + "h "
-	}
-
-	min = Math.floor(ms / 1000 / 60);
-	ms -= min * 60 * 100;
-
-	if (min > 0) {
-		str += min + "m "
-	}
-
-	s = Math.floor(ms / 1000);
-	str += s + "s"
-
-	return str;
-}
 
 </script>
 </body>

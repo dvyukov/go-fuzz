@@ -1,14 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
-	"fmt"
-	"io"
 	"log"
 	"net"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
@@ -16,8 +11,6 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
-
-	"github.com/dvyukov/go-fuzz/go-fuzz/internal/writerset"
 )
 
 var (
@@ -28,19 +21,16 @@ var (
 	flagMaster        = flag.String("master", "", "master mode (value is master address)")
 	flagSlave         = flag.String("slave", "", "slave mode (value is master address)")
 	flagBin           = flag.String("bin", "", "test binary built with go-fuzz-build")
-	flagPprof         = flag.String("pprof", "", "serve pprof handlers on that address")
 	flagDumpCover     = flag.Bool("dumpcover", false, "dump coverage profile into workdir")
 	flagTestOutput    = flag.Bool("testoutput", false, "print test binary output to stdout (for debugging only)")
 	flagCoverCounters = flag.Bool("covercounters", true, "use coverage hit counters")
 	flagSonar         = flag.Bool("sonar", true, "use sonar hints")
 	flagV             = flag.Int("v", 0, "verbosity level")
-	flagMasterStats   = flag.String("masterstats", "", "masterstats HTTP server listen address")
+	flagHTTP          = flag.String("http", "", "HTTP server listen address (master mode only)")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})
 	shutdownCleanup []func()
-
-	writerSet = writerset.New()
 )
 
 func main() {
@@ -48,18 +38,8 @@ func main() {
 	if *flagMaster != "" && *flagSlave != "" {
 		log.Fatalf("both -master and -slave are specified")
 	}
-	if *flagMasterStats != "" && *flagSlave != "" {
-		log.Fatalf("both -masterstats and -slave are specified")
-	}
-	if *flagPprof != "" {
-		go func() {
-			err := http.ListenAndServe(*flagPprof, nil)
-			if err != nil {
-				panic(err)
-			}
-		}()
-	} else {
-		runtime.MemProfileRate = 0
+	if *flagHTTP != "" && *flagSlave != "" {
+		log.Fatalf("both -http and -slave are specified")
 	}
 
 	go func() {
@@ -104,36 +84,5 @@ func main() {
 		go slaveMain()
 	}
 
-	if *flagMasterStats != "" {
-		evMux := http.NewServeMux()
-		evMux.HandleFunc("/eventsource", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "text/event-stream")
-			w.WriteHeader(http.StatusOK)
-			<-writerSet.Add(w)
-		})
-		evMux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-			w.Header().Set("Content-Type", "text/html")
-			w.WriteHeader(http.StatusOK)
-			io.WriteString(w, statsPage)
-		})
-
-		go func() {
-			err := http.ListenAndServe(*flagMasterStats, evMux)
-			if err != nil {
-				panic(err)
-			}
-		}()
-	}
-
 	select {}
-}
-
-func broadcastStats(stats masterStats) {
-	b, err := json.Marshal(stats)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Fprintf(writerSet, "event: ping\ndata: %s\n\n", string(b))
-	writerSet.Flush()
 }
