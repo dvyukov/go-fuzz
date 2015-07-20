@@ -13,6 +13,9 @@ import (
 	"time"
 )
 
+//go:generate go get github.com/elazarl/go-bindata-assetfs/...
+//go:generate go-bindata-assetfs assets/...
+
 var (
 	flagWorkdir       = flag.String("workdir", "", "dir with persistent work data")
 	flagProcs         = flag.Int("procs", runtime.NumCPU(), "parallelism level")
