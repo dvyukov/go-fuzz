@@ -692,8 +692,9 @@ func structureKeyValue(nn []Node) (res []Node) {
 					continue
 				}
 			}
-			kv := &KeyValNode{ctrl.ch, key, value}
-			nn = append(nn[:i-1], append([]Node{kv}, nn[i+2:]...)...)
+			nn[i+1] = &KeyValNode{ctrl.ch, key, value}
+			copy(nn[i-1:], nn[i+1:])
+			nn = nn[:len(nn)-2]
 		}
 	}
 	return nn
