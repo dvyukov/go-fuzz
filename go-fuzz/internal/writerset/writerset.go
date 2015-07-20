@@ -1,5 +1,5 @@
 // Package writerset implements a mechanism to add and remove writers from a construct
-// similar to io.MultiWriter.
+// similar to io.MultiWriter. Manually vendored from http://github.com/stephens2424/writerset
 package writerset
 
 import (
