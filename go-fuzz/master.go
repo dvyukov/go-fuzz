@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"net/http"
@@ -72,7 +71,7 @@ func masterMain(ln net.Listener) {
 func masterListen(m *Master) {
 	if *flagHTTP != "" {
 		http.HandleFunc("/eventsource", m.eventSource)
-		http.HandleFunc("/", m.statsIndex)
+		http.Handle("/", http.FileServer(assetFS()))
 
 		go func() {
 			panic(http.ListenAndServe(*flagHTTP, nil))
@@ -122,12 +121,6 @@ func (m *Master) eventSource(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.WriteHeader(http.StatusOK)
 	<-m.writerSet.Add(w)
-}
-
-func (m *Master) statsIndex(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-	io.WriteString(w, statsPage)
 }
 
 func (m *Master) masterStats() masterStats {
