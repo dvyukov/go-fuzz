@@ -311,8 +311,6 @@ func (hub *Hub) updateScores() {
 			score /= 10
 		} else if execTime > 4 {
 			score /= 4
-		} else if execTime > 4 {
-			score /= 4
 		} else if execTime > 2 {
 			score /= 2
 		} else if execTime < 0.25 {
@@ -369,8 +367,7 @@ func (hub *Hub) updateScores() {
 
 		if score < minScore {
 			score = minScore
-		}
-		if score > maxScore {
+		} else if score > maxScore {
 			score = maxScore
 		}
 		corpus[i].score = int(score)

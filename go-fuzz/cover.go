@@ -60,35 +60,18 @@ func updateMaxCover(base, cur []byte) int {
 
 // Quantize the counters. Otherwise we get too inflated corpus.
 func roundUpCover(x byte) byte {
-	if x == 0 {
-		x = 0
-	} else if x <= 1 {
-		x = 1
-	} else if x <= 2 {
-		x = 2
-	} else if x <= 3 {
-		x = 3
-	} else if x <= 4 {
-		x = 4
-	} else if x <= 5 {
-		x = 5
+	if x <= 5 {
+		return x
 	} else if x <= 8 {
-		x = 8
+		return 8
 	} else if x <= 16 {
-		x = 16
+		return 16
 	} else if x <= 32 {
-		x = 32
+		return 32
 	} else if x <= 64 {
-		x = 64
-	} else {
-		x = 255
+		return 64
 	}
-	if !*flagCoverCounters {
-		if x > 0 {
-			x = 255
-		}
-	}
-	return x
+	return 255
 }
 
 func findNewCover(base, cover []byte) (res []byte, notEmpty bool) {
