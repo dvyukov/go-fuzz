@@ -28,5 +28,4 @@ func TestBracket(t *testing.T) {
 
 func TestKeyValue(t *testing.T) {
 	dump(`a=1 a=b   2  (aa=bb) a bb:cc`)
-
 }
