@@ -85,7 +85,7 @@ func newHub(metadata MetaData) *Hub {
 	sonarSites := make([]SonarSite, len(metadata.Sonar))
 	for i, b := range metadata.Sonar {
 		if i != b.ID {
-			log.Fatalf("corrputed sonar metadata")
+			log.Fatalf("corrupted sonar metadata")
 		}
 		sonarSites[i].id = b.ID
 		sonarSites[i].loc = fmt.Sprintf("%v:%v.%v,%v.%v", b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol)

@@ -217,7 +217,7 @@ type SyncRes struct {
 }
 
 // Sync is a periodic sync with a slave.
-// Slave sends statitstics. Master returns new inputs.
+// Slave sends statistics. Master returns new inputs.
 func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

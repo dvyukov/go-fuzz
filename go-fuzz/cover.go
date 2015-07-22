@@ -160,9 +160,9 @@ func dumpSonar(outf string, sites []SonarSite) {
 	for i := range sites {
 		s := &sites[i]
 		cnt := 0  // red color
-		stmt := 1 // account in precentage calculation
+		stmt := 1 // account in percentage calculation
 		if s.takenTotal[0] == 0 && s.takenTotal[1] == 0 {
-			stmt = 0 // don't account in precentage calculation
+			stmt = 0 // don't account in percentage calculation
 			cnt = 1  // grey color
 		} else if s.takenTotal[0] > 0 && s.takenTotal[1] > 0 {
 			cnt = 100 // green color
