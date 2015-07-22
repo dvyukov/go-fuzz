@@ -40,7 +40,7 @@ func (s *Slave) parseSonarData(sonar []byte) (res []SonarSample) {
 		n2 := sonar[5]
 		sonar = sonar[SonarHdrLen:]
 		if n1 > SonarMaxLen || n2 > SonarMaxLen || len(sonar) < int(n1)+int(n2) {
-			log.Fatalf("corrputed sonar data: hdr=[%v/%v/%v] data=%v", flags, n1, n2, len(sonar))
+			log.Fatalf("corrupted sonar data: hdr=[%v/%v/%v] data=%v", flags, n1, n2, len(sonar))
 		}
 		v1 := makeCopy(sonar[:n1])
 		v2 := makeCopy(sonar[n1 : n1+n2])
