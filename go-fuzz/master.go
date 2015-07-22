@@ -216,6 +216,8 @@ type SyncRes struct {
 	Inputs []MasterInput // new interesting inputs
 }
 
+var errUnkownSlave = errors.New("unknown slave")
+
 // Sync is a periodic sync with a slave.
 // Slave sends statistics. Master returns new inputs.
 func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
@@ -224,7 +226,7 @@ func (m *Master) Sync(a *SyncArgs, r *SyncRes) error {
 
 	s := m.slaves[a.ID]
 	if s == nil {
-		return errors.New("unknown slave")
+		return errUnkownSlave
 	}
 	m.statExecs += a.Execs
 	m.statRestarts += a.Restarts

@@ -69,12 +69,15 @@ type Stats struct {
 
 func newHub(metadata MetaData) *Hub {
 	procs := *flagProcs
-	c, err := rpc.Dial("tcp", *flagSlave)
-	if err != nil {
-		log.Fatalf("failed to dial: %v", err)
+	hub := &Hub{
+		corpusSigs:  make(map[Sig]struct{}),
+		triageC:     make(chan MasterInput, procs),
+		newInputC:   make(chan Input, procs),
+		newCrasherC: make(chan NewCrasherArgs, procs),
+		syncC:       make(chan Stats, procs),
 	}
-	var res ConnectRes
-	if err := c.Call("Master.Connect", &ConnectArgs{Procs: procs}, &res); err != nil {
+
+	if err := hub.connect(); err != nil {
 		log.Fatalf("failed to connect to master: %v", err)
 	}
 
@@ -89,18 +92,6 @@ func newHub(metadata MetaData) *Hub {
 		}
 		sonarSites[i].id = b.ID
 		sonarSites[i].loc = fmt.Sprintf("%v:%v.%v,%v.%v", b.File, b.StartLine, b.StartCol, b.EndLine, b.EndCol)
-	}
-
-	hub := &Hub{
-		id:            res.ID,
-		master:        c,
-		corpusSigs:    make(map[Sig]struct{}),
-		initialTriage: uint32(len(res.Corpus)),
-		triageQueue:   res.Corpus,
-		triageC:       make(chan MasterInput, procs),
-		newInputC:     make(chan Input, procs),
-		newCrasherC:   make(chan NewCrasherArgs, procs),
-		syncC:         make(chan Stats, procs),
 	}
 	hub.maxCover.Store(make([]byte, CoverSize))
 
@@ -124,6 +115,23 @@ func newHub(metadata MetaData) *Hub {
 	go hub.loop()
 
 	return hub
+}
+
+func (hub *Hub) connect() error {
+	c, err := rpc.Dial("tcp", *flagSlave)
+	if err != nil {
+		return err
+	}
+	var res ConnectRes
+	if err := c.Call("Master.Connect", &ConnectArgs{Procs: *flagProcs}, &res); err != nil {
+		return err
+	}
+
+	hub.master = c
+	hub.id = res.ID
+	hub.initialTriage = uint32(len(res.Corpus))
+	hub.triageQueue = res.Corpus
+	return nil
 }
 
 func (hub *Hub) loop() {
@@ -163,8 +171,11 @@ func (hub *Hub) loop() {
 			hub.stats.restarts = 0
 			var res SyncRes
 			if err := hub.master.Call("Master.Sync", args, &res); err != nil {
-				log.Printf("sync call failed: %v", err)
-				break
+				log.Printf("sync call failed: %v, reconnection to master", err)
+				if err := hub.connect(); err != nil {
+					log.Printf("failed to connect to master: %v, killing slave", err)
+					return
+				}
 			}
 			if len(res.Inputs) > 0 {
 				hub.triageQueue = append(hub.triageQueue, res.Inputs...)
@@ -229,7 +240,11 @@ func (hub *Hub) loop() {
 
 			if input.mine {
 				if err := hub.master.Call("Master.NewInput", NewInputArgs{hub.id, input.data, uint64(input.depth)}, nil); err != nil {
-					log.Printf("new input call failed: %v", err)
+					log.Printf("new input call failed: %v, reconnecting to master", err)
+					if err := hub.connect(); err != nil {
+						log.Printf("failed to connect to master: %v, killing slave", err)
+						return
+					}
 				}
 			}
 
