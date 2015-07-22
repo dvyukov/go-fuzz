@@ -33,14 +33,22 @@ func Rand(n int) int {
 }
 
 func Emit(data, hint []byte, valid bool) {
-	//fmt.Printf("INPUT [%v]%q\n", len(data), data)
-	f, err := os.Create(filepath.Join(*flagOut, fmt.Sprintf("%v", seq)))
+	f, err := os.Create(filepath.Join(*flagOut, fmt.Sprintf("%d", seq)))
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create file: %v\n", err)
 		os.Exit(1)
 	}
-	f.Write(data)
-	f.Close()
+	defer f.Close()
+
+	n, err := f.Write(data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to write to file: %v\n", err)
+		os.Exit(1)
+	} else if n != len(data) {
+		fmt.Fprint(os.Stderr, "failed to write data to file\n")
+		os.Exit(1)
+	}
+
 	if seq++; seq == *flagN {
 		os.Exit(0)
 	}
