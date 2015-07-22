@@ -1,0 +1,4 @@
+ p: HTTP/1.4
+Transfer-Encoding:chunked
+
+CDEABCDEABCDEFDEF
