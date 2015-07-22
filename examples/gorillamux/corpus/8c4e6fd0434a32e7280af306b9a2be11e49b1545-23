@@ -1,0 +1,65 @@
+/{ :{(?i)|{{{0255752794726}
+				{{index |.Table2 $i | printf "a += (((b^c)&d)^c) + X[(1+5*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			// Round 3.
+			{{range $i, $s := dup 4 .Shift3}}
+				g{index |.Table3 $i | printf "a += (b^c^d) + X[(5+3*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			//nd 4.
+			{{range $i, $s := dup 4 .Shift4}}
+				{{index $.Table4 $i | printf "a += (c^(b|^d)) + X[(7*%d)&15] + %d" $i | relabel}}
+				<%d | a>>(32-%d) + b" $s $s | relabel}}
+				}
+		 Round163353lrzxlT6Y0Vy0rLqW9E5RtBz+GGp8rQap+8TI0G
+M1qiheWQNaBiXBZO8OOi+gMatCxxs1gs3nsL2xoP694hHwZ3BgOwye+Z/MC5TwuG
+KP7Suerj2qXDR2kS4Nvw9hmL7Xtw1wLW7YcYKCwEJEx35EiKGsY7mtQPyvp10gFA
+Wo15v4vPS8+qFsGV5K1Mij4XkdSxYuWC5YAEpAN+jb/af6IPl08M0w3719Hlcn4c
+yHf/W5oPt64FRuXxqBbsR6QXAgMBAAGjgfYwgfMwgbAGA1UdEQSBqDCBpYEPaW5m
+b0BpemVucGUuY29tpIGRMIGOMUcwRQYDVQQKDD5JWkVOUEUgUy5BLiAtIENJRiBB
+MDEzMzcyNjAtUk1lcmMuVml0b3JpYS1HYXN0ZWl6IF—xMDU1IEY2MiBTODFDMEEG
+A1UECQw6QXZkYSBkZWwgTWVkaXRlcnJhbmVvIEV0b3JiaWRlYSAxNCAtIDAxMDEw
+IFZpdG9yaWEtR2FzdGVpejAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIB
+BjAdBgNVHQ4EFgQUHRx(((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			} /ˆ HTTP/1.1
+((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rota
+				{{end}}
+			}
+	
+			// Round 4.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(7*i)&15] + t4[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+		{{end}}
+
+		a += aa
+		b += bb
+		c +=

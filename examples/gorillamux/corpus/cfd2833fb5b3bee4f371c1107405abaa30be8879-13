@@ -1,0 +1,13 @@
+/{{{{:{{+| |  +| f "a += ()+()+| f "a += ()+()+|}}|  + | r}}((b|^d))| rl}}{{{{}}
+			// Round 1.
+			for i : t2[i&15]" | relabel}}a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a

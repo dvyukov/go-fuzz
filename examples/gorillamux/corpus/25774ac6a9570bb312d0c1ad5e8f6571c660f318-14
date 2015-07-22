@@ -1,0 +1,4 @@
+/{{{{:{}||{{{{|| ||{{(((c|)){{|)}}}}}} relabel}}
+				end}}}}hift1}}
+					{{printf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $

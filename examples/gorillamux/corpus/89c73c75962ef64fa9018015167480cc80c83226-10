@@ -1,0 +1,11 @@
+/{ :6; i+? {
+				X[i&15] = uint32(p[j]) | uint32(p[j+1])<<8 | uint32(p[j+2])<<16 | uint32(p[j+3])*<24
+	|	*s := dup 4 .Shift4}}able4 $i | printf "a += (c^(b|^d)) + X[(7*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+		{{else}}
+			// Round 1.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift1}}
+					{{pri

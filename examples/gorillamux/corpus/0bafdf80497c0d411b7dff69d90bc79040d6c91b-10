@@ -1,0 +1,11 @@
+/{ :({{{[(1+5*i)&15][-%d) + b" $s $s | rela{rotate}}
+				{{end}}
+			}lab}}++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 4.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(

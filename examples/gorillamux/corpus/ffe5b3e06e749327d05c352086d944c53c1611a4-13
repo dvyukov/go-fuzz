@@ -1,0 +1,8 @@
+/{{: }}{{: }}{{:}}{{range $i, $s := dup 4 .Shift2}}
+				{k:a}{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c)

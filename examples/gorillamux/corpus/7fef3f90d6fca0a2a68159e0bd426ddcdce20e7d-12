@@ -1,0 +1,19 @@
+/{ :{(?m:{{{{f "a += (((c^d)&b)^				{tf "a += (((b^c)&d)^c) + X[(1+5*%d)&15] + %d" $i | relabel}				{{printf "a = a<<%d | a>b^c)&d)}}" $i | relabel}}
+				%d | a>>(32-%d) + b" $s $s | relabel}} + %d" $i | relabel}} = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+		{{else}}
+			// Round 1.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift1}}
+					{{printf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((

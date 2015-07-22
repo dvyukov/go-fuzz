@@ -1,0 +1,4 @@
+/{{{{:{{| f "a +=| f "a +}}|  +|  + |}}}}
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b

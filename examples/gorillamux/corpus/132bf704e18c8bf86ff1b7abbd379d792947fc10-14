@@ -1,0 +1,3 @@
+/{{{{:{{| |  | f "a +=| f "a +=|}}|  + |  + || | rte}}| r}}				{{range $s := .Shift3}}
+					{{printf "a += (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<

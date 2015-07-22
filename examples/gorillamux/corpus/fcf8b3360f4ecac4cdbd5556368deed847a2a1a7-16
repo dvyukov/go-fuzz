@@ -1,0 +1,5 @@
+/{{{{:{{|^| f "a +=| f "a +=}}|  + |  + }}|}} $s | relabel			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift

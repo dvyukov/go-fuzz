@@ -1,0 +1,7 @@
+/{{{{{{{{:[\$[:digit:]]}} | relabel}}
+		[^\x00-\x{10FFFF}]}}$s := .Shift3}}= (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+		

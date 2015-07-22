@@ -1,0 +1,19 @@
+/{; i < 16; {
+				{{range $s := .{{[(1+5*i)&15]2[i&15]" | relabel}}[(5+3*i)&15] + t3[i&15]" | relabel}}ge $s := .Shift4}}= (c^(b|^d)) + X[(7*i)&15] + t4[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+		{{end}}
+
+		a += aa
+		b += bb
+		c += cc
+		d += dd
+
+		p = p[chunk:]
+	}
+
+	dig.s[0] = a
+	d

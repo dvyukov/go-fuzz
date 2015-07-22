@@ -1,0 +1,17 @@
+/{ :{(?i:{{[fFull}}Round{{rangeisdupShiftindexTableiprintfacdbdXda2-}ndtfab^cd)^c) + X[(1+5*%d)&15] + %d" $i | relabel			{		tf "a += (b^c^d) + X[(5+3*%d)&15] + %d" $i | relabel}}5] + %d" $i | relabel}}= a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+		{{else}}
+			// Round 1.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift1}}
+					{{printf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}

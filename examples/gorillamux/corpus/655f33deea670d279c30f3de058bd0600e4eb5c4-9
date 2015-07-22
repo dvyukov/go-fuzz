@@ -1,0 +1,4 @@
+/{ 0
+			for i := 0; i <\16{}}6; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^c^

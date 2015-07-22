@@ -1,0 +1,88 @@
+/{ :{{{{{{{{{dup 4 .Shift1}}
+				{{index $.Table1 $ printf "a += ((()&b)^d) + X%d] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			// Round 2.
+			tf "a += (((b^c)&d)^c) + X[(1+5*%d)&15] + %d" $i | relabel}}
+				%d | a>>(32-%d) + b" $s $s | relabel}}
+				nd}}
+	
+			// Round 3.
+			tf "a += (b^c^d) + X[(5+3*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			// Round 4.
+			{{range $i, $s := dup 4 .Shift4}}
+				{{index $.Table4 $i | printf "a += (c^(b|^d)) + X[(7*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+		{{else}}
+			// Round 1.
+			for i := uint(0); i < 16; range $s := .Shift1}}
+					{{printf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | rndex $.Table4 $i | printf "a += (c^(b|^d)) + X[(7*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+		{{else}}
+			// Round 1.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift1}}
+					{{printf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round /a HTTP/0.1
+hift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 4.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(7*i)&15] + t4[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+		{{end}}
+
+		a += aa
+		b += bb
+		c += cc
+		d += dd
+
+		p = p[chunk:]
+	

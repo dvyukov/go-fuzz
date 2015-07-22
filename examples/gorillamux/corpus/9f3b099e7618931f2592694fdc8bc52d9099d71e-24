@@ -1,0 +1,9 @@
+/{ :{(?i)HWoPFRuXBbsR6QXAgMBAAGYMAGA1UdEQSBqDCBpYEPaWBVGUuYIGRMIGOMnge $s := .Shift4}}= (c^(b|^d)) + X[(7*i)&15] + t4[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+		{{end}}
+
+		a += 

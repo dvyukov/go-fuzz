@@ -1,0 +1,10 @@
+/{{{{:{{| f "a +| f "a +}}| r}}| r}}{{{{{:{| u| u| }}(|)|{{{{(( | (|)){{|(|))| a}}| a|e|ebel}}relabel}}= a<<%d | | }}}}}}
+					{{printf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16rintf "a{{range $s :

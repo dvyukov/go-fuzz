@@ -1,0 +1,16 @@
+/{ :{[end}	// Round 2.	tf "a += (b^c)&d)^c) + X[(1+5*%d)&15] + }{{%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			/3.
+			{{ + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 4.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a +=

@@ -1,0 +1,66 @@
+AMDgx
+CzAJBgNVBAYTAkVTMRQwEgYDVQQKDAtJWkVOU5UgUy5BLjETMBEGA1UEAwwKSXpl
+bnBlLmNvbTAeFw0wNzEyMTMxMzA4MjdaFw0zNzEyMTMwODI3MjVaMDgxCzAJBgNV
+BAYTAkVTMRQwEgYDVQQKDAtJWkVOUEUgUy5BLjETMBEGA1UEAwwKSXplbnBlLmNv
+bTCCAiIwDQYJKoZIhvcNAQEBBQADggIPADCCAgoCggIBAMnTesoPHqynhugWZWqx
+whtFMnGV2f4QW8yv56V5AY+Jw8ryVXH3d753lPNypCxE2J6SmxQ6oeckkAoKVo7F
+2CaU4dlI4S0+2gpy3aOZFdqBoof0e24md4lYrdbrDLJBenNubdt6eEHpCIgSfocu
+ZhFjbFT7PJ1ywLwu/8K33Q124zrX97RovqL144FuwUZvXY3gTcZUVYkaMzEKsVe5
+o4qYw+w7NMWVQWl+dcI8IMVhulFHoCCQk6GQS/NOfIVFVJrRBSZBsLVNHTO+xAPI
+JXzBcNs79AktVCdIrC/hxKw+yMuSTFM5NyPs0wH54AlETU1kwOENWocivK0bo/4m
+tRXzp/yEGensoYi0RGmEg/OJ0XQGqcwL1sLeJ4VQJsoXuMl6h1YsGgEebL4TrRCs
+tST1OJGh1kva8bvS3ke18byB9llrzxlT6Y0Vy0rLqW9E5RtBz+GGp8rQap+8TI0G
+M1qiheWQNaBiXBZO8OOi+gMatCxxs1gs3nsL2xoP694hHwZ3BgOwye+Z/MC5TwuG
+KP7Suerj2qXDR2kS4Nvw9hmL7Xtw1wLW7YcYKCwEJEx35EiKGsY7mtQPyvp10gFA
+Wo15v4vPS8+qFsGV5K1Mij4XkdSxYuWC5YAEpAN+jb/af6IPl08M0w3719Hlcn4c
+yHf/W5oPt64FRuXxqBbsR6QXAgMBAAGjgfYwgfMwgbAGA1UdEQSBqDCBpYEPaW5m
+b0BpemVucGUuY29tpIGRMIGOMUcwRQYDVQQKDD5JWkVOUEUgUy5BLiAtIENJRiBB
+MDEzMzcyNjAtUk1lcmMuVml0b3JpYS1HYXN0ZWl6IFQxMDU1IEY2MiBTODFDMEEG
+A1UECQw6QXZkYSBkZWwgTWVkaXRlcnJhbmVvIEV0b3JiaWRlYSAxNCAtIDAxMDEw
+IFZpdG9yaWEtR2FzdGVpejAPBgNVHRMBAf8EBTADAQH/MA4GA1UdDwEB/wQEAwIB
+BjAdBgNVHQ4EFgQUHRxlDqjyJXu0kc/ksbHmvVV0bAUwDQYJKoZIhvcNAQEFBQAD
+ggIBAMeBRmrange $s := .Shift1}}
+					{{printf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round  HTTP/1.151231257827021181583404541015625c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^R^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+			{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 4.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(7*i)&15] + t4[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+		{{end}}
+
+		a += aa
+		b += bb
+		c += cc
+		d += dd
+
+		p = p[chunk:]
+	}
+
+	dig

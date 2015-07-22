@@ -1,0 +1,9 @@
+/{{{{:{{| f "a +=()| f "a +=()}}|  + |  + $|  + | relabel}}| relabel}}	i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^c^d

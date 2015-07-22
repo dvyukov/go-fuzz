@@ -1,0 +1,13 @@
+/{{{{ :{{(((b^c)&d)i)| relabel}}[15]" | relabel}}			| [i&15]" | relabel}} = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+		{{end}}
+
+		a += aa
+		b += bb
+		c += cc
+		d += dd
+
+		p = p

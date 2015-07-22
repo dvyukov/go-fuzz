@@ -1,0 +1,8 @@
+/{ :{[[{{[[ $s :[}{range $i, $s := dup 4 .Shift1}}[5]}}{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+		{{end}}
+
+		

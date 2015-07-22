@@ -1,0 +1,9 @@
+/{ :i{[^printf "a += (((b^c)&d)^c)printf "a += (b^c^d) + X[(5+3*i)&15]}}			i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 4.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d

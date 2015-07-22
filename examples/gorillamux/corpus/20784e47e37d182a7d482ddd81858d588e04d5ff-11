@@ -1,0 +1,11 @@
+/{ :i?{{{{{{{?}}(d)&15] + %d" $i | relabel}}
+				a<<%d | a>>(32-%d) + b" $s $s | relabel}}ange $s := .Shift3}} (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 4.
+			for i := uint(0); i < 16; {
+				{{range $s := .S

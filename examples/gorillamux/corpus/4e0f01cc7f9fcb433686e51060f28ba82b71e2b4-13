@@ -1,0 +1,9 @@
+/{ :{(?i:{{\pS+5*%d)&15] + %d" $i | re| a>>(32-%d) + b" $s $s | relabel}}label}}a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}

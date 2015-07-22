@@ -1,0 +1,9 @@
+/{ :{(?i:{{{{end	// R
+		bel}}
+		[^\x00-\x{10FFFF}]}}}}}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	

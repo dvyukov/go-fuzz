@@ -1,0 +1,11 @@
+/{ :({{{[(1+5*}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16;  $s $s | relabel}} i := uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(7*i)&15] + t4[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+		

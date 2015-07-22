@@ -1,0 +1,4 @@
+/{ :t(){{{$ .}{+ (((b^c)d)^c) +X(1) +2[15] | ad | a>() + $ $ | l}}}} | relabelt(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(7*i)&15] + t4[i&15]" | relabel}}
+					{{printf "a

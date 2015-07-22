@@ -1,0 +1,6 @@
+/{{{{:|  | r}}| rl}}{{{{{:{|2()| u | u2|  |d$}}(s |%d)5] + %d" $i | relabel}}a = a<<%d | }} .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}

@@ -1,0 +1,12 @@
+/{{}}{{}}		{{}}			{{$s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			// Round 3.
+			{{5] + %d" $i | relabel}}>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.

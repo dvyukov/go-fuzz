@@ -1,0 +1,6 @@
+/{{{{{{{{{{{:}(?P<ï¿½ï¿½ï¿½}}ï¿½ï¿½½ + b" $s $s }}}}ift1}}otate}}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t

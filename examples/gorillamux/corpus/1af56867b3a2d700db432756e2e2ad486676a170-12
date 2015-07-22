@@ -1,0 +1,14 @@
+/{ :{[i&15e	/ Round 3.	{{range $i, $s := dup 4.Shft3}}	{{index $.Tale3 $i |printf "a += (c^) +X(53*%d)	{{rotae}}
+	{{end}}	/ Rund 4.	{{range $up 4.Shft4}}	 $i |pintf "a += (c^(b|^d) +X[(7*%d)&15]}}}}$s | relabel{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) +

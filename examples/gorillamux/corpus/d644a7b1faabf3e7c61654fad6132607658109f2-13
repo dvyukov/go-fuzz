@@ -1,0 +1,10 @@
+/{ :{(?m:{{{{({(?-s:)}	{{printf "a = a<<%d | a>b^c))}}}}(%d) + b" $s $s | relabel}}relabel}} a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((

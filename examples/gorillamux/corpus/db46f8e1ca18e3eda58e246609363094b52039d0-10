@@ -1,0 +1,8 @@
+/{+:[\PN\PN{Table4 $i | printf "a += (c^(b|^d)) + X[(7*%d)&15] + %d" $i | relabel}} = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+		{{else}}
+			// Round 1.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift1}}
+					{{pri

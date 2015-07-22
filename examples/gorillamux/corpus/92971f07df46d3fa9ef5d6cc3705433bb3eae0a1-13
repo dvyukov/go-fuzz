@@ -1,0 +1,5 @@
+/{{{{:{{| f=()| fa + | r}}$| r{{()| u2(j)| u ()|  $| r}}$| a| a}}s $s | 2}}= (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{en

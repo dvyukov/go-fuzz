@@ -1,0 +1,4 @@
+/{{{{:{{[(*i&152[]| relabel}}[(3i&15]| relabel}} |}}					i++
+					uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(7*i)&15

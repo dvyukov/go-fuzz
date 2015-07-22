@@ -1,0 +1,8 @@
+/{ :{(?is:.{ssii{Xuint(p[j]uintpuintpuintpuinjif.Full}}Round.))}}				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i :=

@@ -1,0 +1,12 @@
+/{ :{[i&15e	/ Rund 3.{{r.Shft3}{indx.ble3 $i| printf "+= (^d) +X[(5+3*%	{{nd}}	/ Round 4.	{{range $i, $s := dup 4.Shft4}}	 $i| ritf "a += (c^(b|^d)+X[(7*%d)&15]}}ge $s := .Shift2}}= (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabe

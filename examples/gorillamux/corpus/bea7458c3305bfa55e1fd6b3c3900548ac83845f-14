@@ -1,0 +1,11 @@
+/{{{{{:{(?i:}}(|d){= (b^c^d) + X[(5+3*%d)&15] + %d" $i |}
+				<%d | a>>(32-%d) + b" $s $s | relabel}}
+; i 32-%d)}}= (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16rintf "a{{range $s := .Shift2}}

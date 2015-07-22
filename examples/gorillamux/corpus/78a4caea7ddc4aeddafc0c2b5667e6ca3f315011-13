@@ -1,0 +1,18 @@
+/{{{{:{{ӷĀ{:{ u2()|  |d | $|}}(s |%d)|{{{{	%d | a>>(32-%d) + b" $s $s | relabel}}
+				nd}}d" $i | relabel}}
+				<%d | a>>(32-%d) + b" $s $s | relabel}} + %d" $i | relabel}} = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+		{{else}}
+			// Round 1.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift1}}
+					{{priQtf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			f

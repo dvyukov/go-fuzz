@@ -1,0 +1,151 @@
+/{{}r t3 = [...]uint32{
+	{{range .Table3}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+	
+	var t4 = [...]uint32{
+	{{range .Table4}}{{printf "\t%#x,\n" .}}{{end}}
+	}
+{{end}}
+
+const x86 = runtime.GOARCH == "amd64" || runtime.GOARCH == "386"
+
+var littleEndian bool
+
+func init() {
+	x := uint32(0x04030201)
+	y := [4]byte{0x1, 0x2, 0x3, 0x4}
+	littleEndian = *(*[4]byte)(unsafe.Pointer(&x)) == y
+}
+
+func blockGeneric(dig *digest, p []byte) {
+	a := dig.s[0]
+	b := dig.s[1]
+	c := dig.s[2]
+	d := dig.s[3]
+	var X *[16]uint32
+	var xbuf [16]uint32
+	for len(p) >= chunk {
+		aa, bb, cc, dd := a, b, c, d
+
+		// This is a constant condition - it is not evaluated on each iteration.
+		if x86 {
+			// MD5 was designed so that x86 processors can just iterate
+			// over the block data directly as uint32s, and we generate
+			// code and run 1.3x faster if we take advantage of that.
+			// My apologies.
+			X = (*[16]uint32)(unsafe.Pointer(&p[0]))
+		} else if littleEndian && uintptr(unsafe.Pointer(&p[0]))&(unsafe.Alignof(uint32(0))-1) == 0 {
+			X = (*[16]uint32)(unsafe.Pointer(&p[0]))
+		} else {
+			X = &xbuf
+			j := 0
+			for i := 0; i < 16; i++ {
+				X[i&15] = uint32(p[j]) | uint32(p[j+1])<<8 | uint32(p[j+2])<<16 | uint32(p[j+3])<<24
+				j += 4
+			}
+		}
+
+		{{if .Full}}
+			// Round 1.
+			{{range $i, $s := dup 4 .Shift1}}
+				{{index $.Table1 $i | printf "a += (((c^d)&b)^d) + X[%d] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			// Round 2.
+			{{range $i, $s := dup 4 .Shift2}}
+				{{index $.Table2 $i | printf "a += (((b^c)&d)^c) + X[(1+5*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			// Round 3.
+			{{range $i, $s := dup 4 .Shift3}}
+				{{index $.Table3 $i | printf "a += (b^c^d) + X[(5+3*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+	
+			// Round 4.
+			{{range $i, $s := dup 4 .Shift4}}
+				{{index $.Table4 $i | printf "a += (c^(b|^d)) + X[(7*%d)&15] + %d" $i | relabel}}
+				{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			{{end}}
+		{{else}}
+			// Round 1.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift1}}
+					{{printf "a += (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (b^c^d) + X[(5+3*i)&15] + t3[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 4.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(7*i)&15] + t4[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+		{{end}}
+
+		a += aa
+		b += bb
+		c += cc
+		d += dd
+
+		p = p[chunk:]
+	}
+
+	dig.s[0] = a
+	dig.s[1] = b
+	dig.s[2] = c
+	dig.s[3] = d
+}
+ relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift3}}
+					{{printf "a += (

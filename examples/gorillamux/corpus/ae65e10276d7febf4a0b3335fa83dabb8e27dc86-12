@@ -1,0 +1,19 @@
+/{{{{:{{| || f "a += ()+| f "a +}}|  +| r+| r}}$| rbel}}{{{{{:{|2()| u | u2()|  | d |  $|}}(s |%d)&15] + %d" $i | relabel<<%d | a>>(32-%d) + b" $s $s | relabel}}
+				{{rotate}}
+			se}{range $s := .Shift1}} (((c^d)&b)^d) + X[i&15] + t1[i&15]" | relabel}fcntl		{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			

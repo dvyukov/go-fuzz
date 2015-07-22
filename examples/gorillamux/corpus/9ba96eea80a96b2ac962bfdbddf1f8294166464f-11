@@ -1,0 +1,2 @@
+/{{{{:{{| relabel}}]| relabel}}||}}			{{range $s := .Shift4}}
+					{{printf "a += (c^(b|^d)) + X[(7*i)&15

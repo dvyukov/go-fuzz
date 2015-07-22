@@ -1,0 +1,18 @@
+/{{{{:{{| |  +| f "a += ()+| f "a += ()+}}|  +| r+| relabel}}$| relabel}}{{:.}}{{{:{()| uint32(j+])| u<<16 | uint32(p+])|  (((c^d)&b)^d)| d |  $| relabel}}(((b^c)&d))| relabel}5]" | relabel}<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 2.
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | relabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16

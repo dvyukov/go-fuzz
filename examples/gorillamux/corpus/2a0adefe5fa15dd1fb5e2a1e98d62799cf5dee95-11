@@ -1,0 +1,15 @@
+/{ :{(?is:.{ssii{Xuint(p[j]uintpuintpuintpuinjif.Full}}Round.))[(7*%d)&15]|}}{{}}{{i < 16; + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{	}
+			for i := uint(0); i < 16; {
+				{{range $s := .Shift2}}
+					{{printf "a += (((b^c)&d)^c) + X[(1+5*i)&15] + t2[i&15]" | rty Å¿Îelabel}}
+					{{printf "a = a<<%d | a>>(32-%d) + b" $s $s | relabel}}
+					i++
+					{{rotate}}
+				{{end}}
+			}
+	
+			// Round 3.
+			for i := uint(0); i < 16; {
