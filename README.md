@@ -175,7 +175,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: nil deref in error message](https://github.com/golang/go/issues/11614)
 - [cmd/compile: use of untyped nil in switch](https://github.com/golang/go/issues/11668)
 - [cmd/compile: implicitly converts complex constant to integer](https://github.com/golang/go/issues/11669)
-- [cmd/compile: assignment to entry in nil map](https://github.com/golang/go/issues/11670)
+- [cmd/compile: assignment to entry in nil map](https://github.com/golang/go/issues/11670) **fixed**
 - [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674)
 - [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
 - [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699)
