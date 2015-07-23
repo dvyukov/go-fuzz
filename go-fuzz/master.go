@@ -16,7 +16,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/stephens2424/writerset"
+	"github.com/dvyukov/go-fuzz/go-fuzz/internal/writerset"
 )
 
 // Master manages persistent fuzzer state like input corpus and crashers.
@@ -34,7 +34,7 @@ type Master struct {
 	statRestarts  uint64
 	coverFullness int
 
-	writerSet *writerset.WriterSet
+	statsWriters *writerset.WriterSet
 }
 
 // MasterSlave represents master's view of a slave.
@@ -48,7 +48,7 @@ type MasterSlave struct {
 // masterMain is entry function for master.
 func masterMain(ln net.Listener) {
 	m := &Master{}
-	m.writerSet = writerset.New()
+	m.statsWriters = writerset.New()
 	m.startTime = time.Now()
 	m.lastInput = time.Now()
 	m.suppressions = newPersistentSet(filepath.Join(*flagWorkdir, "suppressions"))
@@ -113,14 +113,14 @@ func (m *Master) broadcastStats() {
 		panic(err)
 	}
 
-	fmt.Fprintf(m.writerSet, "event: ping\ndata: %s\n\n", string(b))
-	m.writerSet.Flush()
+	fmt.Fprintf(m.statsWriters, "event: ping\ndata: %s\n\n", string(b))
+	m.statsWriters.Flush()
 }
 
 func (m *Master) eventSource(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.WriteHeader(http.StatusOK)
-	<-m.writerSet.Add(w)
+	<-m.statsWriters.Add(w)
 }
 
 func (m *Master) masterStats() masterStats {
