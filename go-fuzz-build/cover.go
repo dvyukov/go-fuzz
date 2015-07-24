@@ -117,13 +117,15 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 			stmts = append(stmts, sw.Init)
 			sw.Init = nil
 		}
-		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: "__go_fuzz_tmp"}}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
+		const tmpvar = "__go_fuzz_tmp"
+		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: tmpvar}}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
+		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: "_"}}, Tok: token.ASSIGN, Rhs: []ast.Expr{&ast.Ident{Name: tmpvar}}})
 		sw.Tag = nil
 		stmts = append(stmts, sw)
 		for _, cas1 := range sw.Body.List {
 			cas := cas1.(*ast.CaseClause)
 			for i, expr := range cas.List {
-				cas.List[i] = &ast.BinaryExpr{X: &ast.Ident{Name: "__go_fuzz_tmp", NamePos: expr.Pos()}, Op: token.EQL, Y: expr}
+				cas.List[i] = &ast.BinaryExpr{X: &ast.Ident{Name: tmpvar, NamePos: expr.Pos()}, Op: token.EQL, Y: expr}
 			}
 		}
 		nn.Tag = nil
