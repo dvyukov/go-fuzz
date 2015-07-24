@@ -36,9 +36,6 @@ func Fuzz(data []byte) int {
 		for _, x := range sel.From {
 			nodes = append(nodes, x)
 		}
-		for _, x := range sel.From {
-			nodes = append(nodes, x)
-		}
 		for _, x := range sel.SelectExprs {
 			nodes = append(nodes, x)
 		}
