@@ -401,5 +401,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cockroachdb/cockroach: crash on x % 0](https://github.com/cockroachdb/cockroach/pull/1799) **fixed**
 - [cockroachdb/cockroach: panic when dealing with empty sql ident](https://github.com/cockroachdb/cockroach/pull/1808) **fixed**
 - [cockroachdb/cockroach: parse literals more like Postgres](https://github.com/cockroachdb/cockroach/pull/1807) **fixed**
+- [cockroachdb/cockroach: SELECT ("*") parse oddities](https://github.com/cockroachdb/cockroach/issues/1810)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
