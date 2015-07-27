@@ -254,7 +254,7 @@ func (hub *Hub) loop() {
 
 		case crash := <-hub.newCrasherC:
 			// New crasher from slaves. Woohoo!
-			if crash.Hanging {
+			if crash.Hanging || !*flagDup {
 				ro := hub.ro.Load().(*ROData)
 				ro1 := new(ROData)
 				*ro1 = *ro
@@ -265,11 +265,13 @@ func (hub *Hub) loop() {
 					}
 					ro1.badInputs[hash(crash.Data)] = struct{}{}
 				}
-				ro1.suppressions = make(map[Sig]struct{})
-				for k, v := range ro.suppressions {
-					ro1.suppressions[k] = v
+				if !*flagDup {
+					ro1.suppressions = make(map[Sig]struct{})
+					for k, v := range ro.suppressions {
+						ro1.suppressions[k] = v
+					}
+					ro1.suppressions[hash(crash.Suppression)] = struct{}{}
 				}
-				ro1.suppressions[hash(crash.Suppression)] = struct{}{}
 				hub.ro.Store(ro1)
 			}
 			if err := hub.master.Call("Master.NewCrasher", crash, nil); err != nil {
