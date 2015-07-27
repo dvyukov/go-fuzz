@@ -106,7 +106,7 @@ test, file with .output suffix contains output of the test on this input. Every
 few seconds go-fuzz prints logs of the form:
 ```
 2015/04/25 12:39:53 slaves: 500, corpus: 186 (42s ago), crashers: 3,
-     restarts: 1/8027, execs: 12009519 (121224/sec), cover: 0.31%, uptime: 1m39s
+     restarts: 1/8027, execs: 12009519 (121224/sec), cover: 2746, uptime: 1m39s
 ```
 Where ```slaves``` means number of tests running in parallel (set with -procs
 flag). ```corpus``` is current number of interesting inputs the fuzzer has
@@ -117,9 +117,10 @@ test processes. The rate should be close to 1/10000 (which is the planned
 restart rate); if it is considerably higher than 1/10000, consider fixing already
 discovered bugs which lead to frequent restarts. ```execs``` is total number of
 test executions, and the number in brackets is the average speed of test
-executions. ```cover``` is density of hashed coverage bitmap, ideally this value
-should be smaller than 5%, otherwise fuzzer can miss new interesting inputs.
-And finally ```uptime``` is uptime of the process.
+executions. ```cover``` is number of bits set in a hashed coverage bitmap, if this number
+grows fuzzer uncovers new lines of code; size of the bitmap is 64K; ideally ```cover```
+value should be less than ~5000, otherwise fuzzer can miss new interesting inputs
+due to hash collisions. And finally ```uptime``` is uptime of the process.
 
 ### Random Notes
 
