@@ -369,17 +369,11 @@ func (hub *Hub) updateScores() {
 			score *= 5
 		}
 
-		// User boost (Fuzz function return value) multiplier 1-4x.
+		// User boost (Fuzz function return value) multiplier 1-2x.
 		// We don't know what it is, but user said so.
-		switch inp.res {
-		case 0:
-			// no boost for you
-		case 1:
+		if inp.res > 0 {
 			// Assuming this is a correct input (e.g. deserialized successfully).
 			score *= 2
-		default:
-			// Assuming this is a correct and interesting in some way input.
-			score *= 4
 		}
 
 		if score < minScore {

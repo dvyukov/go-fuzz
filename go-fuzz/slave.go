@@ -277,7 +277,7 @@ func (s *Slave) triageInput(input MasterInput) {
 				return false
 			}
 			if inp.res != res || worseCover(newCover, cover) {
-				s.noteNewInput(candidate, cover, inp.depth+1, execMinimizeInput)
+				s.noteNewInput(candidate, cover, res, inp.depth+1, execMinimizeInput)
 				return false
 			}
 			return true
@@ -564,16 +564,20 @@ func (s *Slave) testInputImpl(bin *TestBinary, data []byte, depth, typ int) (son
 		}
 	}
 	s.execs[typ]++
-	_, _, cover, sonar, output, crashed, hanged := bin.test(data)
+	res, _, cover, sonar, output, crashed, hanged := bin.test(data)
 	if crashed {
 		s.noteCrasher(data, output, hanged)
 		return nil
 	}
-	s.noteNewInput(data, cover, depth, typ)
+	s.noteNewInput(data, cover, res, depth, typ)
 	return sonar
 }
 
-func (s *Slave) noteNewInput(data, cover []byte, depth, typ int) {
+func (s *Slave) noteNewInput(data, cover []byte, res, depth, typ int) {
+	if res < 0 {
+		// User said to not add this input to corpus.
+		return
+	}
 	if s.hub.updateMaxCover(cover) {
 		s.triageQueue = append(s.triageQueue, MasterInput{makeCopy(data), uint64(depth), typ, false, false})
 	}
