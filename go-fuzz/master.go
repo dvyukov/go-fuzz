@@ -181,9 +181,11 @@ func (m *Master) NewCrasher(a *NewCrasherArgs, r *int) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if !m.suppressions.add(Artifact{a.Suppression, 0, false}) || !m.crashers.add(Artifact{a.Data, 0, false}) {
-		// Already have this.
-		return nil
+	if !*flagDup && !m.suppressions.add(Artifact{a.Suppression, 0, false}) {
+		return nil // Already have this.
+	}
+	if !m.crashers.add(Artifact{a.Data, 0, false}) {
+		return nil // Already have this.
 	}
 
 	// Prepare quoted version of input to simplify creation of standalone reproducers.

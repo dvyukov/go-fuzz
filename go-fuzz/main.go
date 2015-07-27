@@ -25,6 +25,7 @@ var (
 	flagBin           = flag.String("bin", "", "test binary built with go-fuzz-build")
 	flagPprof         = flag.String("pprof", "", "serve pprof handlers on that address")
 	flagDumpCover     = flag.Bool("dumpcover", false, "dump coverage profile into workdir")
+	flagDup           = flag.Bool("dup", false, "collect duplicate crashers")
 	flagTestOutput    = flag.Bool("testoutput", false, "print test binary output to stdout (for debugging only)")
 	flagCoverCounters = flag.Bool("covercounters", true, "use coverage hit counters")
 	flagSonar         = flag.Bool("sonar", true, "use sonar hints")
