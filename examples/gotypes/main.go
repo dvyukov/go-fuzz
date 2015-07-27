@@ -20,6 +20,7 @@ import (
 
 // https://github.com/golang/go/issues/11327
 var bigNum = regexp.MustCompile("(\\.[0-9]*)|([0-9]+)[eE]\\-?\\+?[0-9]{3,}")
+var bigNum2 = regexp.MustCompile("[0-9]+[pP][0-9]{3,}") // see issue 11364
 
 // https://github.com/golang/go/issues/11274
 var formatBug1 = regexp.MustCompile("\\*/[ \t\n\r\f\v]*;")
@@ -28,6 +29,8 @@ var formatBug2 = regexp.MustCompile(";[ \t\n\r\f\v]*/\\*")
 var issue11528 = regexp.MustCompile("/\\*(.*\n)+.*\\*/")
 var issue11533 = regexp.MustCompile("[ \r\t\n=\\+\\-\\*\\^\\/\\(,]0[0-9]+[ieE]")
 var issue11531 = regexp.MustCompile(",[ \t\r\n]*,")
+var issue11590 = regexp.MustCompile(": cannot convert .* \\(untyped int constant .*\\) to complex")
+var issue11590_2 = regexp.MustCompile(": [0-9]+ (untyped int constant) overflows complex")
 
 var fpRounding = regexp.MustCompile(" \\(untyped float constant .*\\) truncated to ")
 
@@ -35,8 +38,11 @@ var gcCrash = regexp.MustCompile("\n/tmp/fuzz\\.gc[0-9]+:[0-9]+: internal compil
 var gccgoCrash = regexp.MustCompile("\ngo1: internal compiler error:")
 var asanCrash = regexp.MustCompile("\n==[0-9]+==ERROR: AddressSanitizer: ")
 
+var ssaCrash1 = regexp.MustCompile("internal compiler error: plain block .* len\\(Succs\\)==[0-9]+, want [0-9]+")
+var ssaCrash2 = regexp.MustCompile("internal compiler error: .*Succs has duplicate block")
+
 func Fuzz(data []byte) int {
-	if bigNum.Match(data) {
+	if bigNum.Match(data) || bigNum2.Match(data) {
 		return 0
 	}
 	if issue11531.Match(data) {
@@ -45,35 +51,60 @@ func Fuzz(data []byte) int {
 		return 0
 	}
 	goErr := gotypes(data)
-	//gcErr := gc(data)
-	gcErr := goErr
-	gccgoErr := gccgo(data)
-	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "line number out of range") {
-		// https://github.com/golang/go/issues/11329
-		return 0
+	gcErr := gc(data)
+	//gccgoErr := gccgo(data)
+	gccgoErr := goErr
+	if goErr == nil && gcErr != nil {
+		if strings.Contains(gcErr.Error(), "line number out of range") {
+			// https://github.com/golang/go/issues/11329
+			return 0
+		}
+		if strings.Contains(gcErr.Error(), "stupid shift:") {
+			// https://github.com/golang/go/issues/11328
+			return 0
+		}
+		if strings.Contains(gcErr.Error(), "overflow in int -> string") {
+			// https://github.com/golang/go/issues/11330
+			return 0
+		}
+		if strings.Contains(gcErr.Error(), "larger than address space") {
+			// Gc is more picky at rejecting huge objects.
+			return 0
+		}
+		if strings.Contains(gcErr.Error(), "non-canonical import path") {
+			return 0
+		}
+		if ssaCrash1.MatchString(gcErr.Error()) {
+			// https://github.com/golang/go/issues/11589
+			return 0
+		}
+		if ssaCrash2.MatchString(gcErr.Error()) {
+			// https://github.com/golang/go/issues/11593
+			return 0
+		}
+		if strings.Contains(gcErr.Error(), "src/cmd/compile/internal/gc/ssa.go:377") {
+			// https://github.com/golang/go/issues/11588
+			return 0
+		}
+		if strings.Contains(gcErr.Error(), "constant shift overflow") {
+			// ???
+			return 0
+		}
 	}
-	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "stupid shift:") {
-		// https://github.com/golang/go/issues/11328
-		return 0
-	}
-	if gcErr == nil && goErr != nil && strings.Contains(goErr.Error(), "untyped float constant") {
-		// https://github.com/golang/go/issues/11350
-		return 0
-	}
-	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "overflow in int -> string") {
-		// https://github.com/golang/go/issues/11330
-		return 0
-	}
-	if gcErr == nil && goErr != nil && strings.Contains(goErr.Error(), "illegal character U+") {
-		// https://github.com/golang/go/issues/11359
-		return 0
-	}
-	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "larger than address space") {
-		// Gc is more picky at rejecting huge objects.
-		return 0
-	}
-	if goErr == nil && gcErr != nil && strings.Contains(gcErr.Error(), "non-canonical import path") {
-		return 0
+
+	if gcErr == nil && goErr != nil {
+		if strings.Contains(goErr.Error(), "illegal character U+") {
+			// https://github.com/golang/go/issues/11359
+			return 0
+		}
+		if strings.Contains(goErr.Error(), "untyped float constant") {
+			// https://github.com/golang/go/issues/11350
+			return 0
+		}
+		if issue11590.MatchString(goErr.Error()) || issue11590_2.MatchString(goErr.Error()) {
+			// https://github.com/golang/go/issues/11590
+			return 0
+		}
 	}
 
 	if gccgoErr == nil && goErr != nil {
@@ -162,11 +193,13 @@ func Fuzz(data []byte) int {
 		}
 	}
 
-	if goErr == nil && gccgoErr != nil && strings.Contains(gccgoErr.Error(), ": error: import file ") {
-		// Temporal workaround for broken gccgo installation.
-		// Remove this.
-		return 0
-	}
+	/*
+		if goErr == nil && gccgoErr != nil && strings.Contains(gccgoErr.Error(), ": error: import file ") {
+			// Temporal workaround for broken gccgo installation.
+			// Remove this.
+			return 0
+		}
+	*/
 
 	if (goErr == nil && gccgoErr != nil || goErr != nil && gccgoErr == nil) && issue11528.Match(data) {
 		// https://github.com/golang/go/issues/11528
@@ -174,7 +207,10 @@ func Fuzz(data []byte) int {
 	}
 
 	// go-fuzz is too smart so it can generate a program that contains "internal compiler error" in an error message :)
-	if gcErr != nil && gcCrash.MatchString(gcErr.Error()) {
+	if gcErr != nil && (gcCrash.MatchString(gcErr.Error()) ||
+		strings.Contains(gcErr.Error(), "\nruntime error: ") ||
+		strings.HasPrefix(gcErr.Error(), "runtime error: ") ||
+		strings.Contains(gcErr.Error(), "%!")) { // bad format string
 		if strings.Contains(gcErr.Error(), "internal compiler error: out of fixed registers") {
 			// https://github.com/golang/go/issues/11352
 			return 0
@@ -264,6 +300,10 @@ func Fuzz(data []byte) int {
 		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in methods, at go/gofrontend/types.cc") {
 			// https://github.com/golang/go/issues/11579
+			return 0
+		}
+		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_flatten, at go/gofrontend/expressions.cc") {
+			// https://github.com/golang/go/issues/11592
 			return 0
 		}
 		fmt.Printf("gccgo result: %v\n", gccgoErr)
@@ -357,8 +397,8 @@ func gc(data []byte) error {
 }
 
 func gccgo(data []byte) error {
-	//cmd := exec.Command("gccgo", "-c", "-x", "go", "-o", "/dev/null", "-")
-	cmd := exec.Command("go1", "-", "-o", "/dev/null", "-quiet", "-mtune=generic", "-march=x86-64", "-O3")
+	cmd := exec.Command("gccgo", "-c", "-x", "go", "-O3", "-o", "/dev/null", "-")
+	//cmd := exec.Command("go1", "-", "-o", "/dev/null", "-quiet", "-mtune=generic", "-march=x86-64", "-O3")
 	cmd.Stdin = bytes.NewReader(data)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
