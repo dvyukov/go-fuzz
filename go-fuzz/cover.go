@@ -63,7 +63,7 @@ func roundUpCover(x byte) byte {
 	if !*flagCoverCounters && x > 0 {
 		return 255
 	}
-	
+
 	if x <= 5 {
 		return x
 	} else if x <= 8 {
