@@ -16,8 +16,8 @@ func compareCover(base, cur []byte) bool {
 	if len(base) != CoverSize || len(cur) != CoverSize {
 		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
 	}
-	res := compareCoverBody(&base[0], &cur[0])
-	if false {
+	res := compareCoverBody(base, cur)
+	if true {
 		if compareCoverDump(base, cur) != res {
 			panic("bad")
 		}
@@ -27,18 +27,12 @@ func compareCover(base, cur []byte) bool {
 
 func compareCoverDump(base, cur []byte) bool {
 	for i, v := range base {
-		x := cur[i]
-		if v == 0 && x != 0 {
-			return true
-		}
-		if x > v {
+		if cur[i] > v {
 			return true
 		}
 	}
 	return false
 }
-
-func compareCoverBody(base, cur *byte) bool // in compare.s
 
 func updateMaxCover(base, cur []byte) int {
 	if len(base) != CoverSize || len(cur) != CoverSize {

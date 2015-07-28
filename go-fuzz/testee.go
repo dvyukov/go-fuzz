@@ -10,6 +10,7 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+	"unsafe"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
@@ -24,8 +25,8 @@ type Testee struct {
 	inPipe      *os.File
 	outPipe     *os.File
 	stdoutPipe  *os.File
-	startTime   int64
 	execs       int
+	startTime   int64
 	outputC     chan []byte
 	downC       chan bool
 	down        bool
@@ -45,6 +46,13 @@ type TestBinary struct {
 	testee *Testee
 
 	stats *Stats
+}
+
+func init() {
+	if unsafe.Offsetof(Testee{}.startTime)%8 != 0 {
+		println(unsafe.Offsetof(Testee{}.startTime))
+		panic("bad atomic field offset")
+	}
 }
 
 func newTestBinary(fileName string, periodicCheck func(), stats *Stats) *TestBinary {

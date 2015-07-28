@@ -1,7 +1,7 @@
 #include "textflag.h"
 
-// func compareCoverBody(base, cur *byte) bool
-TEXT ·compareCoverBody(SB), NOSPLIT, $0-17
+// func compareCoverBody1(base, cur *byte) bool
+TEXT ·compareCoverBody1(SB), NOSPLIT, $0-17
 	MOVQ	base+0(FP), SI
 	MOVQ	cur+8(FP), DI
 	MOVQ	$65535, AX	// loop counter (CoverSize)
