@@ -1,12 +1,13 @@
 package main
 
 import (
-	"github.com/elazarl/go-bindata-assetfs"
 	"bytes"
 	"compress/gzip"
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/elazarl/go-bindata-assetfs"
 )
 
 func bindata_read(data []byte, name string) ([]byte, error) {
@@ -5665,11 +5666,12 @@ func AssetNames() []string {
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() ([]byte, error){
 	"assets/bootstrap-theme.min.css": assets_bootstrap_theme_min_css,
-	"assets/bootstrap.min.css": assets_bootstrap_min_css,
-	"assets/bootstrap.min.js": assets_bootstrap_min_js,
-	"assets/jquery.min.js": assets_jquery_min_js,
-	"assets/stats.html": assets_stats_html,
+	"assets/bootstrap.min.css":       assets_bootstrap_min_css,
+	"assets/bootstrap.min.js":        assets_bootstrap_min_js,
+	"assets/jquery.min.js":           assets_jquery_min_js,
+	"assets/stats.html":              assets_stats_html,
 }
+
 // AssetDir returns the file names below a certain
 // directory embedded in the file by go-bindata.
 // For example if you run go-bindata on data/... and data contains the
@@ -5703,21 +5705,17 @@ func AssetDir(name string) ([]string, error) {
 }
 
 type _bintree_t struct {
-	Func func() ([]byte, error)
+	Func     func() ([]byte, error)
 	Children map[string]*_bintree_t
 }
+
 var _bintree = &_bintree_t{nil, map[string]*_bintree_t{
 	"assets": &_bintree_t{nil, map[string]*_bintree_t{
-		"bootstrap.min.js": &_bintree_t{assets_bootstrap_min_js, map[string]*_bintree_t{
-		}},
-		"jquery.min.js": &_bintree_t{assets_jquery_min_js, map[string]*_bintree_t{
-		}},
-		"stats.html": &_bintree_t{assets_stats_html, map[string]*_bintree_t{
-		}},
-		"bootstrap-theme.min.css": &_bintree_t{assets_bootstrap_theme_min_css, map[string]*_bintree_t{
-		}},
-		"bootstrap.min.css": &_bintree_t{assets_bootstrap_min_css, map[string]*_bintree_t{
-		}},
+		"bootstrap.min.js":        &_bintree_t{assets_bootstrap_min_js, map[string]*_bintree_t{}},
+		"jquery.min.js":           &_bintree_t{assets_jquery_min_js, map[string]*_bintree_t{}},
+		"stats.html":              &_bintree_t{assets_stats_html, map[string]*_bintree_t{}},
+		"bootstrap-theme.min.css": &_bintree_t{assets_bootstrap_theme_min_css, map[string]*_bintree_t{}},
+		"bootstrap.min.css":       &_bintree_t{assets_bootstrap_min_css, map[string]*_bintree_t{}},
 	}},
 }}
 
