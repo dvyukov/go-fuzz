@@ -307,6 +307,7 @@ func (s *Slave) processCrasher(crash NewCrasherArgs) {
 				s.noteCrasher(candidate, output, hanged)
 				return false
 			}
+			crash.Error = output
 			return true
 		})
 	}
