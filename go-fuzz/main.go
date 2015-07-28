@@ -4,8 +4,6 @@ import (
 	"flag"
 	"log"
 	"net"
-	"net/http"
-	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"runtime"
@@ -15,6 +13,9 @@ import (
 	"time"
 )
 
+//go:generate go get github.com/elazarl/go-bindata-assetfs/...
+//go:generate go-bindata-assetfs assets/...
+
 var (
 	flagWorkdir       = flag.String("workdir", "", "dir with persistent work data")
 	flagProcs         = flag.Int("procs", runtime.NumCPU(), "parallelism level")
@@ -23,13 +24,13 @@ var (
 	flagMaster        = flag.String("master", "", "master mode (value is master address)")
 	flagSlave         = flag.String("slave", "", "slave mode (value is master address)")
 	flagBin           = flag.String("bin", "", "test binary built with go-fuzz-build")
-	flagPprof         = flag.String("pprof", "", "serve pprof handlers on that address")
 	flagDumpCover     = flag.Bool("dumpcover", false, "dump coverage profile into workdir")
 	flagDup           = flag.Bool("dup", false, "collect duplicate crashers")
 	flagTestOutput    = flag.Bool("testoutput", false, "print test binary output to stdout (for debugging only)")
 	flagCoverCounters = flag.Bool("covercounters", true, "use coverage hit counters")
 	flagSonar         = flag.Bool("sonar", true, "use sonar hints")
 	flagV             = flag.Int("v", 0, "verbosity level")
+	flagHTTP          = flag.String("http", "", "HTTP server listen address (master mode only)")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})
@@ -41,10 +42,8 @@ func main() {
 	if *flagMaster != "" && *flagSlave != "" {
 		log.Fatalf("both -master and -slave are specified")
 	}
-	if *flagPprof != "" {
-		go http.ListenAndServe(*flagPprof, nil)
-	} else {
-		runtime.MemProfileRate = 0
+	if *flagHTTP != "" && *flagSlave != "" {
+		log.Fatalf("both -http and -slave are specified")
 	}
 
 	go func() {
