@@ -3,7 +3,7 @@
 Go-fuzz is a coverage-guided [fuzzing solution](http://en.wikipedia.org/wiki/Fuzz_testing) for testing of Go packages.
 Fuzzing is mainly applicable to packages that parse complex inputs (both text
 and binary), and is especially useful for hardening of systems that parse inputs
-from potentially malicious users (e.g. anything accepted over a network).sn1
+from potentially malicious users (e.g. anything accepted over a network).
 
 ## Usage
 
