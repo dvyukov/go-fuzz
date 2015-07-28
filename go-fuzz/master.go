@@ -71,9 +71,10 @@ func masterMain(ln net.Listener) {
 func masterListen(m *Master) {
 	if *flagHTTP != "" {
 		http.HandleFunc("/eventsource", m.eventSource)
-		http.Handle("/", http.FileServer(assetFS()))
+		http.HandleFunc("/", m.index)
 
 		go func() {
+			fmt.Printf("Serving statistics on http://%s/\n", flagHTTP)
 			panic(http.ListenAndServe(*flagHTTP, nil))
 		}()
 	} else {
@@ -121,6 +122,13 @@ func (m *Master) eventSource(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.WriteHeader(http.StatusOK)
 	<-m.statsWriters.Add(w)
+}
+
+func (m *Master) index(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		r.URL.Path = "/stats.html"
+	}
+	http.FileServer(assetFS()).ServeHTTP(w, r)
 }
 
 func (m *Master) masterStats() masterStats {
