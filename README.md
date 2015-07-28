@@ -122,7 +122,8 @@ test executions, and the number in brackets is the average speed of test
 executions. ```cover``` is number of bits set in a hashed coverage bitmap, if this number
 grows fuzzer uncovers new lines of code; size of the bitmap is 64K; ideally ```cover```
 value should be less than ~5000, otherwise fuzzer can miss new interesting inputs
-due to hash collisions. And finally ```uptime``` is uptime of the process.
+due to hash collisions. And finally ```uptime``` is uptime of the process. This same
+information is also served via http (see the ```-http``` flag).
 
 ### Random Notes
 
