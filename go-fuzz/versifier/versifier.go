@@ -671,6 +671,11 @@ func extractNumbers(nn []Node) []Node {
 func structureKeyValue(nn []Node) (res []Node) {
 	// TODO: extract numeric key-value pairs
 	delims := map[rune]bool{'=': true, ':': true}
+	for _, n := range nn {
+		if brk, ok := n.(*BracketNode); ok {
+			brk.b.nodes = structureKeyValue(brk.b.nodes)
+		}
+	}
 
 	for i := 0; i < len(nn); i++ {
 		n := nn[i]
