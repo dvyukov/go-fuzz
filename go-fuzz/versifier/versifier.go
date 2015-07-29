@@ -571,8 +571,8 @@ func tokenize(data []byte) []Node {
 func structure(nn []Node) []Node {
 	nn = extractNumbers(nn)
 	nn = structureBrackets(nn)
-	nn = structureLists(nn)
 	nn = structureKeyValue(nn)
+	nn = structureLists(nn)
 	nn = structureLines(nn)
 	return nn
 }
