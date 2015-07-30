@@ -408,5 +408,9 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cockroachdb/cockroach: parse literals more like Postgres](https://github.com/cockroachdb/cockroach/pull/1807) **fixed**
 - [cockroachdb/cockroach: SELECT ("*") parse oddities](https://github.com/cockroachdb/cockroach/issues/1810)
 - [github.com/google/open-location-code: Extremely long codes can cause underflow errors](https://github.com/google/open-location-code/issues/12)
+- [github.com/akrennmair/gopcap: incorrectly formed IP, UDP, TCP, ICMP packets can cause out of range errors](https://github.com/akrennmair/gopcap/commit/00e11033259acb75598ba416495bb708d864a010) **fixed**
+- [github.com/gogo/protobuf: gogofast generates Unmarshal code that can panic](https://github.com/gogo/protobuf/issues/86)
+- [github.com/DHowett/go-plist: Various panics found through go-fuzz](https://github.com/DHowett/go-plist/issues/15)
+- [github.com/streadway/amqp: go-fuzz fixes](https://github.com/streadway/amqp/pull/151)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
