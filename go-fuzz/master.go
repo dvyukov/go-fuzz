@@ -74,7 +74,7 @@ func masterListen(m *Master) {
 		http.HandleFunc("/", m.index)
 
 		go func() {
-			fmt.Printf("Serving statistics on http://%s/\n", flagHTTP)
+			fmt.Printf("Serving statistics on http://%s/\n", *flagHTTP)
 			panic(http.ListenAndServe(*flagHTTP, nil))
 		}()
 	} else {
