@@ -571,8 +571,8 @@ func tokenize(data []byte) []Node {
 func structure(nn []Node) []Node {
 	nn = extractNumbers(nn)
 	nn = structureBrackets(nn)
-	nn = structureLists(nn)
 	nn = structureKeyValue(nn)
+	nn = structureLists(nn)
 	nn = structureLines(nn)
 	return nn
 }
@@ -671,6 +671,11 @@ func extractNumbers(nn []Node) []Node {
 func structureKeyValue(nn []Node) (res []Node) {
 	// TODO: extract numeric key-value pairs
 	delims := map[rune]bool{'=': true, ':': true}
+	for _, n := range nn {
+		if brk, ok := n.(*BracketNode); ok {
+			brk.b.nodes = structureKeyValue(brk.b.nodes)
+		}
+	}
 
 	for i := 0; i < len(nn); i++ {
 		n := nn[i]
@@ -678,19 +683,16 @@ func structureKeyValue(nn []Node) (res []Node) {
 		if !ok {
 			continue
 		}
-		if delims[ctrl.ch] {
+		if delims[ctrl.ch] &&
+			!(i == 0 || i == len(nn)-1) {
 			var key, value *AlphaNumNode
-			if i > 0 {
-				key, ok = nn[i-1].(*AlphaNumNode)
-				if !ok {
-					continue
-				}
+			key, ok = nn[i-1].(*AlphaNumNode)
+			if !ok {
+				continue
 			}
-			if i < len(nn)-1 {
-				value, ok = nn[i+1].(*AlphaNumNode)
-				if !ok {
-					continue
-				}
+			value, ok = nn[i+1].(*AlphaNumNode)
+			if !ok {
+				continue
 			}
 			nn[i+1] = &KeyValNode{ctrl.ch, key, value}
 			copy(nn[i-1:], nn[i+1:])
