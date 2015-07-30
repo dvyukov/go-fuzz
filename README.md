@@ -393,6 +393,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/332853ab7b3c719dd67c657394139491c1f6deb7) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72) **fixed**
 - [github.com/mdlayher/aoe: binary marshal/unmarshal inconsistency](https://github.com/mdlayher/aoe/commit/286c87727b95c9491e08cd909c93ac4a42218ee6) **fixed**
+- [github.com/mdlayher/arp: slice bounds out of range](https://github.com/mdlayher/arp/commit/f237799bcd57ff8bb4773eb819a4b852875f01d0) **fixed**
 - [github.com/mdlayher/ethernet: slice bounds out of range](https://github.com/mdlayher/ethernet/commit/da795f9b6b07b56d87722e5871e66519ac94f489) **fixed**
 - [github.com/russross/blackfriday: index out of range panic in scanLinkRef](https://github.com/russross/blackfriday/issues/172) **fixed**
 - [github.com/russross/blackfriday: index out of range panic in isReference](https://github.com/russross/blackfriday/issues/173) **fixed**
