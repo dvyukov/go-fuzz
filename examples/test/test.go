@@ -66,3 +66,73 @@ func Fuzz(data []byte) int {
 	}
 	return 0
 }
+
+// Compilation tests, go-fuzz-build previously failed on these code patterns.
+
+// Test for issue #35.
+const X = 1 << 129
+
+func foo(x float64) bool {
+	return x < X
+}
+
+func test1() bool {
+	var x uint64
+	var y uint
+	return x == 1<<y
+}
+
+func test11() bool {
+	var x uint64
+	var y uint
+	return x < (1<<uint64(y))-1
+}
+
+func Pow(x, y float64) float64 {
+	switch {
+	case x == -1:
+		return 1
+	case (Abs(x) < 1) == IsInf(y, 1):
+		return 0
+	default:
+		return 1
+	}
+}
+
+func Abs(x float64) float64 {
+	return x
+}
+
+func IsInf(x float64, v int) bool {
+	return x != 0
+}
+
+func test2(p *int) bool {
+	return p == nil
+}
+
+type ChanDir int
+
+const (
+	SEND ChanDir = 1 << iota
+	RECV
+)
+
+func test3(x ChanDir) bool {
+	return x == SEND|RECV
+}
+
+type MyBool bool
+
+func test4(x, y MyBool) MyBool {
+	if x && y {
+		return true
+	}
+	if true && y {
+		return true
+	}
+	if x && true {
+		return true
+	}
+	return false
+}

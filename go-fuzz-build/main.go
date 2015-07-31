@@ -2,9 +2,13 @@ package main
 
 import (
 	"archive/zip"
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/parser"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,13 +17,13 @@ import (
 	"strings"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+	"golang.org/x/tools/go/types"
 )
 
 var (
-	flagOut        = flag.String("o", "", "output file")
-	flagFunc       = flag.String("func", "Fuzz", "entry function")
-	flagWork       = flag.Bool("work", false, "don't remove working directory")
-	flagInstrument = flag.String("instrument", "", "instrument a single file (for debugging)")
+	flagOut  = flag.String("o", "", "output file")
+	flagFunc = flag.String("func", "Fuzz", "entry function")
+	flagWork = flag.Bool("work", false, "don't remove working directory")
 
 	workdir string
 	GOROOT  string
@@ -33,12 +37,6 @@ const (
 // instruments Go source files there and builds setting GOROOT to the temp dir.
 func main() {
 	flag.Parse()
-	if *flagInstrument != "" {
-		f := tempFile()
-		instrument("pkg", "pkg/file.go", *flagInstrument, f, nil, nil, nil)
-		fmt.Println(string(readFile(f)))
-		os.Exit(0)
-	}
 	if len(flag.Args()) != 1 || len(flag.Arg(0)) == 0 {
 		failf("usage: go-fuzz-build pkg")
 	}
@@ -79,8 +77,8 @@ func main() {
 
 	lits := make(map[Literal]struct{})
 	var blocks, sonar []CoverBlock
-	coverBin := buildInstrumentedBinary(pkg, deps, lits, &blocks, nil)
 	sonarBin := buildInstrumentedBinary(pkg, deps, nil, nil, &sonar)
+	coverBin := buildInstrumentedBinary(pkg, deps, lits, &blocks, nil)
 	metaData := createMeta(lits, blocks, sonar)
 	defer func() {
 		os.Remove(coverBin)
@@ -190,8 +188,9 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 		copyDir(filepath.Join(GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
 	}
 	for p := range deps {
-		clonePackage(workdir, p, lits, blocks, sonar)
+		clonePackage(workdir, p)
 	}
+	instrumentPackages(workdir, deps, lits, blocks, sonar)
 	createFuzzMain(pkg)
 
 	outf := tempFile()
@@ -219,13 +218,26 @@ func createFuzzMain(pkg string) {
 	writeFile(filepath.Join(workdir, "src", mainPkg, "main.go"), []byte(src))
 }
 
-func clonePackage(workdir, pkg string, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
+func clonePackage(workdir, pkg string) {
 	dir := goListProps(pkg, "Dir")[0]
 	if !strings.HasSuffix(filepath.ToSlash(dir), pkg) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
 	}
 	newDir := filepath.Join(workdir, "src", pkg)
 	copyDir(dir, newDir, false, isSourceFile)
+}
+
+type Package struct {
+	name    string
+	fset    *token.FileSet
+	ast     map[string]*ast.File
+	typed   *types.Package
+	info    types.Info
+	nimport int
+	deps    []*Package
+}
+
+func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	ignore := map[string]bool{
 		"runtime":       true, // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
 		"unsafe":        true, // nothing to see here (also creates import cycle with go-fuzz-dep)
@@ -249,30 +261,92 @@ func clonePackage(workdir, pkg string, lits map[Literal]struct{}, blocks *[]Cove
 		"os":      true,
 		"unicode": true,
 	}
-	if ignore[pkg] {
-		return
-	}
-	if nolits[pkg] {
-		lits = nil
-	}
-	files, err := ioutil.ReadDir(newDir)
-	if err != nil {
-		failf("failed to scan dir '%v': %v", dir, err)
-	}
-	for _, f := range files {
-		if f.IsDir() {
-			continue
+
+	var ready []*Package
+	pkgs := make(map[string]*Package)
+	for pkg := range deps {
+		p := pkgs[pkg]
+		if p == nil {
+			p = &Package{name: pkg}
+			pkgs[pkg] = p
 		}
-		if !strings.HasSuffix(f.Name(), ".go") {
-			continue
+		for _, imp := range goListList(pkg, "Imports") {
+			p1 := pkgs[imp]
+			if p1 == nil {
+				p1 = &Package{name: imp}
+				pkgs[imp] = p1
+			}
+			p.nimport++
+			p1.deps = append(p1.deps, p)
 		}
-		fn := filepath.Join(newDir, f.Name())
-		newFn := fn + ".cover"
-		instrument(pkg, filepath.Join(pkg, f.Name()), fn, newFn, lits, blocks, sonar)
-		os.Remove(fn)
-		err := os.Rename(newFn, fn)
-		if err != nil {
-			failf("failed to rename file: %v", err)
+		if p.nimport == 0 {
+			ready = append(ready, p)
+		}
+	}
+	typedPackages := make(map[string]*types.Package)
+	for len(ready) != 0 {
+		p := ready[len(ready)-1]
+		ready = ready[:len(ready)-1]
+
+		if p.name == "unsafe" {
+			typedPackages["unsafe"] = types.Unsafe
+		} else {
+			p.fset = token.NewFileSet()
+			p.ast = make(map[string]*ast.File)
+			p.info.Types = make(map[ast.Expr]types.TypeAndValue)
+			path := filepath.Join(workdir, "src", p.name)
+			var files []*ast.File
+			for _, fn := range append(goListList(p.name, "GoFiles"), goListList(p.name, "CgoFiles")...) {
+				astFile, err := parser.ParseFile(p.fset, filepath.Join(path, fn), nil, parser.ParseComments)
+				if err != nil {
+					failf("failed to parse package %v: %v", p.name, err)
+				}
+				astFile.Comments = trimComments(astFile, p.fset)
+				p.ast[fn] = astFile
+				files = append(files, astFile)
+			}
+
+			cfg := &types.Config{
+				Packages: typedPackages,
+				Import: func(packages map[string]*types.Package, pkg string) (*types.Package, error) {
+					if packages[pkg] == nil {
+						failf("can't find imported package %v", pkg)
+					}
+					return packages[pkg], nil
+				},
+			}
+			typed, err := cfg.Check(p.name, p.fset, files, &p.info)
+			if err != nil {
+				failf("failed to type check package %v: %v", p.name, err)
+			}
+			typedPackages[p.name] = typed
+
+			if !ignore[p.name] {
+				lits1 := lits
+				if nolits[p.name] {
+					lits1 = nil
+				}
+				for fname, f := range p.ast {
+					fullName := filepath.Join(path, fname)
+					buf := new(bytes.Buffer)
+					content := readFile(fullName)
+					buf.Write(initialComments(content)) // Retain '// +build' directives.
+					instrument(p.name, fname, p.fset, f, &p.info, buf, lits1, blocks, sonar)
+					tmp := tempFile()
+					writeFile(tmp, buf.Bytes())
+					err := os.Rename(tmp, fullName)
+					if err != nil {
+						failf("failed to rename file: %v", err)
+					}
+				}
+			}
+		}
+
+		for _, p1 := range p.deps {
+			p1.nimport--
+			if p1.nimport == 0 {
+				ready = append(ready, p1)
+			}
 		}
 	}
 }
@@ -307,7 +381,7 @@ func goListList(pkg, what string) []string {
 		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
 	if len(out) < 2 {
-		failf("go list output is empty")
+		return nil
 	}
 	out = out[:len(out)-2]
 	return strings.Split(string(out), "|")
@@ -323,7 +397,7 @@ func goListProps(pkg string, props ...string) []string {
 		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
 	if len(out) == 0 {
-		failf("go list output is empty")
+		failf("goListProps: go list output is empty")
 	}
 	out = out[:len(out)-1]
 	return strings.Split(string(out), "|")
