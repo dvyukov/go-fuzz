@@ -5,38 +5,27 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"go/ast"
-	"go/parser"
 	"go/printer"
 	"go/token"
 	"io"
-	"io/ioutil"
-	"os"
 	"strconv"
 	"strings"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+	"golang.org/x/tools/go/exact"
+	"golang.org/x/tools/go/types"
 )
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(pkg, shortName, in, out string, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
-	fset := token.NewFileSet()
-	content, err := ioutil.ReadFile(in)
-	if err != nil {
-		failf("cover: %s: %s", in, err)
-	}
-	parsedFile, err := parser.ParseFile(fset, in, content, parser.ParseComments)
-	if err != nil {
-		failf("cover: %s: %s", in, err)
-	}
-	parsedFile.Comments = trimComments(parsedFile, fset)
-
+func instrument(pkg, shortName string, fset *token.FileSet, parsedFile *ast.File, info *types.Info, out io.Writer, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	file := &File{
 		fset:      fset,
-		name:      in,
+		pkg:       pkg,
 		shortName: shortName,
 		astFile:   parsedFile,
 		blocks:    blocks,
+		info:      info,
 	}
 	file.addImport("github.com/dvyukov/go-fuzz/go-fuzz-dep", fuzzdepPkg, "Main")
 
@@ -47,17 +36,11 @@ func instrument(pkg, shortName, in, out string, lits map[Literal]struct{}, block
 	ast.Walk(file, file.astFile)
 
 	if sonar != nil {
-		s := &Sonar{fset: fset, name: shortName, pkg: pkg, blocks: sonar}
+		s := &Sonar{fset: fset, name: shortName, pkg: pkg, blocks: sonar, info: info}
 		ast.Walk(s, file.astFile)
 	}
 
-	fd, err := os.Create(out)
-	if err != nil {
-		failf("failed to create temp file: %v")
-	}
-	defer fd.Close()
-	fd.Write(initialComments(content)) // Retain '// +build' directives.
-	file.print(fd)
+	file.print(out)
 }
 
 type Sonar struct {
@@ -65,6 +48,7 @@ type Sonar struct {
 	name   string
 	pkg    string
 	blocks *[]CoverBlock
+	info   *types.Info
 }
 
 var sonarSeq = 0
@@ -74,21 +58,15 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	switch nn := n.(type) {
 	case *ast.BinaryExpr:
 		break
+
 	case *ast.GenDecl:
 		if nn.Tok != token.VAR {
 			return nil // constants and types are not interesting
 		}
 		return s
 
-	case *ast.FuncDecl:
-		if s.pkg == "math" && (nn.Name.Name == "Y0" || nn.Name.Name == "Y1" || nn.Name.Name == "Yn" ||
-			nn.Name.Name == "J0" || nn.Name.Name == "J1" || nn.Name.Name == "Jn" ||
-			nn.Name.Name == "Pow") {
-			// Can't handle code there:
-			// math/j0.go:93: constant 680564733841876926926749214863536422912 overflows int
-			return nil
-		}
-		return s // recurse
+	case *ast.SelectorExpr:
+		return nil
 
 	case *ast.SwitchStmt:
 		if nn.Tag == nil || nn.Body == nil {
@@ -118,14 +96,19 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 			sw.Init = nil
 		}
 		const tmpvar = "__go_fuzz_tmp"
-		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: tmpvar}}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
-		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: "_"}}, Tok: token.ASSIGN, Rhs: []ast.Expr{&ast.Ident{Name: tmpvar}}})
+		tmp := &ast.Ident{Name: tmpvar}
+		typ := s.info.Types[sw.Tag]
+		s.info.Types[tmp] = typ
+		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{tmp}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
+		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: "_"}}, Tok: token.ASSIGN, Rhs: []ast.Expr{tmp}})
 		sw.Tag = nil
 		stmts = append(stmts, sw)
 		for _, cas1 := range sw.Body.List {
 			cas := cas1.(*ast.CaseClause)
 			for i, expr := range cas.List {
-				cas.List[i] = &ast.BinaryExpr{X: &ast.Ident{Name: tmpvar, NamePos: expr.Pos()}, Op: token.EQL, Y: expr}
+				tmp := &ast.Ident{Name: tmpvar, NamePos: expr.Pos()}
+				s.info.Types[tmp] = typ
+				cas.List[i] = &ast.BinaryExpr{X: tmp, Op: token.EQL, Y: expr}
 			}
 		}
 		nn.Tag = nil
@@ -234,9 +217,6 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	v2 := nn.Y
 	ast.Walk(s, v1)
 	ast.Walk(s, v2)
-	if isUninterestingLiteral(v1) || isUninterestingLiteral(v2) {
-		return s
-	}
 	if isCap(v1) || isCap(v2) {
 		// Haven't seen useful cases yet.
 		return s
@@ -250,11 +230,19 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 		// what part of the input to alter to affect len result.
 		flags |= SonarLength
 	}
-	if isConstExpr(v1) {
+	var tv types.TypeAndValue
+	if isConstExpr(s.info, v1) {
 		flags |= SonarConst1
+	} else {
+		tv = s.info.Types[v1]
 	}
-	if isConstExpr(v2) {
+	if isConstExpr(s.info, v2) {
 		flags |= SonarConst2
+	} else {
+		tv = s.info.Types[v2]
+	}
+	if flags&SonarConst1 != 0 && flags&SonarConst2 != 0 {
+		return nil
 	}
 	id := int(flags) | sonarSeq<<8
 	startPos := s.fset.Position(nn.Pos())
@@ -262,16 +250,59 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	*s.blocks = append(*s.blocks, CoverBlock{sonarSeq, s.name, startPos.Line, startPos.Column, endPos.Line, endPos.Column, int(flags)})
 	sonarSeq++
 	block := &ast.BlockStmt{}
-	if !isSimpleExpr(v1) {
-		tmp := ast.NewIdent("v1")
-		block.List = append(block.List, &ast.AssignStmt{Tok: token.DEFINE, Lhs: []ast.Expr{tmp}, Rhs: []ast.Expr{v1}})
-		v1 = tmp
+
+	// Comparisons of pointers, maps, chans and bool are not interesting.
+	if _, ok := tv.Type.(*types.Pointer); ok {
+		return nil
 	}
-	if !isSimpleExpr(v2) {
-		tmp := ast.NewIdent("v2")
-		block.List = append(block.List, &ast.AssignStmt{Tok: token.DEFINE, Lhs: []ast.Expr{tmp}, Rhs: []ast.Expr{v2}})
-		v2 = tmp
+	if _, ok := tv.Type.(*types.Map); ok {
+		return nil
 	}
+	if _, ok := tv.Type.(*types.Chan); ok {
+		return nil
+	}
+	if s := tv.Type.Underlying().String(); s == "bool" || s == "untyped nil" || s == "unsafe.Pointer" {
+		return nil
+	}
+
+	typstr := tv.Type.String()
+	if strings.HasPrefix(typstr, s.pkg+".") {
+		typstr = typstr[len(s.pkg)+1:]
+	}
+	conv := func(name string, v ast.Expr) ast.Expr {
+		// Convert const to the type of the other expr.
+		isConst := isConstExpr(s.info, v)
+		badConst := false
+		if isConst {
+			c := s.info.Types[v].Value
+			if c.Kind() == exact.Int {
+				if v, ok := exact.Int64Val(c); !ok || int64(int(v)) != v {
+					// Such const can't be used outside of its current context,
+					// because it will be converted to int and that will fail.
+					badConst = true
+				}
+			}
+		}
+		if badConst || isWeirdShift(s.info, v) {
+			//fmt.Printf("adding type: %#v at %v %#v %v %v\n", v, s.fset.Position(v.Pos()), s.info.Types[v].Value, badConst, s.isWeirdShift(v))
+			v = &ast.CallExpr{
+				Fun:  &ast.Ident{Name: typstr},
+				Args: []ast.Expr{v},
+			}
+			s.info.Types[v] = tv
+		}
+		if !isConst {
+			// Assign to a temp to avoid double side-effects.
+			tmp := ast.NewIdent(name)
+			block.List = append(block.List, &ast.AssignStmt{Tok: token.DEFINE, Lhs: []ast.Expr{tmp}, Rhs: []ast.Expr{v}})
+			v = tmp
+			s.info.Types[v] = tv
+		}
+		return v
+	}
+	v1 = conv("v1", v1)
+	v2 = conv("v2", v2)
+
 	block.List = append(block.List,
 		&ast.ExprStmt{
 			X: &ast.CallExpr{
@@ -292,65 +323,30 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	return nil
 }
 
-func isUninterestingLiteral(n ast.Expr) bool {
-	if id, ok := n.(*ast.Ident); ok {
-		return id.Name == "nil" || id.Name == "true" || id.Name == "false"
-	}
-	return false
+func isWeirdShift(info *types.Info, n ast.Expr) bool {
+	w := &WeirdShiftWalker{info: info}
+	ast.Walk(w, n)
+	return w.found
 }
 
-func isSimpleExpr(n ast.Expr) bool {
-	switch nn := n.(type) {
-	case *ast.Ident:
-		return true
-	case *ast.BasicLit:
-		return true
-	case *ast.UnaryExpr:
-		return isSimpleExpr(nn.X)
-	case *ast.BinaryExpr:
-		return isSimpleExpr(nn.X) && isSimpleExpr(nn.Y)
-	case *ast.SelectorExpr:
-		return isSimpleExpr(nn.X) && isSimpleExpr(nn.Sel)
-	case *ast.ParenExpr:
-		return isSimpleExpr(nn.X)
-	case *ast.CallExpr:
-		if arg := isConv(nn); arg != nil {
-			return isSimpleExpr(arg)
-		}
-		if isUnsafeOperator(nn) {
-			return true
-		}
-		return false
-	default:
-		return false
-	}
+type WeirdShiftWalker struct {
+	info  *types.Info
+	found bool
 }
 
-func isConstExpr(n ast.Expr) bool {
-	switch nn := n.(type) {
-	case *ast.Ident:
-		return nn.Obj != nil && nn.Obj.Kind == ast.Con
-	case *ast.BasicLit:
-		return true
-	case *ast.UnaryExpr:
-		return isConstExpr(nn.X)
-	case *ast.BinaryExpr:
-		return isConstExpr(nn.X) && isConstExpr(nn.Y)
-	case *ast.SelectorExpr:
-		return isConstExpr(nn.Sel)
-	case *ast.ParenExpr:
-		return isConstExpr(nn.X)
-	case *ast.CallExpr:
-		if arg := isConv(nn); arg != nil {
-			return isConstExpr(arg)
-		}
-		if isUnsafeOperator(nn) {
-			return true
-		}
-		return false
-	default:
-		return false
+func (w *WeirdShiftWalker) Visit(n ast.Node) ast.Visitor {
+	if bin, ok := n.(*ast.BinaryExpr); ok && (bin.Op == token.SHL || bin.Op == token.SHR) && isConstExpr(w.info, bin.X) {
+		w.found = true
 	}
+	return w
+}
+
+func isConstExpr(info *types.Info, n ast.Expr) bool {
+	tv := info.Types[n]
+	if tv.Type == nil && tv.Value == nil {
+		panic(fmt.Sprintf("untyped expression: %#v", n))
+	}
+	return tv.Value != nil
 }
 
 func isCap(n ast.Expr) bool {
@@ -366,44 +362,6 @@ func isLen(n ast.Expr) bool {
 	if call, ok := n.(*ast.CallExpr); ok {
 		if id, ok2 := call.Fun.(*ast.Ident); ok2 {
 			return id.Name == "len"
-		}
-	}
-	return false
-}
-
-func isConv(n *ast.CallExpr) ast.Expr {
-	if id, ok := n.Fun.(*ast.Ident); ok {
-		if knownTypes[id.Name] {
-			return n.Args[0]
-		}
-	}
-	return nil
-}
-
-var knownTypes = map[string]bool{
-	"rune":    true,
-	"byte":    true,
-	"int8":    true,
-	"uint8":   true,
-	"int16":   true,
-	"uint16":  true,
-	"int32":   true,
-	"uint32":  true,
-	"int64":   true,
-	"uint64":  true,
-	"string":  true,
-	"int":     true,
-	"uint":    true,
-	"intptr":  true,
-	"uintptr": true,
-	"float32": true,
-	"float64": true,
-}
-
-func isUnsafeOperator(n *ast.CallExpr) bool {
-	if sel, ok := n.Fun.(*ast.SelectorExpr); ok {
-		if id, ok := sel.X.(*ast.Ident); ok {
-			return id.Name == "unsafe"
 		}
 	}
 	return false
@@ -478,7 +436,7 @@ func trimComments(file *ast.File, fset *token.FileSet) []*ast.CommentGroup {
 			}
 		}
 		if list != nil {
-			comments = append(comments, &ast.CommentGroup{list})
+			comments = append(comments, &ast.CommentGroup{List: list})
 		}
 	}
 	return comments
@@ -509,10 +467,11 @@ func initialComments(content []byte) []byte {
 
 type File struct {
 	fset      *token.FileSet
-	name      string // Name of file.
+	pkg       string
 	shortName string
 	astFile   *ast.File
 	blocks    *[]CoverBlock
+	info      *types.Info
 }
 
 var slashslash = []byte("//")
@@ -622,20 +581,18 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 			// Replace:
 			//	x && y
 			// with:
-			//	bool(x) && func() bool { return bool(y) }
-			//
-			// Conversions to bool are required for the following code:
-			//	type MyBool bool
-			//	var x, y MyBool
-			//	x && y
-			// Compilation will still fail because we change type of expression
-			// from MyBool to bool. But at least it is possible to fix the code as:
-			//	MyBool(x && y)
-			n.X = &ast.CallExpr{Fun: &ast.Ident{Name: "bool"}, Args: []ast.Expr{n.X}}
+			//	x && func() bool { return y }
+			typ := f.info.Types[n].Type.String()
+			if strings.HasPrefix(typ, f.pkg+".") {
+				typ = typ[len(f.pkg)+1:]
+			}
+			if typ == "untyped bool" {
+				typ = "bool"
+			}
 			n.Y = &ast.CallExpr{
 				Fun: &ast.FuncLit{
-					Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "bool"}}}}},
-					Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ReturnStmt{Results: []ast.Expr{&ast.CallExpr{Fun: &ast.Ident{Name: "bool"}, Args: []ast.Expr{n.Y}}}}}},
+					Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: typ}}}}},
+					Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ReturnStmt{Results: []ast.Expr{n.Y}}}},
 				},
 			}
 		}
