@@ -230,6 +230,28 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 		// what part of the input to alter to affect len result.
 		flags |= SonarLength
 	}
+
+	checkType := func(tv types.TypeAndValue) bool {
+		// Comparisons of pointers, maps, chans and bool are not interesting.
+		if _, ok := tv.Type.(*types.Pointer); ok {
+			return false
+		}
+		if _, ok := tv.Type.(*types.Map); ok {
+			return false
+		}
+		if _, ok := tv.Type.(*types.Chan); ok {
+			return false
+		}
+		s := tv.Type.Underlying().String()
+		if s == "bool" || s == "ideal bool" || s == "error" ||
+			s == "untyped nil" || s == "unsafe.Pointer" {
+			return false
+		}
+		return true
+	}
+	if !checkType(s.info.Types[v1]) || !checkType(s.info.Types[v2]) {
+		return nil
+	}
 	var tv types.TypeAndValue
 	if isConstExpr(s.info, v1) {
 		flags |= SonarConst1
@@ -251,20 +273,6 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	sonarSeq++
 	block := &ast.BlockStmt{}
 
-	// Comparisons of pointers, maps, chans and bool are not interesting.
-	if _, ok := tv.Type.(*types.Pointer); ok {
-		return nil
-	}
-	if _, ok := tv.Type.(*types.Map); ok {
-		return nil
-	}
-	if _, ok := tv.Type.(*types.Chan); ok {
-		return nil
-	}
-	if s := tv.Type.Underlying().String(); s == "bool" || s == "untyped nil" || s == "unsafe.Pointer" {
-		return nil
-	}
-
 	typstr := tv.Type.String()
 	if strings.HasPrefix(typstr, s.pkg+".") {
 		typstr = typstr[len(s.pkg)+1:]
@@ -284,7 +292,6 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 			}
 		}
 		if badConst || isWeirdShift(s.info, v) {
-			//fmt.Printf("adding type: %#v at %v %#v %v %v\n", v, s.fset.Position(v.Pos()), s.info.Types[v].Value, badConst, s.isWeirdShift(v))
 			v = &ast.CallExpr{
 				Fun:  &ast.Ident{Name: typstr},
 				Args: []ast.Expr{v},
