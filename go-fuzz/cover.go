@@ -17,7 +17,10 @@ func compareCover(base, cur []byte) bool {
 		log.Fatalf("bad cover table size (%v, %v)", len(base), len(cur))
 	}
 	res := compareCoverBody(base, cur)
-	if true {
+	if false {
+		// This check can legitimately fail if the test process has
+		// some background goroutines that continue to write to the
+		// cover array (cur storage is in shared memory).
 		if compareCoverDump(base, cur) != res {
 			panic("bad")
 		}
