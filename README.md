@@ -177,7 +177,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: internal compiler error: getinarg: not a func int](https://github.com/golang/go/issues/11596)
 - [cmd/compile: hangs converting int const to complex64](https://github.com/golang/go/issues/11597)
 - [cmd/compile: nil deref in error message](https://github.com/golang/go/issues/11614)
-- [cmd/compile: use of untyped nil in switch](https://github.com/golang/go/issues/11668)
+- [cmd/compile: use of untyped nil in switch](https://github.com/golang/go/issues/11668) **fixed**
 - [cmd/compile: implicitly converts complex constant to integer](https://github.com/golang/go/issues/11669)
 - [cmd/compile: assignment to entry in nil map](https://github.com/golang/go/issues/11670) **fixed**
 - [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674)
