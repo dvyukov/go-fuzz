@@ -364,7 +364,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: compiles weird construct](https://github.com/golang/go/issues/11561)
 - [gccgo: can do bitwise or on fp constants](https://github.com/golang/go/issues/11566)
 - [gccgo: treats nil as type](https://github.com/golang/go/issues/11567)
-- [gccgo: does not understand greek capiltal letter yot](https://github.com/golang/go/issues/11569)
+- [gccgo: does not understand greek capiltal letter yot](https://github.com/golang/go/issues/11569) **fixed**
 - [gccgo: allows to refer to builtin function not in call expression](https://github.com/golang/go/issues/11570) **fixed**
 - [gccgo: bogus incompatible types in binary expression error](https://github.com/golang/go/issues/11572)
 - [gccgo: allows multiple definitions of a function](https://github.com/golang/go/issues/11573)
