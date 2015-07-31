@@ -212,7 +212,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [net/http: allows invalid characters in header values](https://github.com/golang/go/issues/11207)
 - [net/http: allows %-encoding after \[\]](https://github.com/golang/go/issues/11208) **fixed**
 - [net/mail: ParseAddress/String corrupt address](https://github.com/golang/go/issues/11292)
-- [net/mail: parses invalid address](https://github.com/golang/go/issues/11293)
+- [net/mail: parses invalid address](https://github.com/golang/go/issues/11293) **fixed**
 - [net/mail: fails to escape address](https://github.com/golang/go/issues/11294)
 - [net/textproto: fails to trim header value](https://github.com/golang/go/issues/11204)
 - [archive/zip: cap out of range](https://github.com/golang/go/issues/10956) **fixed**
