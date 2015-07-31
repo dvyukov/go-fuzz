@@ -136,3 +136,11 @@ func test4(x, y MyBool) MyBool {
 	}
 	return false
 }
+
+func bla() error {
+    return nil
+}
+
+func test5() bool {
+    return nil == bla()
+}
