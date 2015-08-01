@@ -27,6 +27,8 @@ func TestBracket(t *testing.T) {
 }
 
 func TestKeyValue(t *testing.T) {
-	dump(`a=1 a=b   2  (aa=bb) a bb:cc:dd,a=b,c=d,e=f`)
 	dump(`:a`)
+	dump(`a=1 a=b 2  (a3=2) a bb:cc:dd,a=b,c=3 (e=0xab,a,b,c)`)
+	dump(`(key=a,b,c)`) // kv of list
+	dump(`a=1,b=2`)     // list of kv
 }

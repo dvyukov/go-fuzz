@@ -316,7 +316,7 @@ func (n *BracketNode) Generate(w io.Writer, v *Verse) {
 type KeyValNode struct {
 	delim rune
 	key   *AlphaNumNode
-	value *AlphaNumNode
+	value *BlockNode
 }
 
 func (n *KeyValNode) Visit(f func(n Node)) {
@@ -571,8 +571,8 @@ func tokenize(data []byte) []Node {
 func structure(nn []Node) []Node {
 	nn = extractNumbers(nn)
 	nn = structureBrackets(nn)
-	nn = structureKeyValue(nn)
 	nn = structureLists(nn)
+	nn = structureKeyValue(nn)
 	nn = structureLines(nn)
 	return nn
 }
@@ -668,13 +668,26 @@ func extractNumbers(nn []Node) []Node {
 	return nn
 }
 
+var kvDelims = map[rune]bool{'=': true, ':': true}
+
 func structureKeyValue(nn []Node) (res []Node) {
-	// TODO: extract numeric key-value pairs
-	delims := map[rune]bool{'=': true, ':': true}
 	for _, n := range nn {
 		if brk, ok := n.(*BracketNode); ok {
 			brk.b.nodes = structureKeyValue(brk.b.nodes)
 		}
+	}
+	for _, n := range nn {
+		if list, ok := n.(*ListNode); ok {
+			for i, _ := range list.blocks {
+				list.blocks[i].nodes = structureKeyValue(list.blocks[i].nodes)
+			}
+		}
+	}
+
+	insertKeyValue := func(index int, delim rune, key *AlphaNumNode, value Node) {
+		nn[index+1] = &KeyValNode{delim, key, &BlockNode{[]Node{value}}}
+		copy(nn[index-1:], nn[index+1:])
+		nn = nn[:len(nn)-2]
 	}
 
 	for i := 0; i < len(nn); i++ {
@@ -683,20 +696,17 @@ func structureKeyValue(nn []Node) (res []Node) {
 		if !ok {
 			continue
 		}
-		if delims[ctrl.ch] &&
+		if kvDelims[ctrl.ch] &&
 			!(i == 0 || i == len(nn)-1) {
-			var key, value *AlphaNumNode
-			key, ok = nn[i-1].(*AlphaNumNode)
-			if !ok {
+			var key *AlphaNumNode
+			if key, ok = nn[i-1].(*AlphaNumNode); !ok {
 				continue
 			}
-			value, ok = nn[i+1].(*AlphaNumNode)
-			if !ok {
-				continue
+			// check for alphanum, num, list values
+			switch value := nn[i+1].(type) {
+			case *AlphaNumNode, *NumNode, *ListNode:
+				insertKeyValue(i, ctrl.ch, key, value.(Node))
 			}
-			nn[i+1] = &KeyValNode{ctrl.ch, key, value}
-			copy(nn[i-1:], nn[i+1:])
-			nn = nn[:len(nn)-2]
 		}
 	}
 	return nn
@@ -816,7 +826,7 @@ func structureLists(nn []Node) (res []Node) {
 						if ctrl1.ch == ctrl.ch {
 							break
 						}
-						if !elems[0].tok[ctrl1.ch] {
+						if !elems[0].tok[ctrl1.ch] && !kvDelims[ctrl1.ch] {
 							break
 						}
 					}
