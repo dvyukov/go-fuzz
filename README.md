@@ -361,7 +361,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: rejects valid fp literal](https://github.com/golang/go/issues/11533)
 - [gccgo: accepts program with invalid identifier](https://github.com/golang/go/issues/11535)
 - [gccgo: accepts program with invalid identifier (2)](https://github.com/golang/go/issues/11547)
-- [gccgo: compiles weird construct](https://github.com/golang/go/issues/11561)
+- [gccgo: compiles weird construct](https://github.com/golang/go/issues/11561) **fixed**
 - [gccgo: can do bitwise or on fp constants](https://github.com/golang/go/issues/11566)
 - [gccgo: treats nil as type](https://github.com/golang/go/issues/11567) **fixed**
 - [gccgo: does not understand greek capiltal letter yot](https://github.com/golang/go/issues/11569) **fixed**
