@@ -408,7 +408,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cockroachdb/cockroach: crash on x % 0](https://github.com/cockroachdb/cockroach/pull/1799) **fixed**
 - [cockroachdb/cockroach: panic when dealing with empty sql ident](https://github.com/cockroachdb/cockroach/pull/1808) **fixed**
 - [cockroachdb/cockroach: parse literals more like Postgres](https://github.com/cockroachdb/cockroach/pull/1807) **fixed**
-- [cockroachdb/cockroach: SELECT ("*") parse oddities](https://github.com/cockroachdb/cockroach/issues/1810)
+- [cockroachdb/cockroach: SELECT ("*") parse oddities](https://github.com/cockroachdb/cockroach/issues/1810) **fixed**
 - [github.com/google/open-location-code: Extremely long codes can cause underflow errors](https://github.com/google/open-location-code/issues/12)
 - [github.com/akrennmair/gopcap: incorrectly formed IP, UDP, TCP, ICMP packets can cause out of range errors](https://github.com/akrennmair/gopcap/commit/00e11033259acb75598ba416495bb708d864a010) **fixed**
 - [github.com/gogo/protobuf: gogofast generates Unmarshal code that can panic](https://github.com/gogo/protobuf/issues/86)
