@@ -1,0 +1,2 @@
+DELETE FROM S
+WHERE M%v%s%v

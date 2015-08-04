@@ -1,0 +1,3 @@
+SELECT D
+FROM S
+ORDER BY H,D,_

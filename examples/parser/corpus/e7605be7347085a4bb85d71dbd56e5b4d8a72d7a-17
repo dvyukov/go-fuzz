@@ -1,0 +1,1 @@
+SELECT O.*,R.*,R.*,R.*,R.*FROM Q
