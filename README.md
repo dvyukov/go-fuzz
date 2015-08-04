@@ -415,5 +415,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/DHowett/go-plist: Various panics found through go-fuzz](https://github.com/DHowett/go-plist/issues/15)
 - [github.com/streadway/amqp: go-fuzz fixes](https://github.com/streadway/amqp/pull/151)
 - [github.com/andybalholm/cascadia: panic when parsing selectors like `:contains(`](https://github.com/andybalholm/cascadia/commit/3ad29d1ad1c4f2023e355603324348cf1f4b2d48) **fixed**
+- [github.com/Azure/go-pkcs12: panic on malformed certificates](https://github.com/Azure/go-pkcs12/issues/25)
+- [github.com/nats-io/gnatsd: panic on malformed input](https://github.com/nats-io/gnatsd/issues/95)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
