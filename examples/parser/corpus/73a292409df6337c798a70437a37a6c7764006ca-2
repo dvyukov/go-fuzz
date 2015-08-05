@@ -1,0 +1,1 @@
+SELECT*FROM	F group by(null,null,null,null,null)
