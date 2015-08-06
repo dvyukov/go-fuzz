@@ -419,5 +419,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/Azure/go-pkcs12: panic on malformed certificates](https://github.com/Azure/go-pkcs12/issues/25)
 - [github.com/nats-io/gnatsd: panic on malformed input](https://github.com/nats-io/gnatsd/issues/95)
 - [github.com/miekg/dns: 8 crashers](https://github.com/miekg/dns/pull/237) **fixed**
+- [github.com/influxdb/influxdb: index out of range](https://github.com/influxdb/influxdb/pull/3570) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
