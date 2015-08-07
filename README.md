@@ -412,7 +412,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cockroachdb/cockroach: weird QualifiedName.Base panics on reproduce](https://github.com/cockroachdb/cockroach/issues/1938)
 - [github.com/google/open-location-code: Extremely long codes can cause underflow errors](https://github.com/google/open-location-code/issues/12)
 - [github.com/akrennmair/gopcap: incorrectly formed IP, UDP, TCP, ICMP packets can cause out of range errors](https://github.com/akrennmair/gopcap/commit/00e11033259acb75598ba416495bb708d864a010) **fixed**
-- [github.com/gogo/protobuf: gogofast generates Unmarshal code that can panic](https://github.com/gogo/protobuf/issues/86)
+- [github.com/gogo/protobuf: gogofast generates Unmarshal code that can panic](https://github.com/gogo/protobuf/issues/86) **fixed**
 - [github.com/DHowett/go-plist: Various panics found through go-fuzz](https://github.com/DHowett/go-plist/issues/15)
 - [github.com/streadway/amqp: go-fuzz fixes](https://github.com/streadway/amqp/pull/151)
 - [github.com/andybalholm/cascadia: panic when parsing selectors like `:contains(`](https://github.com/andybalholm/cascadia/commit/3ad29d1ad1c4f2023e355603324348cf1f4b2d48) **fixed**
