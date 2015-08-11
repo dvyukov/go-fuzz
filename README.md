@@ -352,7 +352,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in methods](https://github.com/golang/go/issues/11579) **fixed**
 - [gccgo: internal compiler error in do_flatten](https://github.com/golang/go/issues/11592) **fixed**
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527)
-- [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528)
+- [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528) **fixed**
 - [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529)
 - [gccgo: hangs](https://github.com/golang/go/issues/11530)
 - [gccgo: hangs (2)](https://github.com/golang/go/issues/11531)
