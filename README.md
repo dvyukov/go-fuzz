@@ -356,7 +356,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529)
 - [gccgo: hangs](https://github.com/golang/go/issues/11530) **fixed**
 - [gccgo: hangs (2)](https://github.com/golang/go/issues/11531) **fixed**
-- [gccgo: hangs (3)](https://github.com/golang/go/issues/11539)
+- [gccgo: hangs (3)](https://github.com/golang/go/issues/11539) **fixed**
 - [gccgo: rejects valid imaginary literal](https://github.com/golang/go/issues/11532)
 - [gccgo: rejects valid fp literal](https://github.com/golang/go/issues/11533)
 - [gccgo: accepts program with invalid identifier](https://github.com/golang/go/issues/11535)
