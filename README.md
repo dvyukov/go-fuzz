@@ -145,6 +145,11 @@ Then run one or more slave processes as:
 $ go-fuzz -bin=./png-fuzz.zip -slave=127.0.0.1:8745 -procs=10
 ```
 
+## External Articles
+
+- [go-fuzz github.com/arolek/ase](https://medium.com/@dgryski/go-fuzz-github-com-arolek-ase-3c74d5a3150c): A step-by-step tutorial
+- [DNS parser, meet Go fuzzer](https://blog.cloudflare.com/dns-parser-meet-go-fuzzer/): A success story with suggestions on how to write the ```Fuzz``` function
+
 ## Credits and technical details
 
 Go-fuzz fuzzing logic is heavily based on [american fuzzy lop](http://lcamtuf.coredump.cx/afl/),
