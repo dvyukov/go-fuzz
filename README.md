@@ -429,5 +429,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/collectd/go-collectd: 2 crashers](https://github.com/collectd/go-collectd/pull/6) **fixed**
 - [github.com/arolek/ase: 2 crashers](https://github.com/arolek/ase/pull/18) **fixed**
 - [github.com/lytics/confl: infinite loop on malformed input](https://github.com/lytics/confl/issues/6) **fixed**
+- [github.com/zeebo/bencode: reject strings with negative length](https://github.com/zeebo/bencode/pull/15) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
