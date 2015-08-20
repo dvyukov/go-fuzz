@@ -337,7 +337,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522)
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
-- [gccgo: segmentation fault](https://github.com/golang/go/issues/11526)
+- [gccgo: segmentation fault](https://github.com/golang/go/issues/11526) **fixed**
 - [gccgo: segmentation fault (2)](https://github.com/golang/go/issues/11536) **fixed**
 - [gccgo: segmentation fault (3)](https://github.com/golang/go/issues/11558) **fixed**
 - [gccgo: segmentation fault (4)](https://github.com/golang/go/issues/11559) **fixed**
