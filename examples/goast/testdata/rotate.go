@@ -1,3 +1,6 @@
+// Copyright 2015 Dmitry Vyukov. All rights reserved.
+// Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
+
 // skip
 
 // NOTE: the actual tests to run are rotate[0123].go

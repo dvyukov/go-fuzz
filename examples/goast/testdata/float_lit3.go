@@ -1,3 +1,6 @@
+// Copyright 2015 Dmitry Vyukov. All rights reserved.
+// Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
+
 // errorcheck
 
 // Check flagging of invalid conversion of constant to float32/float64 near min/max boundaries.

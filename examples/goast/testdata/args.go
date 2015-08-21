@@ -1,3 +1,6 @@
+// Copyright 2015 Dmitry Vyukov. All rights reserved.
+// Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
+
 // run arg1 arg2
 
 // Copyright 2009 The Go Authors. All rights reserved.
