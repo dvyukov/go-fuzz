@@ -1,3 +1,6 @@
+// Copyright 2015 Dmitry Vyukov. All rights reserved.
+// Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
+
 // Package versifier recognizes internal structure of random (currently text-only) data
 // and allows to generate data of a similar structure (for some very weak definition of "similar").
 package versifier
