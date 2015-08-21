@@ -183,7 +183,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: hangs converting int const to complex64](https://github.com/golang/go/issues/11597)
 - [cmd/compile: nil deref in error message](https://github.com/golang/go/issues/11614)
 - [cmd/compile: use of untyped nil in switch](https://github.com/golang/go/issues/11668) **fixed**
-- [cmd/compile: implicitly converts complex constant to integer](https://github.com/golang/go/issues/11669)
+- [cmd/compile: implicitly converts complex constant to integer](https://github.com/golang/go/issues/11669) **fixed**
 - [cmd/compile: assignment to entry in nil map](https://github.com/golang/go/issues/11670) **fixed**
 - [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674)
 - [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
@@ -323,7 +323,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: compiling hangs](https://github.com/golang/go/issues/11327)
 - [x/tools/go/types: stupid shift](https://github.com/golang/go/issues/11328)
 - [x/tools/go/types: line number out of range](https://github.com/golang/go/issues/11329)
-- [x/tools/go/types: assertion failed](https://github.com/golang/go/issues/11347)
+- [x/tools/go/types: assertion failed](https://github.com/golang/go/issues/11347) **fixed**
 - [x/tools/go/types: converts fp constant to string](https://github.com/golang/go/issues/11353) **fixed**
 - [x/tools/go/types: converts complex constant to string](https://github.com/golang/go/issues/11357) **fixed**
 - [x/tools/go/types: misses '-' in error message](https://github.com/golang/go/issues/11367) **fixed**
@@ -331,8 +331,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/tools/go/types: allows duplicate switch cases](https://github.com/golang/go/issues/11578)
 - [x/tools/go/types: can shift complex numbers](https://github.com/golang/go/issues/11594) **fixed**
 - [x/tools/go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611)
-- [x/tools/go/types: int overflow in switch expression](https://github.com/golang/go/issues/11667)
-- [go/types: allows multiple-value in switch and case](https://github.com/golang/go/issues/11687)
+- [x/tools/go/types: int overflow in switch expression](https://github.com/golang/go/issues/11667) **fixed**
+- [go/types: allows multiple-value in switch and case](https://github.com/golang/go/issues/11687) **fixed**
 - [go/types: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11590)
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522)
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
