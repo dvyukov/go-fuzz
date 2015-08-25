@@ -1,0 +1,3 @@
+package n
+func s(t){switch{default:return (9)};return 0}
+func s3(interface{})(t)
