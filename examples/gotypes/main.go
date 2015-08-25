@@ -186,10 +186,6 @@ func Fuzz(data []byte) int {
 			// https://github.com/golang/go/issues/11545
 			return 0
 		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_determine_type, at go/gofrontend/expressions.h") {
-			// https://github.com/golang/go/issues/11546
-			return 0
-		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in backend_numeric_constant_expression, at go/gofrontend/expressions.cc") {
 			// https://github.com/golang/go/issues/11548
 			return 0
