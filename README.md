@@ -188,6 +188,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674)
 - [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
 - [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699)
+- [cmd/compile: "0"[0] should not be a constant](https://github.com/golang/go/issues/11370)
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759)
 - [cmd/asm: slice bounds out of range](https://github.com/golang/go/issues/11760)
 - [cmd/asm: hang](https://github.com/golang/go/issues/11764)
@@ -286,6 +287,21 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [go/format: turns correct program into incorrect one](https://github.com/golang/go/issues/11274)
 - [go/format: non-idempotent format](https://github.com/golang/go/issues/11275)
 - [go/format: adds }](https://github.com/golang/go/issues/11276) **fixed**
+- [go/types: panics on invalid constant](https://github.com/golang/go/issues/11325) **fixed**
+- [go/types: compiling hangs](https://github.com/golang/go/issues/11327)
+- [go/types: stupid shift](https://github.com/golang/go/issues/11328) **fixed**
+- [go/types: line number out of range](https://github.com/golang/go/issues/11329)
+- [go/types: assertion failed](https://github.com/golang/go/issues/11347) **fixed**
+- [go/types: converts fp constant to string](https://github.com/golang/go/issues/11353) **fixed**
+- [go/types: converts complex constant to string](https://github.com/golang/go/issues/11357) **fixed**
+- [go/types: misses '-' in error message](https://github.com/golang/go/issues/11367) **fixed**
+- [go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
+- [go/types: allows duplicate switch cases](https://github.com/golang/go/issues/11578)
+- [go/types: can shift complex numbers](https://github.com/golang/go/issues/11594) **fixed**
+- [go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611)
+- [go/types: int overflow in switch expression](https://github.com/golang/go/issues/11667) **fixed**
+- [go/types: allows multiple-value in switch and case](https://github.com/golang/go/issues/11687) **fixed**
+- [go/types: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11590)
 - [debug/elf: index out of range](https://github.com/golang/go/issues/10996)
 - [debug/elf: makeslice: len out of range](https://github.com/golang/go/issues/10997)
 - [debug/elf: slice bounds out of range](https://github.com/golang/go/issues/10999)
@@ -319,21 +335,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/crypto/openpgp: ReadMessage(): Panic on invalid input in packet.nextSubpacket](https://github.com/golang/go/issues/11503) **fixed**
 - [x/crypto/openpgp: ReadMessage(): Panic on invalid input in packet.PublicKeyV3.setFingerPrintAndKeyId](https://github.com/golang/go/issues/11504) **fixed**
 - [x/crypto/openpgp: ReadMessage(): Panic on invalid input in math/big.nat.div](https://github.com/golang/go/issues/11505) **fixed**
-- [x/tools/go/types: panics on invalid constant](https://github.com/golang/go/issues/11325) **fixed**
-- [x/tools/go/types: compiling hangs](https://github.com/golang/go/issues/11327)
-- [x/tools/go/types: stupid shift](https://github.com/golang/go/issues/11328) **fixed**
-- [x/tools/go/types: line number out of range](https://github.com/golang/go/issues/11329)
-- [x/tools/go/types: assertion failed](https://github.com/golang/go/issues/11347) **fixed**
-- [x/tools/go/types: converts fp constant to string](https://github.com/golang/go/issues/11353) **fixed**
-- [x/tools/go/types: converts complex constant to string](https://github.com/golang/go/issues/11357) **fixed**
-- [x/tools/go/types: misses '-' in error message](https://github.com/golang/go/issues/11367) **fixed**
-- [x/tools/go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
-- [x/tools/go/types: allows duplicate switch cases](https://github.com/golang/go/issues/11578)
-- [x/tools/go/types: can shift complex numbers](https://github.com/golang/go/issues/11594) **fixed**
-- [x/tools/go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611)
-- [x/tools/go/types: int overflow in switch expression](https://github.com/golang/go/issues/11667) **fixed**
-- [go/types: allows multiple-value in switch and case](https://github.com/golang/go/issues/11687) **fixed**
-- [go/types: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11590)
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522)
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
@@ -353,10 +354,15 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in type_size (2)](https://github.com/golang/go/issues/11555)
 - [gccgo: internal compiler error in type_size (3)](https://github.com/golang/go/issues/11556)
 - [gccgo: internal compiler error in do_get_backend](https://github.com/golang/go/issues/11560) **fixed**
+- [gccgo: internal compiler error in do_get_backend (2)](https://github.com/golang/go/issues/12325)
 - [gccgo: internal compiler error in create_tmp_var](https://github.com/golang/go/issues/11568) **fixed**
 - [gccgo: internal compiler error in methods](https://github.com/golang/go/issues/11579) **fixed**
 - [gccgo: internal compiler error in do_flatten](https://github.com/golang/go/issues/11592) **fixed**
+- [gccgo: internal compiler error in do_flatten (2)](https://github.com/golang/go/issues/12319)
+- [gccgo: internal compiler error in do_flatten (3)](https://github.com/golang/go/issues/12320)
 - [gccgo: internal compiler error in declare_function](https://github.com/golang/go/issues/11557) **fixed**
+- [gccgo: internal compiler error: in define](https://github.com/golang/go/issues/12316)
+- [gccgo: internal compiler error: in do_export](https://github.com/golang/go/issues/12321)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527)
 - [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528) **fixed**
 - [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529)
@@ -371,17 +377,22 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: can do bitwise or on fp constants](https://github.com/golang/go/issues/11566)
 - [gccgo: treats nil as type](https://github.com/golang/go/issues/11567) **fixed**
 - [gccgo: does not understand greek capiltal letter yot](https://github.com/golang/go/issues/11569) **fixed**
+- [gccgo: does not understand CUNEIFORM SIGN DUG TIMES MI](https://github.com/golang/go/issues/12322)
 - [gccgo: allows to refer to builtin function not in call expression](https://github.com/golang/go/issues/11570) **fixed**
 - [gccgo: bogus incompatible types in binary expression error](https://github.com/golang/go/issues/11572) **fixed**
 - [gccgo: allows multiple definitions of a function](https://github.com/golang/go/issues/11573) **fixed**
 - [gccgo: can shift by complex number](https://github.com/golang/go/issues/11574)
 - [gccgo: knowns unknown escape sequence](https://github.com/golang/go/issues/11575) **fixed**
 - [gccgo: internal compiler error in start_function](https://github.com/golang/go/issues/11576) **fixed**
+- [gccgo: internal compiler error: in start_function (2)](https://github.com/golang/go/issues/12324)
 - [gccgo: heap-buffer-overflow in Lex::skip_cpp_comment](https://github.com/golang/go/issues/11577)
 - [gccgo: does not convert untyped complex 0i to int in binary operation involving an int](https://github.com/golang/go/issues/11563)
 - [gccgo: does not detect missing return](https://github.com/golang/go/issues/11591) **fixed**
 - [gccgo: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11615)
 - [gccgo: can shift complex numbers](https://github.com/golang/go/issues/11616)
+- [gccgo: does not error on unused var](https://github.com/golang/go/issues/12317)
+- [gccgo: treats 0 as channel](https://github.com/golang/go/issues/12323)
+- [gccgo: does not recognize unused import](https://github.com/golang/go/issues/12326)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
