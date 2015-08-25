@@ -112,10 +112,6 @@ func Fuzz(data []byte) int {
 	}
 
 	if goErr == nil && gccgoErr != nil {
-		if strings.Contains(gccgoErr.Error(), "error: string index out of bounds") {
-			// https://github.com/golang/go/issues/11522
-			return 0
-		}
 		if strings.Contains(gccgoErr.Error(), "error: integer constant overflow") {
 			// https://github.com/golang/go/issues/11525
 			return 0
