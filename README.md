@@ -444,5 +444,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/hydrogen18/stalecucumber: 4 crashers](https://github.com/hydrogen18/stalecucumber/pull/5)
 - [github.com/gonum/blas: cgo indexing error](https://github.com/gonum/blas/issues/133) **fixed**
 - [OpenBLAS: incorrect idamax with NaN value](https://github.com/xianyi/OpenBLAS/issues/624)
+- [github.com/eaburns/flac: 3 crashers](https://github.com/eaburns/flac/pull/6)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
