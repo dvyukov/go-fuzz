@@ -336,6 +336,9 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 					buf.Write(initialComments(content)) // Retain '// +build' directives.
 					instrument(p.name, fname, p.fset, f, &p.info, buf, lits1, blocks, sonar)
 					tmp := tempFile()
+					if runtime.GOOS == "windows" {
+						os.Remove(fullName)
+					}
 					writeFile(tmp, buf.Bytes())
 					err := os.Rename(tmp, fullName)
 					if err != nil {
