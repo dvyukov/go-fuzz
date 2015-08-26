@@ -29,7 +29,6 @@ var bigNum2 = regexp.MustCompile("[0-9]+[pP][0-9]{3,}") // see issue 11364
 var formatBug1 = regexp.MustCompile("\\*/[ \t\n\r\f\v]*;")
 var formatBug2 = regexp.MustCompile(";[ \t\n\r\f\v]*/\\*")
 
-var issue11533 = regexp.MustCompile("[ \r\t\n=\\+\\-\\*\\^\\/\\(,]0[0-9]+[ieE]")
 var issue11590 = regexp.MustCompile(": cannot convert .* \\(untyped int constant .*\\) to complex")
 var issue11590_2 = regexp.MustCompile(": [0-9]+ (untyped int constant) overflows complex")
 var issue11370 = regexp.MustCompile("\\\"[ \t\n\r\f\v]*\\[")
@@ -93,10 +92,6 @@ func Fuzz(data []byte) int {
 			// https://github.com/golang/go/issues/11527
 			return 0
 		}
-		if strings.Contains(goErr.Error(), "invalid operation: operator ^ not defined for") {
-			// https://github.com/golang/go/issues/11529
-			return 0
-		}
 		if fpRounding.MatchString(goErr.Error()) {
 			// gccgo has different rounding
 			return 0
@@ -114,11 +109,6 @@ func Fuzz(data []byte) int {
 	if goErr == nil && gccgoErr != nil {
 		if strings.Contains(gccgoErr.Error(), "error: integer constant overflow") {
 			// https://github.com/golang/go/issues/11525
-			return 0
-		}
-		if issue11533.Match(data) {
-			// https://github.com/golang/go/issues/11532
-			// https://github.com/golang/go/issues/11533
 			return 0
 		}
 		if bytes.Contains(data, []byte("0i")) &&

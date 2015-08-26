@@ -365,12 +365,12 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error: in do_export](https://github.com/golang/go/issues/12321)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527)
 - [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528) **fixed**
-- [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529)
+- [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529) **fixed**
 - [gccgo: hangs](https://github.com/golang/go/issues/11530) **fixed**
 - [gccgo: hangs (2)](https://github.com/golang/go/issues/11531) **fixed**
 - [gccgo: hangs (3)](https://github.com/golang/go/issues/11539) **fixed**
-- [gccgo: rejects valid imaginary literal](https://github.com/golang/go/issues/11532)
-- [gccgo: rejects valid fp literal](https://github.com/golang/go/issues/11533)
+- [gccgo: rejects valid imaginary literal](https://github.com/golang/go/issues/11532) **fixed**
+- [gccgo: rejects valid fp literal](https://github.com/golang/go/issues/11533) **fixed**
 - [gccgo: accepts program with invalid identifier](https://github.com/golang/go/issues/11535) **fixed**
 - [gccgo: accepts program with invalid identifier (2)](https://github.com/golang/go/issues/11547) **fixed**
 - [gccgo: compiles weird construct](https://github.com/golang/go/issues/11561) **fixed**
