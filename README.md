@@ -191,7 +191,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: "0"[0] should not be a constant](https://github.com/golang/go/issues/11370)
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759)
 - [cmd/asm: slice bounds out of range](https://github.com/golang/go/issues/11760)
-- [cmd/asm: hang](https://github.com/golang/go/issues/11764)
+- [cmd/asm: hang](https://github.com/golang/go/issues/11764) **fixed**
 - [cmd/asm: nil deref](https://github.com/golang/go/issues/11765)
 - [internal/trace: index out of range](https://github.com/golang/go/issues/11766)
 - [internal/trace: index out of range (2)](https://github.com/golang/go/issues/11769)
