@@ -160,10 +160,6 @@ func Fuzz(data []byte) int {
 			// https://github.com/golang/go/issues/11541
 			return 0
 		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in record_var_depends_on, at go/gofrontend/gogo.h") {
-			// https://github.com/golang/go/issues/11543
-			return 0
-		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in check_bounds, at go/gofrontend/expressions.cc") {
 			// https://github.com/golang/go/issues/11545
 			return 0
