@@ -120,11 +120,6 @@ func Fuzz(data []byte) int {
 		}
 	}
 
-	if gcErr != nil && goErr != nil && gccgoErr == nil && strings.Contains(gcErr.Error(), "declared and not used") && strings.Contains(goErr.Error(), "declared but not used") {
-		// https://github.com/golang/go/issues/12317
-		return 0
-	}
-
 	// go-fuzz is too smart so it can generate a program that contains "internal compiler error" in an error message :)
 	if gcErr != nil && (gcCrash.MatchString(gcErr.Error()) ||
 		strings.Contains(gcErr.Error(), "\nruntime error: ") ||
@@ -148,10 +143,6 @@ func Fuzz(data []byte) int {
 
 	const gccgoCrash = "go1: internal compiler error:"
 	if gccgoErr != nil && (strings.HasPrefix(gccgoErr.Error(), gccgoCrash) || strings.Contains(gccgoErr.Error(), "\n"+gccgoCrash)) {
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in define, at go/gofrontend/gogo.h") {
-			// https://github.com/golang/go/issues/12316
-			return 0
-		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in set_type, at go/gofrontend/expressions.cc") {
 			// https://github.com/golang/go/issues/11537
 			return 0
