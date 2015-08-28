@@ -437,7 +437,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/nats-io/gnatsd: panic on malformed input](https://github.com/nats-io/gnatsd/issues/95)
 - [github.com/miekg/dns: 8 crashers](https://github.com/miekg/dns/pull/237) **fixed**
 - [github.com/influxdb/influxdb: index out of range](https://github.com/influxdb/influxdb/pull/3570) **fixed**
-- [github.com/collectd/go-collectd: 2 crashers](https://github.com/collectd/go-collectd/pull/6) **fixed**
+- [collectd.org/network: 2 crashers](https://github.com/collectd/go-collectd/pull/6) **fixed**
+- [collectd.org/network: index out of range](https://github.com/collectd/go-collectd/issues/10) **fixed**
 - [github.com/arolek/ase: 2 crashers](https://github.com/arolek/ase/pull/18) **fixed**
 - [github.com/lytics/confl: infinite loop on malformed input](https://github.com/lytics/confl/issues/6) **fixed**
 - [github.com/zeebo/bencode: reject strings with negative length](https://github.com/zeebo/bencode/pull/15) **fixed**
