@@ -361,7 +361,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in do_flatten (2)](https://github.com/golang/go/issues/12319)
 - [gccgo: internal compiler error in do_flatten (3)](https://github.com/golang/go/issues/12320)
 - [gccgo: internal compiler error in declare_function](https://github.com/golang/go/issues/11557) **fixed**
-- [gccgo: internal compiler error: in define](https://github.com/golang/go/issues/12316)
+- [gccgo: internal compiler error: in define](https://github.com/golang/go/issues/12316) **fixed**
 - [gccgo: internal compiler error: in do_export](https://github.com/golang/go/issues/12321)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527)
 - [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528) **fixed**
@@ -390,7 +390,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: does not detect missing return](https://github.com/golang/go/issues/11591) **fixed**
 - [gccgo: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11615)
 - [gccgo: can shift complex numbers](https://github.com/golang/go/issues/11616)
-- [gccgo: does not error on unused var](https://github.com/golang/go/issues/12317)
+- [gccgo: does not error on unused var](https://github.com/golang/go/issues/12317) **fixed**
 - [gccgo: treats 0 as channel](https://github.com/golang/go/issues/12323)
 - [gccgo: does not recognize unused import](https://github.com/golang/go/issues/12326)
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
