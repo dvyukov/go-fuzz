@@ -354,7 +354,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in type_size (2)](https://github.com/golang/go/issues/11555)
 - [gccgo: internal compiler error in type_size (3)](https://github.com/golang/go/issues/11556)
 - [gccgo: internal compiler error in do_get_backend](https://github.com/golang/go/issues/11560) **fixed**
-- [gccgo: internal compiler error in do_get_backend (2)](https://github.com/golang/go/issues/12325)
+- [gccgo: internal compiler error in do_get_backend (2)](https://github.com/golang/go/issues/12325) **fixed**
 - [gccgo: internal compiler error in create_tmp_var](https://github.com/golang/go/issues/11568) **fixed**
 - [gccgo: internal compiler error in methods](https://github.com/golang/go/issues/11579) **fixed**
 - [gccgo: internal compiler error in do_flatten](https://github.com/golang/go/issues/11592) **fixed**
