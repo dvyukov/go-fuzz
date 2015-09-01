@@ -234,6 +234,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [archive/tar: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/11168) **fixed**
 - [archive/tar: Reader.Next returns nil header](https://github.com/golang/go/issues/11169) **fixed**
 - [archive/tar: Writer incorrectly encodes header data](https://github.com/golang/go/issues/11171)
+- [archive/tar: incorrectly claims huge file size](https://github.com/golang/go/issues/12434)
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
 - [encoding/gob: makeslice: len out of range](https://github.com/golang/go/issues/10273) [3 bugs] **fixed**
 - [encoding/gob: stack overflow](https://github.com/golang/go/issues/10415) **fixed**
