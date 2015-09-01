@@ -232,6 +232,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [archive/tar: slice bounds out of range (5)](https://github.com/golang/go/issues/11167) **fixed**
 - [archive/tar: deadly hang](https://github.com/golang/go/issues/10968) **fixed**
 - [archive/tar: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/11168) **fixed**
+- [archive/tar: invalid memory address or nil pointer dereference (2)](https://github.com/golang/go/issues/12435)
 - [archive/tar: Reader.Next returns nil header](https://github.com/golang/go/issues/11169) **fixed**
 - [archive/tar: Writer incorrectly encodes header data](https://github.com/golang/go/issues/11171)
 - [archive/tar: incorrectly claims huge file size](https://github.com/golang/go/issues/12434)
