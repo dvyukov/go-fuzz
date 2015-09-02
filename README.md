@@ -339,7 +339,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/crypto/openpgp: ReadMessage(): Panic on invalid input in math/big.nat.div](https://github.com/golang/go/issues/11505) **fixed**
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522) **fixed**
 - [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
-- [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525)
+- [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525) **fixed**
 - [gccgo: segmentation fault](https://github.com/golang/go/issues/11526) **fixed**
 - [gccgo: segmentation fault (2)](https://github.com/golang/go/issues/11536) **fixed**
 - [gccgo: segmentation fault (3)](https://github.com/golang/go/issues/11558) **fixed**
