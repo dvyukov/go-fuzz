@@ -451,5 +451,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/eaburns/flac: 3 crashers](https://github.com/eaburns/flac/pull/6)
 - [github.com/yvasiyarov/php_session_decoder: 4 crashers](https://github.com/yvasiyarov/php_session_decoder/pull/15)
 - [xi2.org/x/xz: index out of bounds](https://github.com/xi2/xz/issues/3) **fixed**
+- [github.com/pierrec/lz4: 2 crashers](https://github.com/pierrec/lz4/commit/0b67ae4bb1ab03691079e38dddbc3909d68de64f) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
