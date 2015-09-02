@@ -225,6 +225,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
 - [archive/zip: unexpected EOF](https://github.com/golang/go/issues/11144) **fixed**
 - [archive/zip: file with wrong checksum is successfully decompressed](https://github.com/golang/go/issues/11146) **fixed**
+- [archive/zip: unexpected EOF when reading archive](https://github.com/golang/go/issues/12449)
 - [archive/tar: slice bounds out of range](https://github.com/golang/go/issues/10959) **fixed**
 - [archive/tar: slice bounds out of range (2)](https://github.com/golang/go/issues/10960) **fixed**
 - [archive/tar: slice bounds out of range (3)](https://github.com/golang/go/issues/10966) **fixed**
