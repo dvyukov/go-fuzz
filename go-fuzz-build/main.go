@@ -334,7 +334,7 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 					buf := new(bytes.Buffer)
 					content := readFile(fullName)
 					buf.Write(initialComments(content)) // Retain '// +build' directives.
-					instrument(p.name, fname, p.fset, f, &p.info, buf, lits1, blocks, sonar)
+					instrument(p.name, fname, filepath.Join(p.name, fname), p.fset, f, &p.info, buf, lits1, blocks, sonar)
 					tmp := tempFile()
 					if runtime.GOOS == "windows" {
 						os.Remove(fullName)

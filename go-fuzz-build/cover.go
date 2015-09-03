@@ -21,11 +21,12 @@ import (
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(pkg, shortName string, fset *token.FileSet, parsedFile *ast.File, info *types.Info, out io.Writer, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
+func instrument(pkg, shortName, fullName string, fset *token.FileSet, parsedFile *ast.File, info *types.Info, out io.Writer, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	file := &File{
 		fset:      fset,
 		pkg:       pkg,
 		shortName: shortName,
+		fullName:  fullName,
 		astFile:   parsedFile,
 		blocks:    blocks,
 		info:      info,
@@ -39,7 +40,14 @@ func instrument(pkg, shortName string, fset *token.FileSet, parsedFile *ast.File
 	ast.Walk(file, file.astFile)
 
 	if sonar != nil {
-		s := &Sonar{fset: fset, name: shortName, pkg: pkg, blocks: sonar, info: info}
+		s := &Sonar{
+			fset:      fset,
+			shortName: shortName,
+			fullName:  fullName,
+			pkg:       pkg,
+			blocks:    sonar,
+			info:      info,
+		}
 		ast.Walk(s, file.astFile)
 	}
 
@@ -47,11 +55,12 @@ func instrument(pkg, shortName string, fset *token.FileSet, parsedFile *ast.File
 }
 
 type Sonar struct {
-	fset   *token.FileSet
-	name   string
-	pkg    string
-	blocks *[]CoverBlock
-	info   *types.Info
+	fset      *token.FileSet
+	shortName string
+	fullName  string
+	pkg       string
+	blocks    *[]CoverBlock
+	info      *types.Info
 }
 
 var sonarSeq = 0
@@ -272,7 +281,7 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	id := int(flags) | sonarSeq<<8
 	startPos := s.fset.Position(nn.Pos())
 	endPos := s.fset.Position(nn.End())
-	*s.blocks = append(*s.blocks, CoverBlock{sonarSeq, s.name, startPos.Line, startPos.Column, endPos.Line, endPos.Column, int(flags)})
+	*s.blocks = append(*s.blocks, CoverBlock{sonarSeq, s.fullName, startPos.Line, startPos.Column, endPos.Line, endPos.Column, int(flags)})
 	sonarSeq++
 	block := &ast.BlockStmt{}
 
@@ -479,6 +488,7 @@ type File struct {
 	fset      *token.FileSet
 	pkg       string
 	shortName string
+	fullName  string
 	astFile   *ast.File
 	blocks    *[]CoverBlock
 	info      *types.Info
@@ -807,7 +817,7 @@ func (f *File) newCounter(start, end token.Pos, numStmt int) ast.Stmt {
 	if f.blocks != nil {
 		s := f.fset.Position(start)
 		e := f.fset.Position(end)
-		*f.blocks = append(*f.blocks, CoverBlock{cnt, f.shortName, s.Line, s.Column, e.Line, e.Column, numStmt})
+		*f.blocks = append(*f.blocks, CoverBlock{cnt, f.fullName, s.Line, s.Column, e.Line, e.Column, numStmt})
 	}
 
 	idx := &ast.BasicLit{
