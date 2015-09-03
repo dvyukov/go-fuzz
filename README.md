@@ -194,6 +194,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467)
 - [cmd/asm: slice bounds out of range](https://github.com/golang/go/issues/11760) **fixed**
 - [cmd/asm: hang](https://github.com/golang/go/issues/11764) **fixed**
+- [cmd/asm: hang (2)](https://github.com/golang/go/issues/12469)
 - [cmd/asm: nil deref](https://github.com/golang/go/issues/11765) **fixed**
 - [cmd/asm: nil deref (2)](https://github.com/golang/go/issues/12468)
 - [internal/trace: index out of range](https://github.com/golang/go/issues/11766) **fixed**
