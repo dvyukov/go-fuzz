@@ -396,7 +396,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: does not convert untyped complex 0i to int in binary operation involving an int](https://github.com/golang/go/issues/11563)
 - [gccgo: does not detect missing return](https://github.com/golang/go/issues/11591) **fixed**
 - [gccgo: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11615)
-- [gccgo: can shift complex numbers](https://github.com/golang/go/issues/11616)
+- [gccgo: can shift complex numbers](https://github.com/golang/go/issues/11616) **fixed**
 - [gccgo: does not error on unused var](https://github.com/golang/go/issues/12317) **fixed**
 - [gccgo: treats 0 as channel](https://github.com/golang/go/issues/12323)
 - [gccgo: does not recognize unused import](https://github.com/golang/go/issues/12326)
