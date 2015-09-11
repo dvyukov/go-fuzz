@@ -190,13 +190,13 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699)
 - [cmd/compile: "0"[0] should not be a constant](https://github.com/golang/go/issues/11370)
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759) **fixed**
-- [cmd/asm: index out of range (2)](https://github.com/golang/go/issues/12466)
-- [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467)
+- [cmd/asm: index out of range (2)](https://github.com/golang/go/issues/12466) **fixed**
+- [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467) **fixed**
 - [cmd/asm: slice bounds out of range](https://github.com/golang/go/issues/11760) **fixed**
 - [cmd/asm: hang](https://github.com/golang/go/issues/11764) **fixed**
 - [cmd/asm: hang (2)](https://github.com/golang/go/issues/12469) **fixed**
 - [cmd/asm: nil deref](https://github.com/golang/go/issues/11765) **fixed**
-- [cmd/asm: nil deref (2)](https://github.com/golang/go/issues/12468)
+- [cmd/asm: nil deref (2)](https://github.com/golang/go/issues/12468) **fixed**
 - [internal/trace: index out of range](https://github.com/golang/go/issues/11766) **fixed**
 - [internal/trace: index out of range (2)](https://github.com/golang/go/issues/11769) **fixed**
 - [internal/trace: nil deref](https://github.com/golang/go/issues/11767) **fixed**
@@ -229,7 +229,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
 - [archive/zip: unexpected EOF](https://github.com/golang/go/issues/11144) **fixed**
 - [archive/zip: file with wrong checksum is successfully decompressed](https://github.com/golang/go/issues/11146) **fixed**
-- [archive/zip: unexpected EOF when reading archive](https://github.com/golang/go/issues/12449)
+- [archive/zip: unexpected EOF when reading archive](https://github.com/golang/go/issues/12449) **fixed**
 - [archive/tar: slice bounds out of range](https://github.com/golang/go/issues/10959) **fixed**
 - [archive/tar: slice bounds out of range (2)](https://github.com/golang/go/issues/10960) **fixed**
 - [archive/tar: slice bounds out of range (3)](https://github.com/golang/go/issues/10966) **fixed**
