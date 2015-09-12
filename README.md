@@ -392,7 +392,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: knowns unknown escape sequence](https://github.com/golang/go/issues/11575) **fixed**
 - [gccgo: internal compiler error in start_function](https://github.com/golang/go/issues/11576) **fixed**
 - [gccgo: internal compiler error: in start_function (2)](https://github.com/golang/go/issues/12324) **fixed**
-- [gccgo: heap-buffer-overflow in Lex::skip_cpp_comment](https://github.com/golang/go/issues/11577)
+- [gccgo: heap-buffer-overflow in Lex::skip_cpp_comment](https://github.com/golang/go/issues/11577) **fixed**
 - [gccgo: does not convert untyped complex 0i to int in binary operation involving an int](https://github.com/golang/go/issues/11563)
 - [gccgo: does not detect missing return](https://github.com/golang/go/issues/11591) **fixed**
 - [gccgo: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11615)
