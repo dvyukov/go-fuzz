@@ -381,7 +381,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: accepts program with invalid identifier](https://github.com/golang/go/issues/11535) **fixed**
 - [gccgo: accepts program with invalid identifier (2)](https://github.com/golang/go/issues/11547) **fixed**
 - [gccgo: compiles weird construct](https://github.com/golang/go/issues/11561) **fixed**
-- [gccgo: can do bitwise or on fp constants](https://github.com/golang/go/issues/11566)
+- [gccgo: can do bitwise or on fp constants](https://github.com/golang/go/issues/11566) **fixed**
 - [gccgo: treats nil as type](https://github.com/golang/go/issues/11567) **fixed**
 - [gccgo: does not understand greek capiltal letter yot](https://github.com/golang/go/issues/11569) **fixed**
 - [gccgo: does not understand CUNEIFORM SIGN DUG TIMES MI](https://github.com/golang/go/issues/12322)
