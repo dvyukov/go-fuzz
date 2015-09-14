@@ -353,6 +353,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in set_type](https://github.com/golang/go/issues/11537) **fixed**
 - [gccgo: internal compiler error in global_variable_set_init](https://github.com/golang/go/issues/11541) **fixed**
 - [gccgo: internal compiler error: in wide_int_to_tree](https://github.com/golang/go/issues/11542) **fixed**
+- [gccgo: internal compiler error in wide_int_to_tree (2)](https://github.com/golang/go/issues/12618)
 - [gccgo: internal compiler error in record_var_depends_on](https://github.com/golang/go/issues/11543) **fixed**
 - [gccgo: internal compiler error in Builtin_call_expression](https://github.com/golang/go/issues/11544) **fixed**
 - [gccgo: internal compiler error in check_bounds](https://github.com/golang/go/issues/11545)
