@@ -197,6 +197,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/asm: hang (2)](https://github.com/golang/go/issues/12469) **fixed**
 - [cmd/asm: nil deref](https://github.com/golang/go/issues/11765) **fixed**
 - [cmd/asm: nil deref (2)](https://github.com/golang/go/issues/12468) **fixed**
+- [cmd/asm: nil deref (3)](https://github.com/golang/go/issues/12614)
 - [internal/trace: index out of range](https://github.com/golang/go/issues/11766) **fixed**
 - [internal/trace: index out of range (2)](https://github.com/golang/go/issues/11769) **fixed**
 - [internal/trace: nil deref](https://github.com/golang/go/issues/11767) **fixed**
