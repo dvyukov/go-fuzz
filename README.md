@@ -372,6 +372,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error: in define](https://github.com/golang/go/issues/12316) **fixed**
 - [gccgo: internal compiler error: in do_export](https://github.com/golang/go/issues/12321)
 - [gccgo: internal compiler error in do_lower](https://github.com/golang/go/issues/12615)
+- [gccgo: internal compiler error in insert](https://github.com/golang/go/issues/12616)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527) **fixed**
 - [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528) **fixed**
 - [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529) **fixed**
