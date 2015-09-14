@@ -343,7 +343,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [x/crypto/openpgp: ReadMessage(): Panic on invalid input in packet.PublicKeyV3.setFingerPrintAndKeyId](https://github.com/golang/go/issues/11504) **fixed**
 - [x/crypto/openpgp: ReadMessage(): Panic on invalid input in math/big.nat.div](https://github.com/golang/go/issues/11505) **fixed**
 - [gccgo: bogus index out of bounds](https://github.com/golang/go/issues/11522) **fixed**
-- [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524)
+- [gccgo: does not see stupidness of shift count](https://github.com/golang/go/issues/11524) **fixed**
 - [gccgo: bogus integer constant overflow](https://github.com/golang/go/issues/11525) **fixed**
 - [gccgo: segmentation fault](https://github.com/golang/go/issues/11526) **fixed**
 - [gccgo: segmentation fault (2)](https://github.com/golang/go/issues/11536) **fixed**
@@ -358,8 +358,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in do_determine_type](https://github.com/golang/go/issues/11546) **fixed**
 - [gccgo: internal compiler error in backend_numeric_constant_expression](https://github.com/golang/go/issues/11548)
 - [gccgo: internal compiler error in type_size](https://github.com/golang/go/issues/11554) **fixed**
-- [gccgo: internal compiler error in type_size (2)](https://github.com/golang/go/issues/11555)
-- [gccgo: internal compiler error in type_size (3)](https://github.com/golang/go/issues/11556)
+- [gccgo: internal compiler error in type_size (2)](https://github.com/golang/go/issues/11555) **fixed**
+- [gccgo: internal compiler error in type_size (3)](https://github.com/golang/go/issues/11556) **fixed**
 - [gccgo: internal compiler error in do_get_backend](https://github.com/golang/go/issues/11560) **fixed**
 - [gccgo: internal compiler error in do_get_backend (2)](https://github.com/golang/go/issues/12325) **fixed**
 - [gccgo: internal compiler error in create_tmp_var](https://github.com/golang/go/issues/11568) **fixed**
