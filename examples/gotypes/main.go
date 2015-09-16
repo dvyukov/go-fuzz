@@ -34,6 +34,7 @@ var issue11590_2 = regexp.MustCompile(": [0-9]+ (untyped int constant) overflows
 var issue11370 = regexp.MustCompile("\\\"[ \t\n\r\f\v]*\\[")
 
 var fpRounding = regexp.MustCompile(" \\(untyped float constant .*\\) truncated to ")
+var something = regexp.MustCompile(" constant .* overflows ")
 
 var gcCrash = regexp.MustCompile("\n/tmp/fuzz\\.gc[0-9]+:[0-9]+: internal compiler error: ")
 var asanCrash = regexp.MustCompile("\n==[0-9]+==ERROR: AddressSanitizer: ")
@@ -62,6 +63,10 @@ func Fuzz(data []byte) int {
 			return 0
 		}
 		if strings.Contains(gcErr.Error(), "constant shift overflow") {
+			// ???
+			return 0
+		}
+		if something.MatchString(gcErr.Error()) {
 			// ???
 			return 0
 		}
@@ -143,43 +148,29 @@ func Fuzz(data []byte) int {
 
 	const gccgoCrash = "go1: internal compiler error:"
 	if gccgoErr != nil && (strings.HasPrefix(gccgoErr.Error(), gccgoCrash) || strings.Contains(gccgoErr.Error(), "\n"+gccgoCrash)) {
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in set_type, at go/gofrontend/expressions.cc") {
-			// https://github.com/golang/go/issues/11537
-			return 0
-		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in global_variable_set_init, at go/go-gcc.cc") {
-			// https://github.com/golang/go/issues/11541
-			return 0
-		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in check_bounds, at go/gofrontend/expressions.cc") {
 			// https://github.com/golang/go/issues/11545
-			return 0
-		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in backend_numeric_constant_expression, at go/gofrontend/expressions.cc") {
-			// https://github.com/golang/go/issues/11548
-			return 0
-		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in type_size, at go/go-gcc.cc") {
-			// https://github.com/golang/go/issues/11554
-			// https://github.com/golang/go/issues/11555
-			// https://github.com/golang/go/issues/11556
-			return 0
-		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_flatten, at go/gofrontend/expressions.cc") {
-			// https://github.com/golang/go/issues/12319
-			// https://github.com/golang/go/issues/12320
 			return 0
 		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_export, at go/gofrontend/types.cc") {
 			// https://github.com/golang/go/issues/12321
 			return 0
 		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in start_function, at go/gofrontend/gogo.cc") {
-			// https://github.com/golang/go/issues/12324
+		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_lower, at go/gofrontend/expressions.cc") {
+			// https://github.com/golang/go/issues/12615
 			return 0
 		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_get_backend, at go/gofrontend/expressions.cc") {
-			// https://github.com/golang/go/issues/12325
+		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in insert, at go/gofrontend/gogo.cc") {
+			// https://github.com/golang/go/issues/12616
+			return 0
+		}
+		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_get_backend, at go/gofrontend/expressions.cc") ||
+			strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_get_backend, at go/gofrontend/types.cc") {
+			// https://github.com/golang/go/issues/12617
+			return 0
+		}
+		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in wide_int_to_tree, at tree.c") {
+			// https://github.com/golang/go/issues/12618
 			return 0
 		}
 		fmt.Printf("gccgo result: %v\n", gccgoErr)
@@ -187,10 +178,6 @@ func Fuzz(data []byte) int {
 	}
 
 	if gccgoErr != nil && asanCrash.MatchString(gccgoErr.Error()) {
-		if strings.Contains(gccgoErr.Error(), " in Lex::skip_cpp_comment() ../../gcc/go/gofrontend/lex.cc") {
-			// https://github.com/golang/go/issues/11577
-			return 0
-		}
 		fmt.Printf("gccgo result: %v\n", gccgoErr)
 		panic("gccgo compiler crashed")
 	}
