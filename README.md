@@ -307,7 +307,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [go/types: compiles invalid program with overflow](https://github.com/golang/go/issues/11368)
 - [go/types: allows duplicate switch cases](https://github.com/golang/go/issues/11578) **fixed**
 - [go/types: can shift complex numbers](https://github.com/golang/go/issues/11594) **fixed**
-- [go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611)
+- [go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611) **fixed**
 - [go/types: int overflow in switch expression](https://github.com/golang/go/issues/11667) **fixed**
 - [go/types: allows multiple-value in switch and case](https://github.com/golang/go/issues/11687) **fixed**
 - [go/types: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11590)
