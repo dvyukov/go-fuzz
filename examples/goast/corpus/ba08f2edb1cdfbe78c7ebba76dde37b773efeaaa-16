@@ -1,0 +1,10 @@
+package n
+func e(){}
+func F(interface{G()})(){e()
+}
+func G()(){e()
+}
+func t(interface{})(){switch{default:j()}}
+func s()(t){switch{default:(3)}}
+func s6(interface{})(t){switch{default:G()}}
+func s4()(t){switch{default:G()}}

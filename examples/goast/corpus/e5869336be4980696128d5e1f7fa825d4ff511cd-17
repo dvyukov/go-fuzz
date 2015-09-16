@@ -1,0 +1,7 @@
+packageA
+vareg,f=func()f{_()}
+func G()(a){e()}
+func s(interface{})(t){switch{default:j()}}
+func s2()(t){switch{default:a()}}
+func s6(interface{})(){switch{default:G()}}
+func s4()(){switch{default:G()}}

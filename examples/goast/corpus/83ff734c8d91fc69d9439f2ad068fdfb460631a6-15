@@ -1,0 +1,11 @@
+package n
+func e(){}
+func F(interface{})(t,t){e()
+return}
+func G(t,t){e()
+return}
+func d(interface{})(t){switch{default:F(d(nil))};return}
+func s()(){switch{default:return F(3)};return}
+func s3(interface{})(){switch{default:G()}
+return}
+func s4()(){switch{default:G(F(d))}}

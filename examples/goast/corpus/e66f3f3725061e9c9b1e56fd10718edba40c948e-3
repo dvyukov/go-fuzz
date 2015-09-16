@@ -1,0 +1,42 @@
+package n
+import("d"
+"e"
+"c")
+func s()[]e{//
+return[]e{{}}}
+type MapType interface{p()}
+type a interface{m()
+e()
+n()
+em()
+l()}
+func se(func()){e()
+m()
+for m()<0{n("",m())
+if m()%0==0{e()}
+m()
+m()
+m()
+var c=g()
+for ;;i++{go func(){if 1==0{m()}else{m()}
+g()}()}
+g()}
+for m()>0{m()}}
+type K struct{}
+func(MapType)a(){(p)}
+var e=[]e("")
+type intMap map[t][]e
+func(intMap)m(){s=(m)
+for (m)==0{y=d()
+m[y]=e([]e,d(4))}}
+func(intMap)e(){for k=range m{e(m,)
+}}
+func(intMap)em(){y=d((m))
+if s,k=m[y];k{y(s,)}}
+func(intMap)n()int{return(m)}
+func(intMap)l(){for _=range m{}
+for rangem{}}
+func p(){for{var g c
+for _,t=range s(){g()
+goe(t,g)}
+g()}}
