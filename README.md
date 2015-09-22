@@ -163,7 +163,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 
 - [spec: non-integral constant can be converted to int](https://github.com/golang/go/issues/11350) **fixed**
 - [cmd/compile: out of fixed registers](https://github.com/golang/go/issues/11352)
-- [cmd/compile: truncates constants](https://github.com/golang/go/issues/11326)
+- [cmd/compile: truncates constants](https://github.com/golang/go/issues/11326) **fixed**
 - [cmd/compile: overflow in int -> string](https://github.com/golang/go/issues/11330)
 - [cmd/compile: bad HMUL](https://github.com/golang/go/issues/11358) **fixed**
 - [cmd/compile: treecopy Name](https://github.com/golang/go/issues/11361)
