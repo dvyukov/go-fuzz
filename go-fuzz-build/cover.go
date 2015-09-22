@@ -289,6 +289,9 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	if strings.HasPrefix(typstr, s.pkg+".") {
 		typstr = typstr[len(s.pkg)+1:]
 	}
+	if idx := strings.LastIndexByte(typstr, '/'); idx != -1 {
+		typstr = typstr[idx+1:]
+	}
 	conv := func(name string, v ast.Expr) ast.Expr {
 		// Convert const to the type of the other expr.
 		isConst := isConstExpr(s.info, v)
