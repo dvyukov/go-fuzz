@@ -164,11 +164,6 @@ func Fuzz(data []byte) int {
 			// https://github.com/golang/go/issues/12616
 			return 0
 		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_get_backend, at go/gofrontend/expressions.cc") ||
-			strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_get_backend, at go/gofrontend/types.cc") {
-			// https://github.com/golang/go/issues/12617
-			return 0
-		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in wide_int_to_tree, at tree.c") {
 			// https://github.com/golang/go/issues/12618
 			return 0
