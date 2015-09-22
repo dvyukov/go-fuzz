@@ -1,0 +1,2 @@
+#define T(e)T(n(e))
+T()

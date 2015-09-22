@@ -1,0 +1,3 @@
+TEXT C(SB),$56
+CALL R8
+CALL R8,$8

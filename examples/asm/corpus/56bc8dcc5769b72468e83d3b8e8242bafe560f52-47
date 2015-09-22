@@ -1,0 +1,4 @@
+TEXT	T(SB),$8
+CALL*T(SB)
+CALL*T(SB)
+CALL*T(SB)

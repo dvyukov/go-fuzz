@@ -1,0 +1,4 @@
+TEXT	C(SB),$8
+POPW S
+TEXT _(SB),$8
+POPW S

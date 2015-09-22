@@ -1,0 +1,6 @@
+#define C
+C
+L C,C
+C
+C#define L C	L 
+L

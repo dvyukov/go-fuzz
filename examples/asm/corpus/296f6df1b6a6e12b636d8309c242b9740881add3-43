@@ -1,0 +1,6 @@
+TEXT	·(SB),$8
+CALL 8
+CALL$8
+CALL 8
+CALL 8
+CALL 8

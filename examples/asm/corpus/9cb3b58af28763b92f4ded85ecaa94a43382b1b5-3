@@ -1,0 +1,4 @@
+TEXT j(SB),$536
+CALL O(SB)
+TEXT C(SB),$656
+CALL	O(SB)
