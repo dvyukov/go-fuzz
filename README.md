@@ -202,7 +202,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/asm: nil deref (3)](https://github.com/golang/go/issues/12614) **fixed**
 - [cmd/asm: nil deref (4)](https://github.com/golang/go/issues/12627) **fixed**
 - [cmd/asm: nil deref (5)](https://github.com/golang/go/issues/12655)
-- [cmd/asm: cannot happen: slice col](https://github.com/golang/go/issues/12654)
+- [cmd/asm: cannot happen: slice col](https://github.com/golang/go/issues/12654) **fixed**
 - [cmd/asm: unactionable "invalid local variable type 0"](https://github.com/golang/go/issues/12658)
 - [internal/trace: index out of range](https://github.com/golang/go/issues/11766) **fixed**
 - [internal/trace: index out of range (2)](https://github.com/golang/go/issues/11769) **fixed**
