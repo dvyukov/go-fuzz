@@ -271,6 +271,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [image/jpeg: Decode hangs](https://github.com/golang/go/issues/10413) **fixed**
 - [image/jpeg: excessive memory usage](https://github.com/golang/go/issues/10532) **fixed**
 - [image/png: slice bounds out of range](https://github.com/golang/go/issues/10414) **fixed**
+- [image/png: slice bounds out of range (2)](https://github.com/golang/go/issues/12545) **fixed**
 - [image/png: interface conversion: color.Color is color.NRGBA, not color.RGBA](https://github.com/golang/go/issues/10423) **fixed**
 - [image/png: nil deref](https://github.com/golang/go/issues/10493) **fixed**
 - [image/gif: image block is out of bounds](https://github.com/golang/go/issues/10676) **fixed**
