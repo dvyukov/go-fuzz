@@ -417,6 +417,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
 - [github.com/golang/protobuf: MarshalText incorrectly handles unknown bytes](https://github.com/golang/protobuf/issues/35)
 - [github.com/golang/protobuf: MarshalText fails and prints to stderr](https://github.com/golang/protobuf/issues/36)
+- [github.com/golang/protobuf: Unmarshaling errors for packed fields](https://github.com/golang/protobuf/issues/76) **fixed**
 - [code.google.com/p/freetype-go: 42 crashers](https://code.google.com/p/freetype-go/issues/detail?id=17) [42 bugs]
 - [github.com/cryptix/wav: 2 panics in header decoding](https://github.com/cryptix/wav/commit/2f49a0df0d213ee323f694e7bdee8b8a097dc698#diff-f86b763600291cbceee077a33133434a) **fixed**
 - [github.com/spf13/hugo: 7 crashers](https://github.com/spf13/hugo/search?q=go-fuzz&type=Issues) **7 fixed**
