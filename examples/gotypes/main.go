@@ -148,10 +148,6 @@ func Fuzz(data []byte) int {
 
 	const gccgoCrash = "go1: internal compiler error:"
 	if gccgoErr != nil && (strings.HasPrefix(gccgoErr.Error(), gccgoCrash) || strings.Contains(gccgoErr.Error(), "\n"+gccgoCrash)) {
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in check_bounds, at go/gofrontend/expressions.cc") {
-			// https://github.com/golang/go/issues/11545
-			return 0
-		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_export, at go/gofrontend/types.cc") {
 			// https://github.com/golang/go/issues/12321
 			return 0
