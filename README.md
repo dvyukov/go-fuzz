@@ -149,6 +149,7 @@ $ go-fuzz -bin=./png-fuzz.zip -slave=127.0.0.1:8745 -procs=10
 
 - [go-fuzz github.com/arolek/ase](https://medium.com/@dgryski/go-fuzz-github-com-arolek-ase-3c74d5a3150c): A step-by-step tutorial
 - [DNS parser, meet Go fuzzer](https://blog.cloudflare.com/dns-parser-meet-go-fuzzer/): A success story with suggestions on how to write the ```Fuzz``` function
+- [Automated Testing with go-fuzz](https://speakerdeck.com/filosottile/automated-testing-with-go-fuzz)
 
 ## Credits and technical details
 
