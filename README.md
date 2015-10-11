@@ -232,7 +232,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [net/mail: ParseAddress/String corrupt address](https://github.com/golang/go/issues/11292)
 - [net/mail: parses invalid address](https://github.com/golang/go/issues/11293) **fixed**
 - [net/mail: fails to escape address](https://github.com/golang/go/issues/11294)
-- [net/textproto: fails to trim header value](https://github.com/golang/go/issues/11204)
+- [net/textproto: fails to trim header value](https://github.com/golang/go/issues/11204) **fixed**
 - [archive/zip: cap out of range](https://github.com/golang/go/issues/10956) **fixed**
 - [archive/zip: bad file size](https://github.com/golang/go/issues/10957) **fixed**
 - [archive/zip: unexpected EOF](https://github.com/golang/go/issues/11144) **fixed**
