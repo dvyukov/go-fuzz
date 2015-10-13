@@ -470,5 +470,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/yvasiyarov/php_session_decoder: 4 crashers](https://github.com/yvasiyarov/php_session_decoder/pull/15)
 - [xi2.org/x/xz: index out of bounds](https://github.com/xi2/xz/issues/3) **fixed**
 - [github.com/pierrec/lz4: 2 crashers](https://github.com/pierrec/lz4/commit/0b67ae4bb1ab03691079e38dddbc3909d68de64f) **fixed**
+- [github.com/dustin/go-coap: slice bounds out of range (1)](https://github.com/dustin/go-coap/commit/979f9a1787fc3091ba5c337a6d1d903432ce2007) **fixed**
+- [github.com/dustin/go-coap: slice bounds out of range (2)](https://github.com/dustin/go-coap/commit/a2260b92ac405c9c63c4a89c15bb705a3f2928bf) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
