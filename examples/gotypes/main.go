@@ -91,18 +91,8 @@ func Fuzz(data []byte) int {
 			// https://github.com/golang/go/issues/11524
 			return 0
 		}
-		if (bytes.Contains(data, []byte("//line")) || bytes.Contains(data, []byte("/*"))) &&
-			(strings.Contains(goErr.Error(), "illegal UTF-8 encoding") ||
-				strings.Contains(goErr.Error(), "illegal character NUL")) {
-			// https://github.com/golang/go/issues/11527
-			return 0
-		}
 		if fpRounding.MatchString(goErr.Error()) {
 			// gccgo has different rounding
-			return 0
-		}
-		if strings.Contains(goErr.Error(), "operator | not defined for") {
-			// https://github.com/golang/go/issues/11566
 			return 0
 		}
 		if strings.Contains(goErr.Error(), "illegal byte order mark") {
@@ -112,10 +102,6 @@ func Fuzz(data []byte) int {
 	}
 
 	if goErr == nil && gccgoErr != nil {
-		if strings.Contains(gccgoErr.Error(), "error: integer constant overflow") {
-			// https://github.com/golang/go/issues/11525
-			return 0
-		}
 		if bytes.Contains(data, []byte("0i")) &&
 			(strings.Contains(gccgoErr.Error(), "incompatible types in binary expression") ||
 				strings.Contains(gccgoErr.Error(), "initialization expression has wrong type")) {
@@ -156,12 +142,20 @@ func Fuzz(data []byte) int {
 			// https://github.com/golang/go/issues/12615
 			return 0
 		}
-		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in insert, at go/gofrontend/gogo.cc") {
-			// https://github.com/golang/go/issues/12616
-			return 0
-		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in wide_int_to_tree, at tree.c") {
 			// https://github.com/golang/go/issues/12618
+			return 0
+		}
+		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in uniform_vector_p, at tree.c") {
+			// https://github.com/golang/go/issues/12935
+			return 0
+		}
+		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_determine_type, at go/gofrontend/expressions.h") {
+			// https://github.com/golang/go/issues/12937
+			return 0
+		}
+		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_get_backend, at go/gofrontend/expressions.cc") {
+			// https://github.com/golang/go/issues/12939
 			return 0
 		}
 		fmt.Printf("gccgo result: %v\n", gccgoErr)
@@ -171,11 +165,6 @@ func Fuzz(data []byte) int {
 	if gccgoErr != nil && asanCrash.MatchString(gccgoErr.Error()) {
 		fmt.Printf("gccgo result: %v\n", gccgoErr)
 		panic("gccgo compiler crashed")
-	}
-
-	if gcErr == nil && goErr == nil && gccgoErr != nil && strings.Contains(gccgoErr.Error(), "0x124a4") {
-		// https://github.com/golang/go/issues/12322
-		return 0
 	}
 
 	if (goErr == nil) != (gcErr == nil) || (goErr == nil) != (gccgoErr == nil) {
