@@ -475,5 +475,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/pierrec/lz4: 2 crashers](https://github.com/pierrec/lz4/commit/0b67ae4bb1ab03691079e38dddbc3909d68de64f) **fixed**
 - [github.com/dustin/go-coap: slice bounds out of range (1)](https://github.com/dustin/go-coap/commit/979f9a1787fc3091ba5c337a6d1d903432ce2007) **fixed**
 - [github.com/dustin/go-coap: slice bounds out of range (2)](https://github.com/dustin/go-coap/commit/a2260b92ac405c9c63c4a89c15bb705a3f2928bf) **fixed**
+- [github.com/dgryski/go-quicklz: many array-out-of-bounds issues](https://github.com/dgryski/go-quicklz/commit/6897f36a2bb707fe5b294fb9c06b7e086ab9503b) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
