@@ -382,7 +382,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in declare_function](https://github.com/golang/go/issues/11557) **fixed**
 - [gccgo: internal compiler error: in define](https://github.com/golang/go/issues/12316) **fixed**
 - [gccgo: internal compiler error: in do_export](https://github.com/golang/go/issues/12321)
-- [gccgo: internal compiler error in do_lower](https://github.com/golang/go/issues/12615)
+- [gccgo: internal compiler error in do_lower](https://github.com/golang/go/issues/12615) **fixed**
 - [gccgo: internal compiler error in insert](https://github.com/golang/go/issues/12616) **fixed**
 - [gccgo: internal compiler error in uniform_vector_p](https://github.com/golang/go/issues/12935)
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527) **fixed**
