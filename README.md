@@ -415,7 +415,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: does not error on unused var](https://github.com/golang/go/issues/12317) **fixed**
 - [gccgo: treats 0 as channel](https://github.com/golang/go/issues/12323) **fixed**
 - [gccgo: does not recognize unused import](https://github.com/golang/go/issues/12326) **fixed**
-- [gccgo: can shift by string](https://github.com/golang/go/issues/12936)
+- [gccgo: can shift by string](https://github.com/golang/go/issues/12936) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.SetMapIndex on zero Value](https://github.com/golang/protobuf/issues/27) **fixed**
 - [github.com/golang/protobuf: call of reflect.Value.Interface on zero Value in MarshalText](https://github.com/golang/protobuf/issues/33) **fixed**
 - [github.com/golang/protobuf: Invalid map is successfully decoded](https://github.com/golang/protobuf/issues/34)
