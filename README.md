@@ -384,7 +384,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error: in do_export](https://github.com/golang/go/issues/12321)
 - [gccgo: internal compiler error in do_lower](https://github.com/golang/go/issues/12615) **fixed**
 - [gccgo: internal compiler error in insert](https://github.com/golang/go/issues/12616) **fixed**
-- [gccgo: internal compiler error in uniform_vector_p](https://github.com/golang/go/issues/12935)
+- [gccgo: internal compiler error in uniform_vector_p](https://github.com/golang/go/issues/12935) **fixed**
 - [gccgo: accepts invalid UTF-8](https://github.com/golang/go/issues/11527) **fixed**
 - [gccgo: spurious expected newline error](https://github.com/golang/go/issues/11528) **fixed**
 - [gccgo: can apply ^ to true](https://github.com/golang/go/issues/11529) **fixed**
