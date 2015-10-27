@@ -403,7 +403,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: allows to refer to builtin function not in call expression](https://github.com/golang/go/issues/11570) **fixed**
 - [gccgo: bogus incompatible types in binary expression error](https://github.com/golang/go/issues/11572) **fixed**
 - [gccgo: allows multiple definitions of a function](https://github.com/golang/go/issues/11573) **fixed**
-- [gccgo: can shift by complex number](https://github.com/golang/go/issues/11574)
+- [gccgo: can shift by complex number](https://github.com/golang/go/issues/11574) **fixed**
 - [gccgo: knowns unknown escape sequence](https://github.com/golang/go/issues/11575) **fixed**
 - [gccgo: internal compiler error in start_function](https://github.com/golang/go/issues/11576) **fixed**
 - [gccgo: internal compiler error: in start_function (2)](https://github.com/golang/go/issues/12324) **fixed**
