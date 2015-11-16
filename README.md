@@ -193,6 +193,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: unexpected %!(NOVERB)](https://github.com/golang/go/issues/13266)
 - [cmd/compile: wrong line number in error message](https://github.com/golang/go/issues/13267)
 - [cmd/compile: not-deterministic output](https://github.com/golang/go/issues/13268)
+- [cmd/compile: parsing problem](https://github.com/golang/go/issues/13270)
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759) **fixed**
 - [cmd/asm: index out of range (2)](https://github.com/golang/go/issues/12466) **fixed**
 - [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467) **fixed**
