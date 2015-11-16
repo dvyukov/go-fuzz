@@ -190,6 +190,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
 - [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699)
 - [cmd/compile: "0"[0] should not be a constant](https://github.com/golang/go/issues/11370)
+- [cmd/compile: unexpected %!(NOVERB)](https://github.com/golang/go/issues/13266)
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759) **fixed**
 - [cmd/asm: index out of range (2)](https://github.com/golang/go/issues/12466) **fixed**
 - [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467) **fixed**
