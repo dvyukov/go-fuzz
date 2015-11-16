@@ -168,7 +168,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: overflow in int -> string](https://github.com/golang/go/issues/11330)
 - [cmd/compile: bad HMUL](https://github.com/golang/go/issues/11358) **fixed**
 - [cmd/compile: treecopy Name](https://github.com/golang/go/issues/11361)
-- [cmd/compile: accepts invalid identifiers](https://github.com/golang/go/issues/11359)
+- [cmd/compile: accepts invalid identifiers](https://github.com/golang/go/issues/11359) **fixed**
 - [cmd/compile: hangs compiling hex fp constant](https://github.com/golang/go/issues/11364)
 - [cmd/compile: mishandles int->complex conversion](https://github.com/golang/go/issues/11365)
 - [cmd/compile: allows to define blank methods on builtin types](https://github.com/golang/go/issues/11366)
