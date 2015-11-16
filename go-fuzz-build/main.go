@@ -242,16 +242,18 @@ type Package struct {
 
 func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	ignore := map[string]bool{
-		"runtime":       true, // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
-		"unsafe":        true, // nothing to see here (also creates import cycle with go-fuzz-dep)
-		"errors":        true, // nothing to see here (also creates import cycle with go-fuzz-dep)
-		"syscall":       true, // creates import cycle with go-fuzz-dep (and probably nothing to see here)
-		"sync":          true, // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
-		"sync/atomic":   true, // not interesting (also creates import cycle with go-fuzz-dep)
-		"time":          true, // creates import cycle with go-fuzz-dep
-		"runtime/cgo":   true, // why would we instrument it?
-		"runtime/pprof": true, // why would we instrument it?
-		"runtime/race":  true, // why would we instrument it?
+		"runtime":                 true, // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
+		"runtime/internal/atomic": true, // runtime depends on it
+		"runtime/internal/sys":    true, // runtime depends on it
+		"unsafe":                  true, // nothing to see here (also creates import cycle with go-fuzz-dep)
+		"errors":                  true, // nothing to see here (also creates import cycle with go-fuzz-dep)
+		"syscall":                 true, // creates import cycle with go-fuzz-dep (and probably nothing to see here)
+		"sync":                    true, // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
+		"sync/atomic":             true, // not interesting (also creates import cycle with go-fuzz-dep)
+		"time":                    true, // creates import cycle with go-fuzz-dep
+		"runtime/cgo":             true, // why would we instrument it?
+		"runtime/pprof":           true, // why would we instrument it?
+		"runtime/race":            true, // why would we instrument it?
 	}
 	if runtime.GOOS == "windows" {
 		// Cross-compilation is not implemented.
