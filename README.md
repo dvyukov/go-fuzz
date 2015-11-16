@@ -324,7 +324,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [go/types: parses comma terminated fields](https://github.com/golang/go/issues/11611) **fixed**
 - [go/types: int overflow in switch expression](https://github.com/golang/go/issues/11667) **fixed**
 - [go/types: allows multiple-value in switch and case](https://github.com/golang/go/issues/11687) **fixed**
-- [go/types: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11590)
+- [go/types: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11590) **fixed**
 - [debug/elf: index out of range](https://github.com/golang/go/issues/10996)
 - [debug/elf: makeslice: len out of range](https://github.com/golang/go/issues/10997)
 - [debug/elf: slice bounds out of range](https://github.com/golang/go/issues/10999)
