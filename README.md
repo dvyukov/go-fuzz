@@ -195,6 +195,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: not-deterministic output](https://github.com/golang/go/issues/13268)
 - [cmd/compile: parsing problem](https://github.com/golang/go/issues/13270)
 - [cmd/compile: compiles incorrect program](https://github.com/golang/go/issues/13272)
+- [cmd/compile: does not compile correct program](https://github.com/golang/go/issues/13273)
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759) **fixed**
 - [cmd/asm: index out of range (2)](https://github.com/golang/go/issues/12466) **fixed**
 - [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467) **fixed**
