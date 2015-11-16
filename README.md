@@ -188,7 +188,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: assignment to entry in nil map](https://github.com/golang/go/issues/11670) **fixed**
 - [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674)
 - [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
-- [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699)
+- [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699) **fixed**
 - [cmd/compile: "0"[0] should not be a constant](https://github.com/golang/go/issues/11370)
 - [cmd/compile: unexpected %!(NOVERB)](https://github.com/golang/go/issues/13266)
 - [cmd/compile: wrong line number in error message](https://github.com/golang/go/issues/13267)
