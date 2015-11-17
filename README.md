@@ -190,7 +190,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
 - [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699) **fixed**
 - [cmd/compile: "0"[0] should not be a constant](https://github.com/golang/go/issues/11370)
-- [cmd/compile: unexpected %!(NOVERB)](https://github.com/golang/go/issues/13266)
+- [cmd/compile: unexpected %!(NOVERB)](https://github.com/golang/go/issues/13266) **fixed**
 - [cmd/compile: wrong line number in error message](https://github.com/golang/go/issues/13267)
 - [cmd/compile: not-deterministic output](https://github.com/golang/go/issues/13268)
 - [cmd/compile: parsing problem](https://github.com/golang/go/issues/13270)
