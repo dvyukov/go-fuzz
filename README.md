@@ -180,7 +180,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: internal compiler error: b3.Succs has duplicate block b3](https://github.com/golang/go/issues/11593) **fixed**
 - [cmd/compile: internal compiler error: newname nil](https://github.com/golang/go/issues/11610)
 - [cmd/compile: accepts invalid function type](https://github.com/golang/go/issues/11595)
-- [cmd/compile: internal compiler error: getinarg: not a func int](https://github.com/golang/go/issues/11596)
+- [cmd/compile: internal compiler error: getinarg: not a func int](https://github.com/golang/go/issues/11596) **fixed**
 - [cmd/compile: hangs converting int const to complex64](https://github.com/golang/go/issues/11597)
 - [cmd/compile: nil deref in error message](https://github.com/golang/go/issues/11614)
 - [cmd/compile: use of untyped nil in switch](https://github.com/golang/go/issues/11668) **fixed**
