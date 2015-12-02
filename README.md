@@ -237,7 +237,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [net/http: allows empty header names](https://github.com/golang/go/issues/11205) **fixed**
 - [net/http: allows invalid characters in header values](https://github.com/golang/go/issues/11207)
 - [net/http: allows %-encoding after \[\]](https://github.com/golang/go/issues/11208) **fixed**
-- [net/mail: ParseAddress/String corrupt address](https://github.com/golang/go/issues/11292)
+- [net/mail: ParseAddress/String corrupt address](https://github.com/golang/go/issues/11292) **fixed**
 - [net/mail: parses invalid address](https://github.com/golang/go/issues/11293) **fixed**
 - [net/mail: fails to escape address](https://github.com/golang/go/issues/11294)
 - [net/textproto: fails to trim header value](https://github.com/golang/go/issues/11204) **fixed**
