@@ -173,7 +173,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: mishandles int->complex conversion](https://github.com/golang/go/issues/11365)
 - [cmd/compile: allows to define blank methods on builtin types](https://github.com/golang/go/issues/11366) **fixed**
 - [cmd/compile: mis-calculates a constant](https://github.com/golang/go/issues/11369) **fixed**
-- [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540)
+- [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540) **fixed**
 - [cmd/compile: nil pointer dereference](https://github.com/golang/go/issues/11588) **fixed**
 - [cmd/compile: nil pointer dereference (2)](https://github.com/golang/go/issues/11666) **fixed**
 - [cmd/compile: internal compiler error: plain block b3 len(Succs)==2, want 1](https://github.com/golang/go/issues/11589) **fixed**
