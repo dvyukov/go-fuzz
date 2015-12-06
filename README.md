@@ -305,7 +305,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [html/template: nil pointer dereference](https://github.com/golang/go/issues/10673) **fixed**
 - [html/template: slice bounds out of range](https://github.com/golang/go/issues/10799) **fixed**
 - [mime: ParseMediaType parses invalid media types](https://github.com/golang/go/issues/11289) **fixed**
-- [mime: Parse/Format corrupt parameters](https://github.com/golang/go/issues/11290)
+- [mime: Parse/Format corrupt parameters](https://github.com/golang/go/issues/11290) **fixed**
 - [mime: Parse/Format corrupt parameters (2)](https://github.com/golang/go/issues/11291) **fixed**
 - [go/parser: eats \r in comments](https://github.com/golang/go/issues/11151)
 - [go/format: turns correct program into incorrect one](https://github.com/golang/go/issues/11274)
