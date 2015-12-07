@@ -182,7 +182,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: accepts invalid function type](https://github.com/golang/go/issues/11595)
 - [cmd/compile: internal compiler error: getinarg: not a func int](https://github.com/golang/go/issues/11596) **fixed**
 - [cmd/compile: hangs converting int const to complex64](https://github.com/golang/go/issues/11597)
-- [cmd/compile: nil deref in error message](https://github.com/golang/go/issues/11614)
+- [cmd/compile: nil deref in error message](https://github.com/golang/go/issues/11614) **fixed**
 - [cmd/compile: use of untyped nil in switch](https://github.com/golang/go/issues/11668) **fixed**
 - [cmd/compile: implicitly converts complex constant to integer](https://github.com/golang/go/issues/11669) **fixed**
 - [cmd/compile: assignment to entry in nil map](https://github.com/golang/go/issues/11670) **fixed**
