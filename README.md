@@ -486,5 +486,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/dgryski/go-quicklz: many array-out-of-bounds issues](https://github.com/dgryski/go-quicklz/commit/6897f36a2bb707fe5b294fb9c06b7e086ab9503b) **fixed**
 - [github.com/rasky/go-lzo: possible infinite loop with single byte input](https://github.com/rasky/go-lzo/commit/22d79fde8006d605b307e3d58b775d9c1f756d52) **fixed**
 - [github.com/ulikunitz/xz: panic in lzma.writeRep](https://github.com/ulikunitz/xz/issues/3)
+- [github.com/Preetam/sflow: excessive memory consumption](https://github.com/Preetam/sflow/issues/29)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
