@@ -312,7 +312,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [go/format: non-idempotent format](https://github.com/golang/go/issues/11275) **fixed**
 - [go/format: adds }](https://github.com/golang/go/issues/11276) **fixed**
 - [go/types: panics on invalid constant](https://github.com/golang/go/issues/11325) **fixed**
-- [go/types: compiling hangs](https://github.com/golang/go/issues/11327)
+- [go/types: compiling hangs](https://github.com/golang/go/issues/11327) **fixed**
 - [go/types: stupid shift](https://github.com/golang/go/issues/11328) **fixed**
 - [go/types: line number out of range](https://github.com/golang/go/issues/11329)
 - [go/types: assertion failed](https://github.com/golang/go/issues/11347) **fixed**
