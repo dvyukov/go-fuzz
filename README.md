@@ -374,7 +374,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in Builtin_call_expression](https://github.com/golang/go/issues/11544) **fixed**
 - [gccgo: internal compiler error in check_bounds](https://github.com/golang/go/issues/11545) **fixed**
 - [gccgo: internal compiler error in do_determine_type](https://github.com/golang/go/issues/11546) **fixed**
-- [gccgo: internal compiler error in do_determine_type (2)](https://github.com/golang/go/issues/12937)
+- [gccgo: internal compiler error in do_determine_type (2)](https://github.com/golang/go/issues/12937) **fixed**
 - [gccgo: internal compiler error in backend_numeric_constant_expression](https://github.com/golang/go/issues/11548) **fixed**
 - [gccgo: internal compiler error in type_size](https://github.com/golang/go/issues/11554) **fixed**
 - [gccgo: internal compiler error in type_size (2)](https://github.com/golang/go/issues/11555) **fixed**
@@ -382,6 +382,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [gccgo: internal compiler error in do_get_backend](https://github.com/golang/go/issues/11560) **fixed**
 - [gccgo: internal compiler error in do_get_backend (2)](https://github.com/golang/go/issues/12325) **fixed**
 - [gccgo: internal compiler error in do_get_backend (3)](https://github.com/golang/go/issues/12617) **fixed**
+- [gccgo: internal compiler error in do_get_backend (4)](https://github.com/golang/go/issues/12939) **fixed**
 - [gccgo: internal compiler error in create_tmp_var](https://github.com/golang/go/issues/11568) **fixed**
 - [gccgo: internal compiler error in methods](https://github.com/golang/go/issues/11579) **fixed**
 - [gccgo: internal compiler error in do_flatten](https://github.com/golang/go/issues/11592) **fixed**
