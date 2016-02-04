@@ -264,7 +264,6 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 		"runtime/cgo":             true, // why would we instrument it?
 		"runtime/pprof":           true, // why would we instrument it?
 		"runtime/race":            true, // why would we instrument it?
-		"internal/race":           true, // why would we instrument it?
 	}
 	if runtime.GOOS == "windows" {
 		// Cross-compilation is not implemented.
