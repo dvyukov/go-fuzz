@@ -33,7 +33,7 @@ var (
 )
 
 const (
-	mainPkg = "go-fuzz-main"
+	mainPkg = "go.fuzz.main"
 )
 
 // Copies the package with all dependent packages into a temp dir,
@@ -131,6 +131,7 @@ func testNormalBuild(pkg string) {
 	defer func() {
 		workdir = ""
 	}()
+	copyFuzzDep(workdir)
 	createFuzzMain(pkg)
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", filepath.Join(workdir, "bin"), mainPkg)
 	for _, v := range os.Environ() {
@@ -191,9 +192,10 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 		copyDir(filepath.Join(GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
 	}
 	for p := range deps {
-		clonePackage(workdir, p)
+		clonePackage(workdir, p, p)
 	}
 	instrumentPackages(workdir, deps, lits, blocks, sonar)
+	copyFuzzDep(workdir)
 	createFuzzMain(pkg)
 
 	outf := tempFile()
@@ -213,6 +215,13 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 	return outf
 }
 
+func copyFuzzDep(workdir string) {
+	// In Go1.6 standard packages can't depend on non-standard ones.
+	// So we pretend that go-fuzz-dep is a standard one.
+	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-dep", "go-fuzz-dep")
+	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-defs", "go-fuzz-defs")
+}
+
 func createFuzzMain(pkg string) {
 	if err := os.MkdirAll(filepath.Join(workdir, "src", mainPkg), 0700); err != nil {
 		failf("failed to create temp dir: %v", err)
@@ -221,12 +230,12 @@ func createFuzzMain(pkg string) {
 	writeFile(filepath.Join(workdir, "src", mainPkg, "main.go"), []byte(src))
 }
 
-func clonePackage(workdir, pkg string) {
+func clonePackage(workdir, pkg, targetPkg string) {
 	dir := goListProps(pkg, "Dir")[0]
 	if !strings.HasSuffix(filepath.ToSlash(dir), pkg) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
 	}
-	newDir := filepath.Join(workdir, "src", pkg)
+	newDir := filepath.Join(workdir, "src", targetPkg)
 	copyDir(dir, newDir, false, isSourceFile)
 }
 
@@ -251,6 +260,7 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 		"sync":                    true, // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
 		"sync/atomic":             true, // not interesting (also creates import cycle with go-fuzz-dep)
 		"time":                    true, // creates import cycle with go-fuzz-dep
+		"internal/race":           true, // runtime depends on it
 		"runtime/cgo":             true, // why would we instrument it?
 		"runtime/pprof":           true, // why would we instrument it?
 		"runtime/race":            true, // why would we instrument it?
@@ -464,7 +474,7 @@ package main
 
 import (
 	target "%v"
-	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
+	dep "go-fuzz-dep"
 )
 
 func main() {

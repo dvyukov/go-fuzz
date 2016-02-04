@@ -1,13 +1,15 @@
 // Copyright 2015 Dmitry Vyukov. All rights reserved.
 // Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
 
+// +build gofuzz
+
 package gofuzzdep
 
 import (
 	"sync/atomic"
 	"unsafe"
 
-	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+	. "go-fuzz-defs"
 )
 
 const failure = ^uint8(0)
