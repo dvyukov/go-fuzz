@@ -31,7 +31,7 @@ func instrument(pkg, shortName, fullName string, fset *token.FileSet, parsedFile
 		blocks:    blocks,
 		info:      info,
 	}
-	file.addImport("github.com/dvyukov/go-fuzz/go-fuzz-dep", fuzzdepPkg, "Main")
+	file.addImport("go-fuzz-dep", fuzzdepPkg, "Main")
 
 	if lits != nil {
 		ast.Walk(&LiteralCollector{lits}, file.astFile)
