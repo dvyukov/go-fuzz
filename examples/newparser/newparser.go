@@ -47,16 +47,6 @@ func Fuzz(data []byte) int {
 	oldGcErr := gc(data, true)
 	newGcErr := gc(data, false)
 
-	if oldGcErr != nil && newGcErr != nil && strings.Contains(oldGcErr.Error(), "unexpected %") && strings.Contains(newGcErr.Error(), "unexpected %") {
-		// https://github.com/golang/go/issues/13266
-		return -1
-	}
-
-	if oldGcErr != nil && newGcErr != nil && (strings.Contains(oldGcErr.Error(), "package statement must be first") || strings.Contains(newGcErr.Error(), "package statement must be first")) {
-		// https://github.com/golang/go/issues/13267
-		return -1
-	}
-
 	check := func(gcErr error) bool {
 		if gcErr != nil && (gcCrash.MatchString(gcErr.Error()) ||
 			strings.Contains(gcErr.Error(), "\nruntime error: ") ||
