@@ -34,6 +34,7 @@ var (
 	flagSonar         = flag.Bool("sonar", true, "use sonar hints")
 	flagV             = flag.Int("v", 0, "verbosity level")
 	flagHTTP          = flag.String("http", "", "HTTP server listen address (master mode only)")
+	flagFuzzTimeout   = flag.Duration("fuzztimeout", 0, "time limit for whole fuzzing process (for go-fuzz devs only)")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})
@@ -52,7 +53,14 @@ func main() {
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT)
-		<-c
+		if *flagFuzzTimeout == 0 {
+			<-c
+		} else {
+			select {
+			case <-c:
+			case <-time.After(*flagFuzzTimeout):
+			}
+		}
 		atomic.StoreUint32(&shutdown, 1)
 		close(shutdownC)
 		log.Printf("shutting down...")
