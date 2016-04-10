@@ -35,6 +35,7 @@ var (
 	flagV             = flag.Int("v", 0, "verbosity level")
 	flagHTTP          = flag.String("http", "", "HTTP server listen address (master mode only)")
 	flagFuzzTimeout   = flag.Duration("fuzztimeout", 0, "time limit for whole fuzzing process (for go-fuzz devs only)")
+	flagCSVFile       = flag.String("csvfile", "", "filename of csv output (for devs only)")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})

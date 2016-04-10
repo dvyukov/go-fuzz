@@ -8,11 +8,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	_ "net/http/pprof"
 	"net/rpc"
+	"os"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -38,6 +40,7 @@ type Master struct {
 	coverFullness int
 
 	statsWriters *writerset.WriterSet
+	csvWriter    io.WriteCloser
 }
 
 // MasterSlave represents master's view of a slave.
@@ -59,6 +62,10 @@ func masterMain(ln net.Listener) {
 	m.corpus = newPersistentSet(filepath.Join(*flagWorkdir, "corpus"))
 	if len(m.corpus.m) == 0 {
 		m.corpus.add(Artifact{[]byte{}, 0, false})
+	}
+
+	if *flagCSVFile != "" {
+		m.initCSV(filepath.Join(*flagWorkdir, *flagCSVFile))
 	}
 
 	m.slaves = make(map[int]*MasterSlave)
@@ -108,8 +115,8 @@ func masterLoop(m *Master) {
 func (m *Master) broadcastStats() {
 	stats := m.masterStats()
 
-	// log to stdout
 	log.Println(stats.String())
+	m.logCSV(stats)
 
 	// write to any http clients
 	b, err := json.Marshal(stats)
@@ -187,6 +194,31 @@ func fmtDuration(d time.Duration) string {
 	} else {
 		return fmt.Sprintf("%vs", int(d.Seconds()))
 	}
+}
+
+func (m *Master) logCSV(s masterStats) {
+	if m.csvWriter == nil {
+		return
+	}
+	fmt.Fprintf(m.csvWriter, "%v,%v,%v,%v\n",
+		s.Corpus, s.Crashers, s.Cover, int(time.Since(s.StartTime).Seconds()),
+	)
+}
+
+func (m *Master) initCSV(fname string) {
+	f, err := os.Create(fname)
+	if err != nil {
+		panic(err)
+	}
+	m.csvWriter = f
+	f.WriteString("corpus,crashers,cover,seconds\n")
+
+	shutdownCleanup = append(shutdownCleanup, func() {
+		err := f.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	})
 }
 
 type ConnectArgs struct {
