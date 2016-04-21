@@ -1,0 +1,3 @@
+[submodule "go-fuzz/vendor/github.com/elazarl/go-bindata-assetfs"]
+	path = go-fuzz/vendor/github.com/elazarl/go-bindata-assetfs
+	url = https://github.com/elazarl/go-bindata-assetfs
