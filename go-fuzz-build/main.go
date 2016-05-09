@@ -12,6 +12,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -20,7 +21,6 @@ import (
 	"strings"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
-	"golang.org/x/tools/go/types"
 )
 
 var (
@@ -72,6 +72,7 @@ func main() {
 	deps["unsafe"] = true
 	deps["sync"] = true
 	deps["sync/atomic"] = true
+	deps["internal/race"] = true
 	if runtime.GOOS == "windows" {
 		// syscall depends on unicode/utf16.
 		// Cross-compilation is not implemented.
@@ -249,6 +250,21 @@ type Package struct {
 	deps    []*Package
 }
 
+type Importer struct {
+	pkgs map[string]*types.Package
+}
+
+func (i *Importer) Import(path string) (*types.Package, error) {
+	panic("must not be called")
+}
+
+func (i *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
+	if i.pkgs[path] == nil {
+		failf("can't find imported package %v", path)
+	}
+	return i.pkgs[path], nil
+}
+
 func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	ignore := map[string]bool{
 		"runtime":                         true, // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
@@ -300,6 +316,7 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 		}
 	}
 	typedPackages := make(map[string]*types.Package)
+	importer := &Importer{typedPackages}
 	for len(ready) != 0 {
 		p := ready[len(ready)-1]
 		ready = ready[:len(ready)-1]
@@ -323,13 +340,7 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 			}
 
 			cfg := &types.Config{
-				Packages: typedPackages,
-				Import: func(packages map[string]*types.Package, pkg string) (*types.Package, error) {
-					if packages[pkg] == nil {
-						failf("can't find imported package %v", pkg)
-					}
-					return packages[pkg], nil
-				},
+				Importer: importer,
 			}
 			typed, err := cfg.Check(p.name, p.fset, files, &p.info)
 			if err != nil {

@@ -8,15 +8,15 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"go/ast"
+	"go/constant"
 	"go/printer"
 	"go/token"
+	"go/types"
 	"io"
 	"strconv"
 	"strings"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
-	"golang.org/x/tools/go/exact"
-	"golang.org/x/tools/go/types"
 )
 
 const fuzzdepPkg = "_go_fuzz_dep_"
@@ -298,12 +298,15 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 		badConst := false
 		if isConst {
 			c := s.info.Types[v].Value
-			if c.Kind() == exact.Int {
-				if v, ok := exact.Int64Val(c); !ok || int64(int(v)) != v {
+			switch c.Kind() {
+			case constant.Int:
+				if v, ok := constant.Int64Val(c); !ok || int64(int(v)) != v {
 					// Such const can't be used outside of its current context,
 					// because it will be converted to int and that will fail.
 					badConst = true
 				}
+			case constant.Float:
+				badConst = true
 			}
 		}
 		if badConst || isWeirdShift(s.info, v) {
