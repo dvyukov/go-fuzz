@@ -292,7 +292,6 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 		"sync":          true, // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
 		"sync/atomic":   true, // not interesting (also creates import cycle with go-fuzz-dep)
 		"time":          true, // creates import cycle with go-fuzz-dep
-		"io":            true, // time depends on it
 		"internal/race": true, // runtime depends on it
 		"runtime/cgo":   true, // why would we instrument it?
 		"runtime/pprof": true, // why would we instrument it?
