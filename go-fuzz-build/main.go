@@ -254,15 +254,30 @@ type Importer struct {
 	pkgs map[string]*types.Package
 }
 
-func (i *Importer) Import(path string) (*types.Package, error) {
+func (imp *Importer) Import(path string) (*types.Package, error) {
 	panic("must not be called")
 }
 
-func (i *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
-	if i.pkgs[path] == nil {
-		failf("can't find imported package %v", path)
+func (imp *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
+	if pkg := imp.pkgs[path]; pkg != nil {
+		return pkg, nil
 	}
-	return i.pkgs[path], nil
+
+	// Vendor hackery.
+	prefix := filepath.Join(workdir, "src") + string(os.PathSeparator)
+	if strings.HasPrefix(srcDir, prefix) {
+		srcDir = srcDir[len(prefix):]
+	}
+	parts := strings.Split(srcDir, string(os.PathSeparator))
+	for i := 0; i <= len(parts); i++ {
+		vendorPath := strings.Join(parts[:len(parts)-i], string(os.PathSeparator))
+		vendorPath = filepath.Join(vendorPath, "vendor", path)
+		if pkg := imp.pkgs[vendorPath]; pkg != nil {
+			return pkg, nil
+		}
+	}
+	failf("can't find imported package %v", path)
+	return nil, nil
 }
 
 func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
