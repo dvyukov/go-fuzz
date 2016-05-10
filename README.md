@@ -491,5 +491,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/ulikunitz/xz: panic in lzma.writeRep](https://github.com/ulikunitz/xz/issues/3)
 - [github.com/Preetam/sflow: excessive memory consumption](https://github.com/Preetam/sflow/issues/29) **fixed**
 - [github.com/hashicorp/go-version: unhandled value out of range](https://github.com/hashicorp/go-version/pull/11) **fixed**
+- [atlassian/gostatsd: Return an error instead of nil when parseline gets nil/empty input](https://github.com/atlassian/gostatsd/pull/5)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
