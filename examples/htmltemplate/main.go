@@ -8,7 +8,6 @@ import (
 	"html/template"
 	"io/ioutil"
 	"regexp"
-	"strings"
 )
 
 // Huge padding
@@ -18,14 +17,7 @@ func Fuzz(data []byte) int {
 	if fmtHang.Match(data) {
 		return 0
 	}
-	sdata := string(data)
-	if strings.Contains(sdata, "template") {
-		return 0 // causes infinite recursion
-	}
-	if strings.Contains(sdata, "block") {
-		return 0 // causes infinite recursion due to https://github.com/golang/go/issues/15618
-	}
-	t, err := template.New("").Funcs(funcs).Parse(sdata)
+	t, err := template.New("").Funcs(funcs).Parse(string(data))
 	if err != nil {
 		if t != nil {
 			panic("non nil template on error")
