@@ -233,6 +233,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [regexp: considers "\Q\E*" as valid regexp](https://github.com/golang/go/issues/11187) **fixed**
 - [time: allows signs for year/tz in format string](https://github.com/golang/go/issues/11128)
 - [math/big: incorrect string->Float conversion](https://github.com/golang/go/issues/11341)
+- [math/big: MakeFromLiteral with 0 mantissa and large exponent hangs](https://github.com/golang/go/issues/16176)
 - [net/http: can't send star request](https://github.com/golang/go/issues/11202) **fixed**
 - [net/http: allows empty header names](https://github.com/golang/go/issues/11205) **fixed**
 - [net/http: allows invalid characters in header values](https://github.com/golang/go/issues/11207) **fixed**
