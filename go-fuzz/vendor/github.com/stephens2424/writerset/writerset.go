@@ -1,8 +1,5 @@
-// Copyright 2015 Dmitry Vyukov. All rights reserved.
-// Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
-
 // Package writerset implements a mechanism to add and remove writers from a construct
-// similar to io.MultiWriter. Manually vendored from http://github.com/stephens2424/writerset
+// similar to io.MultiWriter.
 package writerset
 
 import (
