@@ -19,7 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/dvyukov/go-fuzz/go-fuzz/internal/writerset"
+	"github.com/stephens2424/writerset"
 )
 
 // Master manages persistent fuzzer state like input corpus and crashers.
