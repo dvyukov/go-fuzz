@@ -6,7 +6,7 @@
 package mygame
 
 const (
-	ColorRed = 1
+	ColorRed   = 1
 	ColorGreen = 2
-	ColorBlue = 3
+	ColorBlue  = 3
 )

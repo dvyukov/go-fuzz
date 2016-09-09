@@ -15,9 +15,9 @@ func Fuzz(data []byte) int {
 	// from net package. To build this example, you need to patch net package to
 	// rename parseNSSConf to ParseNSSConf first.
 	/*
-	if net.ParseNSSConf(bytes.NewReader(data)) == nil {
-		return 0
-	}
+		if net.ParseNSSConf(bytes.NewReader(data)) == nil {
+			return 0
+		}
 	*/
 	return 1
 }

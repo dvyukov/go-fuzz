@@ -18,7 +18,7 @@ func Fuzz(data []byte) int {
 		fmt.Printf("s2: %q\n", s2)
 		panic("string changed")
 	}
-	s3 := html.UnescapeString(s0)	
+	s3 := html.UnescapeString(s0)
 	html.EscapeString(s3)
 	return 0
 }

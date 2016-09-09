@@ -6,8 +6,8 @@ package suffix
 import (
 	"bytes"
 	"fmt"
-	"sort"
 	"index/suffixarray"
+	"sort"
 )
 
 func Fuzz(data []byte) int {

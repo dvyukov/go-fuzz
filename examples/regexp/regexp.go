@@ -65,25 +65,25 @@ func Fuzz(data []byte) int {
 	}
 
 	/*
-	if isAscii(restrb) && isAscii(str) {
-		re2ok, re2matched, re2err := RE2Match(restrb, str)
-		re, err := regexp.Compile(restr)
-		if (err == nil) != re2ok {
-			if !(re2ok && (strings.HasPrefix(err.Error(), "error parsing regexp: invalid UTF-8") ||
-				strings.HasPrefix(err.Error(), "error parsing regexp: invalid repeat count") ||
-				strings.HasPrefix(err.Error(), "error parsing regexp: invalid escape sequence: `\\C`"))) {
-				fmt.Printf("re=%q regexp=%v re2=%v(%v)\n", restr, err, re2ok, re2err)
-				panic("regexp and re2 disagree on regexp validity")
+		if isAscii(restrb) && isAscii(str) {
+			re2ok, re2matched, re2err := RE2Match(restrb, str)
+			re, err := regexp.Compile(restr)
+			if (err == nil) != re2ok {
+				if !(re2ok && (strings.HasPrefix(err.Error(), "error parsing regexp: invalid UTF-8") ||
+					strings.HasPrefix(err.Error(), "error parsing regexp: invalid repeat count") ||
+					strings.HasPrefix(err.Error(), "error parsing regexp: invalid escape sequence: `\\C`"))) {
+					fmt.Printf("re=%q regexp=%v re2=%v(%v)\n", restr, err, re2ok, re2err)
+					panic("regexp and re2 disagree on regexp validity")
+				}
+			}
+			if err == nil {
+				matched := re.Match(str)
+				if re2matched != matched {
+					fmt.Printf("re=%q str=%q regexp=%v re2=%v\n", restr, str, matched, re2matched)
+					panic("regexp and re2 disagree on regexp match")
+				}
 			}
 		}
-		if err == nil {
-			matched := re.Match(str)
-			if re2matched != matched {
-				fmt.Printf("re=%q str=%q regexp=%v re2=%v\n", restr, str, matched, re2matched)
-				panic("regexp and re2 disagree on regexp match")
-			}
-		}
-	}
 	*/
 
 	score := 0

@@ -25,7 +25,7 @@ func Fuzz(data []byte) int {
 	for width := 2; width <= 8; width++ {
 		uncomp0 := append([]byte{}, uncomp...)
 		for i, v := range uncomp0 {
-			uncomp0[i] = v & (1<<uint(width)-1)
+			uncomp0[i] = v & (1<<uint(width) - 1)
 		}
 		for _, order := range []lzw.Order{lzw.MSB, lzw.LSB} {
 			buf := new(bytes.Buffer)

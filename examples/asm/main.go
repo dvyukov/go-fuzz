@@ -11,7 +11,7 @@ index c07e6f8..d39cb47 100644
 --- a/src/cmd/asm/internal/asm/parse.go
 +++ b/src/cmd/asm/internal/asm/parse.go
 @@ -8,7 +8,7 @@ package asm
- 
+
  import (
         "fmt"
 -       "log"
@@ -26,14 +26,14 @@ index c07e6f8..d39cb47 100644
 +               panic("os.Exit")
         }
  }
- 
+
 diff --git a/src/cmd/asm/internal/lex/input.go b/src/cmd/asm/internal/lex/input.go
 index 7e495b8..45e9b8d 100644
 --- a/src/cmd/asm/internal/lex/input.go
 +++ b/src/cmd/asm/internal/lex/input.go
 @@ -64,8 +64,9 @@ func predefine(defines flags.MultiFlag) map[string]*Macro {
  }
- 
+
  func (in *Input) Error(args ...interface{}) {
 -       fmt.Fprintf(os.Stderr, "%s:%d: %s", in.File(), in.Line(), fmt.Sprintln(args...))
 -       os.Exit(1)
@@ -44,13 +44,13 @@ index 7e495b8..45e9b8d 100644
 package asm
 
 import (
-	"os"
-	"io/ioutil"	
 	"bytes"
 	"cmd/asm/internal/arch"
 	"cmd/asm/internal/asm"
 	"cmd/asm/internal/lex"
 	"cmd/internal/obj"
+	"io/ioutil"
+	"os"
 )
 
 func Fuzz(data []byte) int {

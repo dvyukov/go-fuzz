@@ -148,9 +148,9 @@ func test4(x, y MyBool) MyBool {
 }
 
 func bla() error {
-    return nil
+	return nil
 }
 
 func test5() bool {
-    return nil == bla()
+	return nil == bla()
 }

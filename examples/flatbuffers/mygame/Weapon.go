@@ -8,6 +8,7 @@ package mygame
 import (
 	flatbuffers "github.com/google/flatbuffers/go"
 )
+
 type Weapon struct {
 	_tab flatbuffers.Table
 }
@@ -34,6 +35,8 @@ func (rcv *Weapon) X() float32 {
 }
 
 func WeaponStart(builder *flatbuffers.Builder) { builder.StartObject(2) }
-func WeaponAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) { builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(name), 0) }
-func WeaponAddX(builder *flatbuffers.Builder, x float32) { builder.PrependFloat32Slot(1, x, 0) }
+func WeaponAddName(builder *flatbuffers.Builder, name flatbuffers.UOffsetT) {
+	builder.PrependUOffsetTSlot(0, flatbuffers.UOffsetT(name), 0)
+}
+func WeaponAddX(builder *flatbuffers.Builder, x float32)          { builder.PrependFloat32Slot(1, x, 0) }
 func WeaponEnd(builder *flatbuffers.Builder) flatbuffers.UOffsetT { return builder.EndObject() }

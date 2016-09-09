@@ -4,8 +4,8 @@
 package elf
 
 import (
-	"debug/elf"
 	"bytes"
+	"debug/elf"
 )
 
 func Fuzz(data []byte) int {

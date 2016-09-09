@@ -6,7 +6,7 @@
 package mygame
 
 const (
-	AnyNONE = 0
+	AnyNONE    = 0
 	AnyMonster = 1
-	AnyWeapon = 2
+	AnyWeapon  = 2
 )

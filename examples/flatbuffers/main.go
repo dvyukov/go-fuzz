@@ -4,14 +4,14 @@
 package flatbuffers
 
 import (
-	flatbuffers "github.com/google/flatbuffers/go"
 	"github.com/dvyukov/go-fuzz/examples/flatbuffers/mygame"
+	flatbuffers "github.com/google/flatbuffers/go"
 )
 
 func Fuzz(data []byte) int {
 	var m mygame.Monster
 	m.Init(data, 0)
-//loop:
+	//loop:
 	pos := m.Pos(nil)
 	pos.X()
 	pos.Y()
@@ -26,17 +26,17 @@ func Fuzz(data []byte) int {
 	m.Name()
 	var t flatbuffers.Table
 	if m.Test(&t) {
-/*
-		switch m.TestType() {
-		case mygame.AnyMonster:
-			m._tab = t
-			goto loop
-		case mygame.AnyWeapon:
-			w := mygame.Weapon{t}
-			w.Name()
-			w.X()
-		}
-*/
+		/*
+			switch m.TestType() {
+			case mygame.AnyMonster:
+				m._tab = t
+				goto loop
+			case mygame.AnyWeapon:
+				w := mygame.Weapon{t}
+				w.Name()
+				w.X()
+			}
+		*/
 	}
 	return 0
 }

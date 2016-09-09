@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"gopkg.in/mgo.v2/bson"
 	"github.com/dvyukov/go-fuzz/examples/fuzz"
+	"gopkg.in/mgo.v2/bson"
 )
 
 func Fuzz(data []byte) int {
@@ -53,8 +53,8 @@ type S struct {
 	B string
 	C float64
 	D []byte
-	E bool   `bson:"E1"`
-	F uint8  `bson:",omitempty"`
+	E bool  `bson:"E1"`
+	F uint8 `bson:",omitempty"`
 	G S1
 	H *S2
 	I *int

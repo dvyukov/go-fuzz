@@ -9,7 +9,7 @@ import (
 	"math/big"
 	"reflect"
 	"time"
-	
+
 	"github.com/dvyukov/go-fuzz/examples/fuzz"
 )
 

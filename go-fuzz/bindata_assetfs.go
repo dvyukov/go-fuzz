@@ -10,10 +10,10 @@
 package main
 
 import (
-	"github.com/elazarl/go-bindata-assetfs"
 	"bytes"
 	"compress/gzip"
 	"fmt"
+	"github.com/elazarl/go-bindata-assetfs"
 	"io"
 	"io/ioutil"
 	"os"
@@ -226,10 +226,10 @@ func AssetNames() []string {
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
 	"assets/bootstrap-theme.min.css": assetsBootstrapThemeMinCss,
-	"assets/bootstrap.min.css": assetsBootstrapMinCss,
-	"assets/bootstrap.min.js": assetsBootstrapMinJs,
-	"assets/jquery.min.js": assetsJqueryMinJs,
-	"assets/stats.html": assetsStatsHtml,
+	"assets/bootstrap.min.css":       assetsBootstrapMinCss,
+	"assets/bootstrap.min.js":        assetsBootstrapMinJs,
+	"assets/jquery.min.js":           assetsJqueryMinJs,
+	"assets/stats.html":              assetsStatsHtml,
 }
 
 // AssetDir returns the file names below a certain
@@ -271,13 +271,14 @@ type bintree struct {
 	Func     func() (*asset, error)
 	Children map[string]*bintree
 }
+
 var _bintree = &bintree{nil, map[string]*bintree{
 	"assets": &bintree{nil, map[string]*bintree{
 		"bootstrap-theme.min.css": &bintree{assetsBootstrapThemeMinCss, map[string]*bintree{}},
-		"bootstrap.min.css": &bintree{assetsBootstrapMinCss, map[string]*bintree{}},
-		"bootstrap.min.js": &bintree{assetsBootstrapMinJs, map[string]*bintree{}},
-		"jquery.min.js": &bintree{assetsJqueryMinJs, map[string]*bintree{}},
-		"stats.html": &bintree{assetsStatsHtml, map[string]*bintree{}},
+		"bootstrap.min.css":       &bintree{assetsBootstrapMinCss, map[string]*bintree{}},
+		"bootstrap.min.js":        &bintree{assetsBootstrapMinJs, map[string]*bintree{}},
+		"jquery.min.js":           &bintree{assetsJqueryMinJs, map[string]*bintree{}},
+		"stats.html":              &bintree{assetsStatsHtml, map[string]*bintree{}},
 	}},
 }}
 
@@ -327,7 +328,6 @@ func _filePath(dir, name string) string {
 	cannonicalName := strings.Replace(name, "\\", "/", -1)
 	return filepath.Join(append([]string{dir}, strings.Split(cannonicalName, "/")...)...)
 }
-
 
 func assetFS() *assetfs.AssetFS {
 	for k := range _bintree.Children {

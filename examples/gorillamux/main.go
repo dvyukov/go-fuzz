@@ -4,16 +4,16 @@
 package gorillamux
 
 import (
-	"strings"
 	"bufio"
-	"net/http"
 	"github.com/gorilla/mux"
+	"net/http"
+	"strings"
 )
 
-func Fuzz(data[]byte) int {
+func Fuzz(data []byte) int {
 	s := string(data)
 	r0 := s[:len(s)/3]
-	r1 := s[len(s)/3:len(s)/3*2]
+	r1 := s[len(s)/3 : len(s)/3*2]
 	reqs := s[len(s)/3*2:]
 	r := mux.NewRouter()
 	r.HandleFunc(r0, foo)
