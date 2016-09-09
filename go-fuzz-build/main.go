@@ -32,10 +32,6 @@ var (
 	GOROOT  string
 )
 
-const (
-	mainPkg = "go.fuzz.main"
-)
-
 // Copies the package with all dependent packages into a temp dir,
 // instruments Go source files there and builds setting GOROOT to the temp dir.
 func main() {
@@ -57,7 +53,13 @@ func main() {
 	}
 
 	// To produce error messages (this is much faster and gives correct line numbers).
-	testNormalBuild(pkg)
+	if !strings.Contains(pkg, "internal") {
+		// Can't test normal build for internal packages.
+		// For internal packages we need to create main package in the same dir
+		// as the internal package. But since we don't mess with real GOPATH
+		// we can't do that.
+		testNormalBuild(pkg)
+	}
 
 	deps := make(map[string]bool)
 	for _, p := range goListList(pkg, "Deps") {
@@ -132,8 +134,8 @@ func testNormalBuild(pkg string) {
 	defer func() {
 		workdir = ""
 	}()
-	copyFuzzDep(workdir)
-	createFuzzMain(pkg)
+	copyFuzzDep(workdir, false)
+	mainPkg := createFuzzMain(pkg)
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", filepath.Join(workdir, "bin"), mainPkg)
 	for _, v := range os.Environ() {
 		if strings.HasPrefix(v, "GOPATH") {
@@ -141,7 +143,7 @@ func testNormalBuild(pkg string) {
 		}
 		cmd.Env = append(cmd.Env, v)
 	}
-	cmd.Env = append(cmd.Env, "GOPATH="+filepath.Join(workdir, "goroot")+string(os.PathListSeparator)+os.Getenv("GOPATH"))
+	cmd.Env = append(cmd.Env, "GOPATH="+os.Getenv("GOPATH")+string(os.PathListSeparator)+filepath.Join(workdir, "gopath"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
@@ -194,8 +196,8 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 		clonePackage(workdir, p, p, std)
 	}
 	instrumentPackages(workdir, deps, lits, blocks, sonar)
-	copyFuzzDep(workdir)
-	createFuzzMain(pkg)
+	copyFuzzDep(workdir, true)
+	mainPkg := createFuzzMain(pkg)
 
 	outf := tempFile()
 	os.Remove(outf)
@@ -215,18 +217,20 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 	return outf
 }
 
-func copyFuzzDep(workdir string) {
+func copyFuzzDep(workdir string, std bool) {
 	// In Go1.6 standard packages can't depend on non-standard ones.
 	// So we pretend that go-fuzz-dep is a standard one.
-	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-dep", "go-fuzz-dep", true)
-	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-defs", "go-fuzz-defs", true)
+	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-dep", "go-fuzz-dep", std)
+	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-defs", "go-fuzz-defs", std)
 }
 
-func createFuzzMain(pkg string) {
-	path := filepath.Join(workdir, "goroot", "src", mainPkg)
+func createFuzzMain(pkg string) string {
+	mainPkg := filepath.Join(pkg, "go.fuzz.main")
+	path := filepath.Join(workdir, "gopath", "src", mainPkg)
 	mkdirAll(path)
 	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
 	writeFile(filepath.Join(path, "main.go"), []byte(src))
+	return mainPkg
 }
 
 func clonePackage(workdir, pkg, targetPkg string, std bool) {
