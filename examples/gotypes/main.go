@@ -39,65 +39,68 @@ var something = regexp.MustCompile(" constant .* overflows ")
 var gcCrash = regexp.MustCompile("\n/tmp/fuzz\\.gc[0-9]+:[0-9]+: internal compiler error: ")
 var asanCrash = regexp.MustCompile("\n==[0-9]+==ERROR: AddressSanitizer: ")
 
+const (
+	testGccgo = false
+)
+
 func Fuzz(data []byte) int {
 	if bigNum.Match(data) || bigNum2.Match(data) {
-		return 0
+		return -1
 	}
 	goErr := gotypes(data)
-	gcErr := gc(data)
-	gccgoErr := gccgo(data)
+	gcErr := gc(data, false)
+	gcNewParserErr := gc(data, true)
+	gccgoErr := gcErr
+	if testGccgo {
+		gccgoErr = gccgo(data)
+	}
+
+	if (gcErr == nil) != (gcNewParserErr == nil) {
+		fmt.Printf("old parser: %v\n", gcErr)
+		fmt.Printf("new parser: %v\n", gcNewParserErr)
+		panic("old/new parser disagree")
+	}
+
 	if goErr == nil && gcErr != nil {
 		if strings.Contains(gcErr.Error(), "line number out of range") {
 			// https://github.com/golang/go/issues/11329
-			return 0
-		}
-		if strings.Contains(gcErr.Error(), "overflow in int -> string") {
-			// https://github.com/golang/go/issues/11330
-			return 0
+			return -1
 		}
 		if strings.Contains(gcErr.Error(), "larger than address space") {
 			// Gc is more picky at rejecting huge objects.
-			return 0
+			return -1
 		}
 		if strings.Contains(gcErr.Error(), "non-canonical import path") {
-			return 0
+			return -1
 		}
 		if strings.Contains(gcErr.Error(), "constant shift overflow") {
 			// ???
-			return 0
+			return -1
 		}
 		if something.MatchString(gcErr.Error()) {
 			// ???
-			return 0
+			return -1
 		}
 	}
 
 	if gcErr == nil && goErr != nil {
-		if strings.Contains(goErr.Error(), "illegal character U+") {
-			// https://github.com/golang/go/issues/11359
-			return 0
-		}
-		if issue11590.MatchString(goErr.Error()) || issue11590_2.MatchString(goErr.Error()) {
-			// https://github.com/golang/go/issues/11590
-			return 0
-		}
 		if issue11370.MatchString(goErr.Error()) {
-			return 0
+			return -1
 		}
 	}
 
 	if gccgoErr == nil && goErr != nil {
 		if strings.Contains(goErr.Error(), "invalid operation: stupid shift count") {
 			// https://github.com/golang/go/issues/11524
-			return 0
+			return -1
 		}
 		if fpRounding.MatchString(goErr.Error()) {
 			// gccgo has different rounding
-			return 0
+			return -1
 		}
 		if strings.Contains(goErr.Error(), "illegal byte order mark") {
 			// on "package\rG\n//line \ufeff:1" input, not filed.
-			return 0
+			return -1
 		}
 	}
 
@@ -107,7 +110,7 @@ func Fuzz(data []byte) int {
 				strings.Contains(gccgoErr.Error(), "initialization expression has wrong type")) {
 			// https://github.com/golang/go/issues/11564
 			// https://github.com/golang/go/issues/11563
-			return 0
+			return -1
 		}
 	}
 
@@ -116,18 +119,6 @@ func Fuzz(data []byte) int {
 		strings.Contains(gcErr.Error(), "\nruntime error: ") ||
 		strings.HasPrefix(gcErr.Error(), "runtime error: ") ||
 		strings.Contains(gcErr.Error(), "%!")) { // bad format string
-		if strings.Contains(gcErr.Error(), "internal compiler error: out of fixed registers") {
-			// https://github.com/golang/go/issues/11352
-			return 0
-		}
-		if strings.Contains(gcErr.Error(), "internal compiler error: treecopy Name") {
-			// https://github.com/golang/go/issues/11361
-			return 0
-		}
-		if strings.Contains(gcErr.Error(), "internal compiler error: newname nil") {
-			// https://github.com/golang/go/issues/11610
-			return 0
-		}
 		fmt.Printf("gc result: %v\n", gcErr)
 		panic("gc compiler crashed")
 	}
@@ -136,27 +127,27 @@ func Fuzz(data []byte) int {
 	if gccgoErr != nil && (strings.HasPrefix(gccgoErr.Error(), gccgoCrash) || strings.Contains(gccgoErr.Error(), "\n"+gccgoCrash)) {
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_export, at go/gofrontend/types.cc") {
 			// https://github.com/golang/go/issues/12321
-			return 0
+			return -1
 		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_lower, at go/gofrontend/expressions.cc") {
 			// https://github.com/golang/go/issues/12615
-			return 0
+			return -1
 		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in wide_int_to_tree, at tree.c") {
 			// https://github.com/golang/go/issues/12618
-			return 0
+			return -1
 		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in uniform_vector_p, at tree.c") {
 			// https://github.com/golang/go/issues/12935
-			return 0
+			return -1
 		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_determine_type, at go/gofrontend/expressions.h") {
 			// https://github.com/golang/go/issues/12937
-			return 0
+			return -1
 		}
 		if strings.Contains(gccgoErr.Error(), "go1: internal compiler error: in do_get_backend, at go/gofrontend/expressions.cc") {
 			// https://github.com/golang/go/issues/12939
-			return 0
+			return -1
 		}
 		fmt.Printf("gccgo result: %v\n", gccgoErr)
 		panic("gccgo compiler crashed")
@@ -178,7 +169,7 @@ func Fuzz(data []byte) int {
 
 	}
 	if formatBug1.Match(data) || formatBug2.Match(data) {
-		return 1
+		return 0
 	}
 	// https://github.com/golang/go/issues/11274
 	data = bytes.Replace(data, []byte{'\r'}, []byte{' '}, -1)
@@ -216,7 +207,7 @@ func gotypes(data []byte) (err error) {
 		return
 	}
 	prog := ssa.NewProgram(fset, ssa.BuildSerially|ssa.SanityCheckFunctions|ssa.GlobalDebug)
-	prog.BuildAll()
+	prog.Build()
 	for _, pkg := range prog.AllPackages() {
 		_, err := pkg.WriteTo(ioutil.Discard)
 		if err != nil {
@@ -226,7 +217,7 @@ func gotypes(data []byte) (err error) {
 	return
 }
 
-func gc(data []byte) error {
+func gc(data []byte, newparser bool) error {
 	f, err := ioutil.TempFile("", "fuzz.gc")
 	if err != nil {
 		return err
@@ -238,7 +229,7 @@ func gc(data []byte) error {
 		return err
 	}
 	f.Close()
-	out, err := exec.Command("compile", f.Name()).CombinedOutput()
+	out, err := exec.Command("compile", fmt.Sprintf("-newparser=%v", newparser), f.Name()).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s\n%s", out, err)
 	}
