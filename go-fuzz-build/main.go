@@ -61,9 +61,9 @@ func main() {
 
 	deps := make(map[string]bool)
 	for _, p := range goListList(pkg, "Deps") {
-		deps[p] = true
+		deps[p] = goListBool(p, "Standard")
 	}
-	deps[pkg] = true
+	deps[pkg] = goListBool(pkg, "Standard")
 	// These packages are used by go-fuzz-dep, so we need to copy them regardless.
 	deps["runtime"] = true
 	deps["syscall"] = true
@@ -141,7 +141,7 @@ func testNormalBuild(pkg string) {
 		}
 		cmd.Env = append(cmd.Env, v)
 	}
-	cmd.Env = append(cmd.Env, "GOPATH="+workdir+string(os.PathListSeparator)+os.Getenv("GOPATH"))
+	cmd.Env = append(cmd.Env, "GOPATH="+filepath.Join(workdir, "goroot")+string(os.PathListSeparator)+os.Getenv("GOPATH"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
@@ -178,22 +178,20 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 
 	if deps["runtime/cgo"] {
 		// Trick go command into thinking that it has up-to-date sources for cmd/cgo.
-		cgoDir := filepath.Join(workdir, "src", "cmd", "cgo")
-		if err := os.MkdirAll(cgoDir, 0700); err != nil {
-			failf("failed to create temp dir: %v", err)
-		}
+		cgoDir := filepath.Join(workdir, "goroot", "src", "cmd", "cgo")
+		mkdirAll(cgoDir)
 		src := "// +build never\npackage main\n"
 		writeFile(filepath.Join(cgoDir, "fake.go"), []byte(src))
 	}
-	copyDir(filepath.Join(GOROOT, "pkg", "tool"), filepath.Join(workdir, "pkg", "tool"), true, nil)
+	copyDir(filepath.Join(GOROOT, "pkg", "tool"), filepath.Join(workdir, "goroot", "pkg", "tool"), true, nil)
 	if _, err := os.Stat(filepath.Join(GOROOT, "pkg", "include")); err == nil {
-		copyDir(filepath.Join(GOROOT, "pkg", "include"), filepath.Join(workdir, "pkg", "include"), true, nil)
+		copyDir(filepath.Join(GOROOT, "pkg", "include"), filepath.Join(workdir, "goroot", "pkg", "include"), true, nil)
 	} else {
 		// Cross-compilation is not implemented.
-		copyDir(filepath.Join(GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
+		copyDir(filepath.Join(GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "goroot", "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
 	}
-	for p := range deps {
-		clonePackage(workdir, p, p)
+	for p, std := range deps {
+		clonePackage(workdir, p, p, std)
 	}
 	instrumentPackages(workdir, deps, lits, blocks, sonar)
 	copyFuzzDep(workdir)
@@ -204,12 +202,13 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 	outf += ".exe"
 	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", outf, mainPkg)
 	for _, v := range os.Environ() {
-		if strings.HasPrefix(v, "GOROOT") {
+		if strings.HasPrefix(v, "GOROOT") || strings.HasPrefix(v, "GOPATH") {
 			continue
 		}
 		cmd.Env = append(cmd.Env, v)
 	}
-	cmd.Env = append(cmd.Env, "GOROOT="+workdir)
+	cmd.Env = append(cmd.Env, "GOROOT="+filepath.Join(workdir, "goroot"))
+	cmd.Env = append(cmd.Env, "GOPATH="+filepath.Join(workdir, "gopath"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
@@ -219,24 +218,27 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 func copyFuzzDep(workdir string) {
 	// In Go1.6 standard packages can't depend on non-standard ones.
 	// So we pretend that go-fuzz-dep is a standard one.
-	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-dep", "go-fuzz-dep")
-	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-defs", "go-fuzz-defs")
+	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-dep", "go-fuzz-dep", true)
+	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-defs", "go-fuzz-defs", true)
 }
 
 func createFuzzMain(pkg string) {
-	if err := os.MkdirAll(filepath.Join(workdir, "src", mainPkg), 0700); err != nil {
-		failf("failed to create temp dir: %v", err)
-	}
+	path := filepath.Join(workdir, "goroot", "src", mainPkg)
+	mkdirAll(path)
 	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
-	writeFile(filepath.Join(workdir, "src", mainPkg, "main.go"), []byte(src))
+	writeFile(filepath.Join(path, "main.go"), []byte(src))
 }
 
-func clonePackage(workdir, pkg, targetPkg string) {
+func clonePackage(workdir, pkg, targetPkg string, std bool) {
 	dir := goListProps(pkg, "Dir")[0]
 	if !strings.HasSuffix(filepath.ToSlash(dir), pkg) {
 		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
 	}
-	newDir := filepath.Join(workdir, "src", targetPkg)
+	root := "goroot"
+	if !std {
+		root = "gopath"
+	}
+	newDir := filepath.Join(workdir, root, "src", targetPkg)
 	copyDir(dir, newDir, false, isSourceFile)
 }
 
@@ -252,6 +254,7 @@ type Package struct {
 
 type Importer struct {
 	pkgs map[string]*types.Package
+	deps map[string]bool
 }
 
 func (imp *Importer) Import(path string) (*types.Package, error) {
@@ -264,8 +267,10 @@ func (imp *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*ty
 	}
 
 	// Vendor hackery.
-	prefix := filepath.Join(workdir, "src") + string(os.PathSeparator)
-	if strings.HasPrefix(srcDir, prefix) {
+	if prefix := filepath.Join(workdir, "goroot", "src") + string(os.PathSeparator); strings.HasPrefix(srcDir, prefix) {
+		srcDir = srcDir[len(prefix):]
+	}
+	if prefix := filepath.Join(workdir, "gopath", "src") + string(os.PathSeparator); strings.HasPrefix(srcDir, prefix) {
 		srcDir = srcDir[len(prefix):]
 	}
 	parts := strings.Split(srcDir, string(os.PathSeparator))
@@ -331,7 +336,7 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 		}
 	}
 	typedPackages := make(map[string]*types.Package)
-	importer := &Importer{typedPackages}
+	importer := &Importer{typedPackages, deps}
 	for len(ready) != 0 {
 		p := ready[len(ready)-1]
 		ready = ready[:len(ready)-1]
@@ -342,7 +347,11 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 			p.fset = token.NewFileSet()
 			p.ast = make(map[string]*ast.File)
 			p.info.Types = make(map[ast.Expr]types.TypeAndValue)
-			path := filepath.Join(workdir, "src", p.name)
+			root := "goroot"
+			if !deps[p.name] {
+				root = "gopath"
+			}
+			path := filepath.Join(workdir, root, "src", p.name)
 			var files []*ast.File
 			for _, fn := range append(goListList(p.name, "GoFiles"), goListList(p.name, "CgoFiles")...) {
 				astFile, err := parser.ParseFile(p.fset, filepath.Join(path, fn), nil, parser.ParseComments)
@@ -397,9 +406,7 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 }
 
 func copyDir(dir, newDir string, rec bool, pred func(string) bool) {
-	if err := os.MkdirAll(newDir, 0700); err != nil {
-		failf("failed to create temp dir: %v", err)
-	}
+	mkdirAll(newDir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		failf("failed to scan dir '%v': %v", dir, err)
@@ -448,6 +455,15 @@ func goListProps(pkg string, props ...string) []string {
 	return strings.Split(string(out), "|")
 }
 
+func goListBool(pkg, what string) bool {
+	templ := fmt.Sprintf("{{.%v}}", what)
+	out, err := exec.Command("go", "list", "-tags", "gofuzz", "-f", templ, pkg).CombinedOutput()
+	if err != nil {
+		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
+	}
+	return string(out) == "true\n"
+}
+
 func failf(str string, args ...interface{}) {
 	if !*flagWork && workdir != "" {
 		os.RemoveAll(workdir)
@@ -476,6 +492,12 @@ func readFile(name string) []byte {
 func writeFile(name string, data []byte) {
 	if err := ioutil.WriteFile(name, data, 0700); err != nil {
 		failf("failed to write temp file: %v", err)
+	}
+}
+
+func mkdirAll(dir string) {
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		failf("failed to create temp dir: %v", err)
 	}
 }
 

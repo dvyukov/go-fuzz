@@ -5,7 +5,14 @@ package test
 
 import (
 	"bytes"
+
+	// Test vendoring support.
+	vendored_foo "non.existent.com/foo"
 )
+
+func init() {
+	vendored_foo.Foo()
+}
 
 func Fuzz(data []byte) int {
 	if len(data) == 1 {
