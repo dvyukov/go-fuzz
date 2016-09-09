@@ -17,6 +17,11 @@ of the given input during subsequent fuzzing (for example, the input is
 lexically correct and was parsed successfully); -1 if the input must not be
 added to corpus even if gives new coverage; and 0 otherwise; other values are
 reserved for future use.
+
+The `Fuzz` function must be in a package that `go-fuzz` can import. This means
+the code you want to test can't be in package `main`.  Fuzzing `internal`
+packages is supported, however.
+
 In its basic form the Fuzz function just parses the input, and
 go-fuzz ensures that it does not panic, crash the program, allocate insane
 amount of memory nor hang. Fuzz function can also do application-level checks,
