@@ -197,6 +197,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: compiles incorrect program](https://github.com/golang/go/issues/13272) **fixed**
 - [cmd/compile: does not compile correct program](https://github.com/golang/go/issues/13273)
 - [cmd/compile: compiles incorrect program (2)](https://github.com/golang/go/issues/13274) **fixed**
+- [cmd/compile: internal compiler error: want FUNC, but have int](https://github.com/golang/go/issues/17038)
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759) **fixed**
 - [cmd/asm: index out of range (2)](https://github.com/golang/go/issues/12466) **fixed**
 - [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467) **fixed**
