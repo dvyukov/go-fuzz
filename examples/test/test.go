@@ -5,6 +5,7 @@ package test
 
 import (
 	"bytes"
+	"runtime"
 
 	// Test vendoring support.
 	vendored_foo "non.existent.com/foo"
@@ -12,9 +13,28 @@ import (
 
 func init() {
 	vendored_foo.Foo()
+	// Test that background goroutines don't break sonar.
+	// https://github.com/dvyukov/go-fuzz/issues/145
+	// Sonar code is racy (see the issue), but the test don't crash
+	// unless runtime.GOMAXPROCS is uncommented below.
+	go func() {
+		x := 0
+		s := "foobarbazqux"
+		for i := 0; ; i++ {
+			runtime.Gosched()
+			if i == x {
+				s = "foobarbazquz"
+				x -= 1
+			}
+			if s == "foo" {
+				x -= 1
+			}
+		}
+	}()
 }
 
 func Fuzz(data []byte) int {
+	// runtime.GOMAXPROCS(runtime.NumCPU())
 	if len(data) == 1 {
 		if data[0] == '!' || data[0] == '#' {
 			panic("bingo 0")
