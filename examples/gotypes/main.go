@@ -48,17 +48,10 @@ func Fuzz(data []byte) int {
 		return -1
 	}
 	goErr := gotypes(data)
-	gcErr := gc(data, false)
-	gcNewParserErr := gc(data, true)
+	gcErr := gc(data)
 	gccgoErr := gcErr
 	if testGccgo {
 		gccgoErr = gccgo(data)
-	}
-
-	if (gcErr == nil) != (gcNewParserErr == nil) {
-		fmt.Printf("old parser: %v\n", gcErr)
-		fmt.Printf("new parser: %v\n", gcNewParserErr)
-		panic("old/new parser disagree")
 	}
 
 	if goErr == nil && gcErr != nil {
@@ -217,7 +210,7 @@ func gotypes(data []byte) (err error) {
 	return
 }
 
-func gc(data []byte, newparser bool) error {
+func gc(data []byte) error {
 	f, err := ioutil.TempFile("", "fuzz.gc")
 	if err != nil {
 		return err
@@ -229,7 +222,7 @@ func gc(data []byte, newparser bool) error {
 		return err
 	}
 	f.Close()
-	out, err := exec.Command("compile", fmt.Sprintf("-newparser=%v", newparser), f.Name()).CombinedOutput()
+	out, err := exec.Command("compile", f.Name()).CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("%s\n%s", out, err)
 	}
