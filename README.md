@@ -315,6 +315,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [mime: ParseMediaType parses invalid media types](https://github.com/golang/go/issues/11289) **fixed**
 - [mime: Parse/Format corrupt parameters](https://github.com/golang/go/issues/11290) **fixed**
 - [mime: Parse/Format corrupt parameters (2)](https://github.com/golang/go/issues/11291) **fixed**
+- [go/scanner: accepts floating point literals with no decimals after E](https://github.com/golang/go/issues/17621)  **fixed**
 - [go/parser: eats \r in comments](https://github.com/golang/go/issues/11151)
 - [go/format: turns correct program into incorrect one](https://github.com/golang/go/issues/11274)
 - [go/format: non-idempotent format](https://github.com/golang/go/issues/11275) **fixed**
