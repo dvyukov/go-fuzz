@@ -279,8 +279,11 @@ func (imp *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*ty
 	}
 	parts := strings.Split(srcDir, string(os.PathSeparator))
 	for i := 0; i <= len(parts); i++ {
-		vendorPath := strings.Join(parts[:len(parts)-i], string(os.PathSeparator))
-		vendorPath = filepath.Join(vendorPath, "vendor", path)
+		vendorPath := strings.Join(parts[:len(parts)-i], "/")
+		if len(vendorPath) > 0 {
+			vendorPath += "/"
+		}
+		vendorPath += strings.Join([]string{"vendor", path}, "/")
 		if pkg := imp.pkgs[vendorPath]; pkg != nil {
 			return pkg, nil
 		}
