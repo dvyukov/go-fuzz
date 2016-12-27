@@ -506,5 +506,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/flynn/flynn/json5: decoder out of sync with scanner](https://github.com/flynn/json5/commit/29a96735397827a2923c9b669ee3188d601d9153) **fixed**
 - [github.com/flynn/flynn/json5: broken carriage return parsing](https://github.com/flynn/json5/commit/7620272ed63390e979cf5882d2fa0506fe2a8db5) **fixed**
 - [github.com/ipfs/go-ipfs: nil pointer deference in DHT RPC handler](https://github.com/ipfs/go-ipfs/pull/3200) **fixed**
+- [github.com/buger/goreplay: fix panic in http headers parser function](https://github.com/buger/goreplay/pull/411) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
