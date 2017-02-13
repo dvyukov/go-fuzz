@@ -24,6 +24,7 @@ import (
 )
 
 var (
+	flagTag  = flag.String("tags", "", "a space-separated list of build tags to consider satisfied during the build")
 	flagOut  = flag.String("o", "", "output file")
 	flagFunc = flag.String("func", "Fuzz", "entry function")
 	flagWork = flag.Bool("work", false, "don't remove working directory")
@@ -31,6 +32,14 @@ var (
 	workdir string
 	GOROOT  string
 )
+
+func makeTags() string {
+	tags := "gofuzz"
+	if len(*flagTag) > 0 {
+		tags += " " + *flagTag
+	}
+	return tags
+}
 
 // Copies the package with all dependent packages into a temp dir,
 // instruments Go source files there and builds setting GOROOT to the temp dir.
@@ -136,7 +145,7 @@ func testNormalBuild(pkg string) {
 	}()
 	copyFuzzDep(workdir, false)
 	mainPkg := createFuzzMain(pkg)
-	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", filepath.Join(workdir, "bin"), mainPkg)
+	cmd := exec.Command("go", "build", "-tags", makeTags(), "-o", filepath.Join(workdir, "bin"), mainPkg)
 	for _, v := range os.Environ() {
 		if strings.HasPrefix(v, "GOPATH") {
 			continue
@@ -202,7 +211,7 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 	outf := tempFile()
 	os.Remove(outf)
 	outf += ".exe"
-	cmd := exec.Command("go", "build", "-tags", "gofuzz", "-o", outf, mainPkg)
+	cmd := exec.Command("go", "build", "-tags", makeTags(), "-o", outf, mainPkg)
 	for _, v := range os.Environ() {
 		if strings.HasPrefix(v, "GOROOT") || strings.HasPrefix(v, "GOPATH") {
 			continue
@@ -435,7 +444,7 @@ func copyDir(dir, newDir string, rec bool, pred func(string) bool) {
 
 func goListList(pkg, what string) []string {
 	templ := fmt.Sprintf("{{range .%v}}{{.}}|{{end}}", what)
-	out, err := exec.Command("go", "list", "-tags", "gofuzz", "-f", templ, pkg).CombinedOutput()
+	out, err := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg).CombinedOutput()
 	if err != nil {
 		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
@@ -451,7 +460,7 @@ func goListProps(pkg string, props ...string) []string {
 	for _, p := range props {
 		templ += fmt.Sprintf("{{.%v}}|", p)
 	}
-	out, err := exec.Command("go", "list", "-tags", "gofuzz", "-f", templ, pkg).CombinedOutput()
+	out, err := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg).CombinedOutput()
 	if err != nil {
 		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
@@ -464,7 +473,7 @@ func goListProps(pkg string, props ...string) []string {
 
 func goListBool(pkg, what string) bool {
 	templ := fmt.Sprintf("{{.%v}}", what)
-	out, err := exec.Command("go", "list", "-tags", "gofuzz", "-f", templ, pkg).CombinedOutput()
+	out, err := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg).CombinedOutput()
 	if err != nil {
 		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
