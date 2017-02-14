@@ -105,7 +105,7 @@ func main() {
 func expandHomeDir(path string) string {
 	if len(path) > 2 && path[:2] == "~/" {
 		usr, _ := user.Current()
-		path = filepath.Join(usr.HomeDir, path[:2])
+		path = filepath.Join(usr.HomeDir, path[2:])
 	}
 	return path
 }
