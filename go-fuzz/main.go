@@ -9,6 +9,8 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"os/user"
+	"path/filepath"
 	"runtime"
 	"runtime/debug"
 	"sync/atomic"
@@ -68,6 +70,9 @@ func main() {
 	debug.SetGCPercent(50) // most memory is in large binary blobs
 	lowerProcessPrio()
 
+	*flagWorkdir = expandHomeDir(*flagWorkdir)
+	*flagBin = expandHomeDir(*flagBin)
+
 	if *flagMaster != "" || *flagSlave == "" {
 		if *flagWorkdir == "" {
 			log.Fatalf("-workdir is not set")
@@ -93,4 +98,14 @@ func main() {
 	}
 
 	select {}
+}
+
+// expandHomeDir expands the tilde sign and replaces it
+// with current users home directory and returns it.
+func expandHomeDir(path string) string {
+	if len(path) > 2 && path[:2] == "~/" {
+		usr, _ := user.Current()
+		path = filepath.Join(usr.HomeDir, path[:2])
+	}
+	return path
 }
