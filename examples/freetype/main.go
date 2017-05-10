@@ -1,7 +1,7 @@
 package freetype
 
 import (
-	"code.google.com/p/freetype-go/freetype"
+	"github.com/golang/freetype"
 	"image"
 )
 
