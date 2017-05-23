@@ -75,19 +75,12 @@ func main() {
 		deps[p] = goListBool(p, "Standard")
 	}
 	deps[pkg] = goListBool(pkg, "Standard")
-	// These packages are used by go-fuzz-dep, so we need to copy them regardless.
-	deps["runtime"] = true
-	deps["syscall"] = true
-	deps["time"] = true
-	deps["errors"] = true
-	deps["unsafe"] = true
-	deps["sync"] = true
-	deps["sync/atomic"] = true
-	deps["internal/race"] = true
-	if runtime.GOOS == "windows" {
-		// syscall depends on unicode/utf16.
-		// Cross-compilation is not implemented.
-		deps["unicode/utf16"] = true
+	// Also add all go-fuzz-dep dependencies.
+	for _, p := range goListList("github.com/dvyukov/go-fuzz/go-fuzz-dep", "Deps") {
+		if p == "go-fuzz-defs" {
+			continue
+		}
+		deps[p] = true
 	}
 
 	lits := make(map[Literal]struct{})
