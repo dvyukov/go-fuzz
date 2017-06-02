@@ -238,6 +238,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [regexp: confusing behavior on invalid utf-8 sequences](https://github.com/golang/go/issues/11185)
 - [regexp: considers "\Q\E*" as valid regexp](https://github.com/golang/go/issues/11187) **fixed**
 - [time: allows signs for year/tz in format string](https://github.com/golang/go/issues/11128)
+- [time: RFC3339 time.Parse can not parse string that come from time.Format](https://github.com/golang/go/issues/20555)
 - [math/big: incorrect string->Float conversion](https://github.com/golang/go/issues/11341)
 - [math/big: MakeFromLiteral with 0 mantissa and large exponent hangs](https://github.com/golang/go/issues/16176)
 - [net/http: can't send star request](https://github.com/golang/go/issues/11202) **fixed**
