@@ -511,5 +511,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/ipfs/go-ipfs: nil pointer deference in DHT RPC handler](https://github.com/ipfs/go-ipfs/pull/3200) **fixed**
 - [github.com/buger/goreplay: fix panic in http headers parser function](https://github.com/buger/goreplay/pull/411) **fixed**
 - [github.com/digitalocean/captainslog: incomplete timestamp caused panic](https://github.com/digitalocean/captainslog/pull/27/commits/d01c85621defb6fbbde22071de18f69bb3a74836) **fixed**
+- [github.com/jlaffaye/ftp: panic: runtime error: index out of range](https://github.com/jlaffaye/ftp/issues/97) **fixed**
+- [github.com/unidoc/unidoc: panic: interface conversion: pdf.PdfObject is nil, not *pdf.PdfObjectInteger](https://github.com/unidoc/unidoc/issues/77) **fixed**
+- [github.com/unidoc/unidoc: panic: runtime error: invalid memory address or nil pointer dereference](https://github.com/unidoc/unidoc/issues/79) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
