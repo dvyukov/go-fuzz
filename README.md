@@ -239,6 +239,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [regexp: considers "\Q\E*" as valid regexp](https://github.com/golang/go/issues/11187) **fixed**
 - [time: allows signs for year/tz in format string](https://github.com/golang/go/issues/11128)
 - [time: RFC3339 time.Parse can not parse string that come from time.Format](https://github.com/golang/go/issues/20555)
+- [time: Parse panic: runtime error: index out of range](https://github.com/golang/go/issues/21113)
 - [math/big: incorrect string->Float conversion](https://github.com/golang/go/issues/11341)
 - [math/big: MakeFromLiteral with 0 mantissa and large exponent hangs](https://github.com/golang/go/issues/16176)
 - [net/http: can't send star request](https://github.com/golang/go/issues/11202) **fixed**
@@ -514,5 +515,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/jlaffaye/ftp: panic: runtime error: index out of range](https://github.com/jlaffaye/ftp/issues/97) **fixed**
 - [github.com/unidoc/unidoc: panic: interface conversion: pdf.PdfObject is nil, not *pdf.PdfObjectInteger](https://github.com/unidoc/unidoc/issues/77) **fixed**
 - [github.com/unidoc/unidoc: panic: runtime error: invalid memory address or nil pointer dereference](https://github.com/unidoc/unidoc/issues/79) **fixed**
+- [github.com/unidoc/unidoc: runtime: goroutine stack exceeds 1000000000-byte limit](https://github.com/unidoc/unidoc/issues/80) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
