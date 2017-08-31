@@ -24,7 +24,7 @@ func Fuzz(data []byte) int {
 	}
 	for _, c := range []png.CompressionLevel{png.DefaultCompression, png.NoCompression, png.BestSpeed, png.BestCompression} {
 		var w bytes.Buffer
-		e := &png.Encoder{c}
+		e := &png.Encoder{CompressionLevel: c}
 		err = e.Encode(&w, img)
 		if err != nil {
 			panic(err)
