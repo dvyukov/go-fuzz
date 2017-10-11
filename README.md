@@ -455,6 +455,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/bradfitz/http2: serverConn.readFrames goroutine leak](https://github.com/bradfitz/http2/issues/58)
 - [github.com/golang/snappy: index out of range panic](https://github.com/golang/snappy/issues/11) **fixed**
 - [github.com/bkaradzic/go-lz4: slice bounds out of range](https://github.com/bkaradzic/go-lz4/commit/b8d4dc7b31511bf5f39dfdb02d2ea7662eb8407c) **fixed**
+- [github.com/kurin/blazer: string escape/unescape edge-cases, need to escape filename in DownloadFileByName()](https://github.com/kurin/blazer/issues/32) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/332853ab7b3c719dd67c657394139491c1f6deb7) **fixed**
 - [github.com/gocql/gocql: slice bounds out of range](https://github.com/gocql/gocql/commit/58d90fab97daa2d9edd6e7a1b2a22bee8ce12c72) **fixed**
 - [github.com/mdlayher/aoe: binary marshal/unmarshal inconsistency](https://github.com/mdlayher/aoe/commit/286c87727b95c9491e08cd909c93ac4a42218ee6) **fixed**
