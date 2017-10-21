@@ -4,91 +4,125 @@
 package sqlparser
 
 import (
+	"bytes"
 	"fmt"
+	"io"
+
+	"github.com/youtube/vitess/go/sqltypes"
+	querypb "github.com/youtube/vitess/go/vt/proto/query"
+	"github.com/youtube/vitess/go/vt/sqlparser"
 
 	"github.com/dvyukov/go-fuzz/examples/fuzz"
-	"github.com/youtube/vitess/go/vt/sqlparser"
 )
 
-func Fuzz(data []byte) int {
-	stmt, err := sqlparser.Parse(string(data))
-	if err != nil {
-		if stmt != nil {
-			panic("stmt is not nil on error")
+// shortReader is a io.Reader that forces all reads to only be
+// a few bytes at a time. This helps force more code paths in
+// the parser which makes heavy use of an internal buffer.
+type shortReader struct {
+	r io.Reader
+	n int
+}
+
+func (r *shortReader) Read(p []byte) (n int, err error) {
+	if len(p) > r.n {
+		p = p[:r.n]
+	}
+	return r.r.Read(p)
+}
+
+func parseAll(data []byte) ([]sqlparser.Statement, error) {
+	r := &shortReader{
+		r: bytes.NewReader(data),
+		n: 3,
+	}
+
+	tokens := sqlparser.NewTokenizer(r)
+
+	var statements []sqlparser.Statement
+	for i := 0; i < 1000; i++ { // Only allow 1000 statements
+		if stmt, err := sqlparser.ParseNext(tokens); err != nil {
+			if stmt != nil {
+				panic("stmt is not nil on error")
+			}
+			if err == io.EOF {
+				err = nil
+			}
+			return statements, err
+		} else {
+			statements = append(statements, stmt)
 		}
+	}
+
+	panic("ParseNext loop")
+}
+
+// stringAndParse turns the Statement into a SQL string, re-parses
+// that string, and checks the result matches the original.
+func stringAndParse(data []byte, stmt sqlparser.Statement) {
+	data1 := sqlparser.String(stmt)
+	stmt1, err := sqlparser.Parse(data1)
+	if err != nil {
+		fmt.Printf("data0: %q\n", data)
+		fmt.Printf("data1: %q\n", data1)
+		panic(err)
+	}
+	if !fuzz.DeepEqual(stmt, stmt1) {
+		fmt.Printf("data0: %q\n", data)
+		fmt.Printf("data1: %q\n", data1)
+		panic("not equal")
+	}
+}
+
+func Fuzz(data []byte) int {
+	stmts, err := parseAll(data)
+	if err != nil {
 		return 0
 	}
-	if true {
-		data1 := sqlparser.String(stmt)
-		stmt1, err := sqlparser.Parse(data1)
-		if err != nil {
-			fmt.Printf("data0: %q\n", data)
-			fmt.Printf("data1: %q\n", data1)
-			panic(err)
+	for _, stmt := range stmts {
+		stringAndParse(data, stmt)
+
+		if sel, ok := stmt.(*sqlparser.Select); ok {
+			var nodes []sqlparser.SQLNode
+			for _, x := range sel.From {
+				nodes = append(nodes, x)
+			}
+			for _, x := range sel.SelectExprs {
+				nodes = append(nodes, x)
+			}
+			for _, x := range sel.GroupBy {
+				nodes = append(nodes, x)
+			}
+			for _, x := range sel.OrderBy {
+				nodes = append(nodes, x)
+			}
+			nodes = append(nodes, sel.Where)
+			nodes = append(nodes, sel.Having)
+			nodes = append(nodes, sel.Limit)
+			for _, n := range nodes {
+				if n == nil {
+					continue
+				}
+				if x, ok := n.(sqlparser.SimpleTableExpr); ok {
+					sqlparser.GetTableName(x)
+				}
+				if x, ok := n.(sqlparser.Expr); ok {
+					sqlparser.IsColName(x)
+					sqlparser.IsValue(x)
+					sqlparser.IsNull(x)
+					sqlparser.IsSimpleTuple(x)
+				}
+			}
 		}
-		if !fuzz.DeepEqual(stmt, stmt1) {
-			fmt.Printf("data0: %q\n", data)
-			fmt.Printf("data1: %q\n", data1)
-			panic("not equal")
+		pq := sqlparser.NewParsedQuery(stmt)
+		vars := map[string]*querypb.BindVariable{
+			"A": sqltypes.Int64BindVariable(42),
+			"B": sqltypes.Uint64BindVariable(123123123),
+			"C": sqltypes.StringBindVariable("aa"),
+			"D": sqltypes.BytesBindVariable([]byte("a")),
+			"E": sqltypes.StringBindVariable("foobar"),
+			"F": sqltypes.Float64BindVariable(1.1),
 		}
-	} else {
-		sqlparser.String(stmt)
+		pq.GenerateQuery(vars, nil)
 	}
-	if sel, ok := stmt.(*sqlparser.Select); ok {
-		var nodes []sqlparser.SQLNode
-		for _, x := range sel.From {
-			nodes = append(nodes, x)
-		}
-		for _, x := range sel.SelectExprs {
-			nodes = append(nodes, x)
-		}
-		for _, x := range sel.GroupBy {
-			nodes = append(nodes, x)
-		}
-		for _, x := range sel.OrderBy {
-			nodes = append(nodes, x)
-		}
-		nodes = append(nodes, sel.Where)
-		nodes = append(nodes, sel.Having)
-		nodes = append(nodes, sel.Limit)
-		for _, n := range nodes {
-			if n == nil {
-				continue
-			}
-			if x, ok := n.(sqlparser.SimpleTableExpr); ok {
-				sqlparser.GetTableName(x)
-			}
-			if x, ok := n.(sqlparser.Expr); ok {
-				sqlparser.GetColName(x)
-			}
-			if x, ok := n.(sqlparser.ValExpr); ok {
-				sqlparser.IsValue(x)
-			}
-			if x, ok := n.(sqlparser.ValExpr); ok {
-				sqlparser.IsColName(x)
-			}
-			if x, ok := n.(sqlparser.ValExpr); ok {
-				sqlparser.IsSimpleTuple(x)
-			}
-			if x, ok := n.(sqlparser.ValExpr); ok {
-				sqlparser.AsInterface(x)
-			}
-			if x, ok := n.(sqlparser.BoolExpr); ok {
-				sqlparser.HasINClause([]sqlparser.BoolExpr{x})
-			}
-		}
-	}
-	buf := sqlparser.NewTrackedBuffer(nil)
-	stmt.Format(buf)
-	pq := buf.ParsedQuery()
-	vars := map[string]interface{}{
-		"A": 42,
-		"B": 123123123,
-		"C": "",
-		"D": "a",
-		"E": "foobar",
-		"F": 1.1,
-	}
-	pq.GenerateQuery(vars)
 	return 1
 }
