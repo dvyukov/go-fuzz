@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
@@ -31,6 +32,7 @@ var (
 
 	workdir string
 	GOROOT  string
+	Par     int // Maximum number of simultaneous subprocesses
 )
 
 func makeTags() string {
@@ -61,6 +63,8 @@ func main() {
 		failf("relative import paths are not supported, please specify full package name")
 	}
 
+	Par = runtime.GOMAXPROCS(0)
+
 	// To produce error messages (this is much faster and gives correct line numbers).
 	if !strings.Contains(pkg, "internal") {
 		// Can't test normal build for internal packages.
@@ -71,10 +75,25 @@ func main() {
 	}
 
 	deps := make(map[string]bool)
+	mu := sync.Mutex{}
+	wg := sync.WaitGroup{}
+	sem := make(chan bool, Par)
 	for _, p := range goListList(pkg, "Deps") {
-		deps[p] = goListBool(p, "Standard")
+		wg.Add(1)
+		sem <- true
+		go func(p string) {
+			res := goListBool(p, "Standard")
+			mu.Lock()
+			deps[p] = res
+			mu.Unlock()
+			<-sem
+			wg.Done()
+		}(p)
 	}
+	wg.Wait()
+
 	deps[pkg] = goListBool(pkg, "Standard")
+
 	// Also add all go-fuzz-dep dependencies.
 	for _, p := range goListList("github.com/dvyukov/go-fuzz/go-fuzz-dep", "Deps") {
 		if p == "go-fuzz-defs" {
@@ -194,9 +213,20 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 		// Cross-compilation is not implemented.
 		copyDir(filepath.Join(GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "goroot", "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
 	}
+
+	wg := sync.WaitGroup{}
+	sem := make(chan bool, Par)
 	for p, std := range deps {
-		clonePackage(workdir, p, p, std)
+		wg.Add(1)
+		sem <- true
+		go func(p string, std bool) {
+			clonePackage(workdir, p, p, std)
+			<-sem
+			wg.Done()
+		}(p, std)
 	}
+	wg.Wait()
+
 	instrumentPackages(workdir, deps, lits, blocks, sonar)
 	copyFuzzDep(workdir, true)
 	mainPkg := createFuzzMain(pkg)
@@ -325,25 +355,40 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 
 	var ready []*Package
 	pkgs := make(map[string]*Package)
+	wg := sync.WaitGroup{}
+	mu := sync.Mutex{}
+	sem := make(chan bool, Par)
 	for pkg := range deps {
-		p := pkgs[pkg]
-		if p == nil {
-			p = &Package{name: pkg}
-			pkgs[pkg] = p
-		}
-		for _, imp := range goListList(pkg, "Imports") {
-			p1 := pkgs[imp]
-			if p1 == nil {
-				p1 = &Package{name: imp}
-				pkgs[imp] = p1
+		wg.Add(1)
+		sem <- true
+		go func(pkg string) {
+			defer wg.Done()
+			defer func() { <-sem }()
+
+			impList := goListList(pkg, "Imports")
+			mu.Lock()
+			defer mu.Unlock()
+			p := pkgs[pkg]
+			if p == nil {
+				p = &Package{name: pkg}
+				pkgs[pkg] = p
 			}
-			p.nimport++
-			p1.deps = append(p1.deps, p)
-		}
-		if p.nimport == 0 {
-			ready = append(ready, p)
-		}
+			for _, imp := range impList {
+				p1 := pkgs[imp]
+				if p1 == nil {
+					p1 = &Package{name: imp}
+					pkgs[imp] = p1
+				}
+				p.nimport++
+				p1.deps = append(p1.deps, p)
+			}
+			if p.nimport == 0 {
+				ready = append(ready, p)
+			}
+		}(pkg)
 	}
+	wg.Wait()
+
 	typedPackages := make(map[string]*types.Package)
 	importer := &Importer{typedPackages, deps}
 	for len(ready) != 0 {
@@ -362,7 +407,11 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 			}
 			path := filepath.Join(workdir, root, "src", p.name)
 			var files []*ast.File
-			for _, fn := range append(goListList(p.name, "GoFiles"), goListList(p.name, "CgoFiles")...) {
+			xgoFiles := make(chan []string, 2)
+			go func() { xgoFiles <- goListList(p.name, "GoFiles") }()
+			go func() { xgoFiles <- goListList(p.name, "CgoFiles") }()
+
+			for _, fn := range append(<-xgoFiles, <-xgoFiles...) {
 				astFile, err := parser.ParseFile(p.fset, filepath.Join(path, fn), nil, parser.ParseComments)
 				if err != nil {
 					failf("failed to parse package %v: %v", p.name, err)
