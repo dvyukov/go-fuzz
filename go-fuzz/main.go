@@ -27,8 +27,8 @@ var (
 	flagProcs         = flag.Int("procs", runtime.NumCPU(), "parallelism level")
 	flagTimeout       = flag.Int("timeout", 10, "test timeout, in seconds")
 	flagMinimize      = flag.Duration("minimize", 1*time.Minute, "time limit for input minimization")
-	flagMaster        = flag.String("master", "", "master mode (value is master address)")
-	flagSlave         = flag.String("slave", "", "slave mode (value is master address)")
+	flagCoordinator   = flag.String("coordinator", "", "coordinator mode (value is coordinator address)")
+	flagWorker        = flag.String("worker", "", "worker mode (value is coordinator address)")
 	flagBin           = flag.String("bin", "", "test binary built with go-fuzz-build")
 	flagDumpCover     = flag.Bool("dumpcover", false, "dump coverage profile into workdir")
 	flagDup           = flag.Bool("dup", false, "collect duplicate crashers")
@@ -36,7 +36,7 @@ var (
 	flagCoverCounters = flag.Bool("covercounters", true, "use coverage hit counters")
 	flagSonar         = flag.Bool("sonar", true, "use sonar hints")
 	flagV             = flag.Int("v", 0, "verbosity level")
-	flagHTTP          = flag.String("http", "", "HTTP server listen address (master mode only)")
+	flagHTTP          = flag.String("http", "", "HTTP server listen address (coordinator mode only)")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})
@@ -45,11 +45,11 @@ var (
 
 func main() {
 	flag.Parse()
-	if *flagMaster != "" && *flagSlave != "" {
-		log.Fatalf("both -master and -slave are specified")
+	if *flagCoordinator != "" && *flagWorker != "" {
+		log.Fatalf("both -coordinator and -worker are specified")
 	}
-	if *flagHTTP != "" && *flagSlave != "" {
-		log.Fatalf("both -http and -slave are specified")
+	if *flagHTTP != "" && *flagWorker != "" {
+		log.Fatalf("both -http and -worker are specified")
 	}
 
 	go func() {
@@ -73,28 +73,28 @@ func main() {
 	*flagWorkdir = expandHomeDir(*flagWorkdir)
 	*flagBin = expandHomeDir(*flagBin)
 
-	if *flagMaster != "" || *flagSlave == "" {
+	if *flagCoordinator != "" || *flagWorker == "" {
 		if *flagWorkdir == "" {
 			log.Fatalf("-workdir is not set")
 		}
-		if *flagMaster == "" {
-			*flagMaster = "localhost:0"
+		if *flagCoordinator == "" {
+			*flagCoordinator = "localhost:0"
 		}
-		ln, err := net.Listen("tcp", *flagMaster)
+		ln, err := net.Listen("tcp", *flagCoordinator)
 		if err != nil {
 			log.Fatalf("failed to listen: %v", err)
 		}
-		if *flagMaster == "localhost:0" && *flagSlave == "" {
-			*flagSlave = ln.Addr().String()
+		if *flagCoordinator == "localhost:0" && *flagWorker == "" {
+			*flagWorker = ln.Addr().String()
 		}
-		go masterMain(ln)
+		go coordinatorMain(ln)
 	}
 
-	if *flagSlave != "" {
+	if *flagWorker != "" {
 		if *flagBin == "" {
 			log.Fatalf("-bin is not set")
 		}
-		go slaveMain()
+		go workerMain()
 	}
 
 	select {}

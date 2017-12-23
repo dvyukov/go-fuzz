@@ -32,8 +32,8 @@ type SonarSample struct {
 	val   [2][]byte
 }
 
-func (s *Slave) parseSonarData(sonar []byte) (res []SonarSample) {
-	ro := s.hub.ro.Load().(*ROData)
+func (w *Worker) parseSonarData(sonar []byte) (res []SonarSample) {
+	ro := w.hub.ro.Load().(*ROData)
 	sonar = makeCopy(sonar)
 	for len(sonar) > SonarHdrLen {
 		id := binary.LittleEndian.Uint32(sonar)
@@ -81,11 +81,11 @@ func (s *Slave) parseSonarData(sonar []byte) (res []SonarSample) {
 	return res
 }
 
-func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
-	ro := s.hub.ro.Load().(*ROData)
+func (w *Worker) processSonarData(data, sonar []byte, depth int, smash bool) {
+	ro := w.hub.ro.Load().(*ROData)
 	updated := false
 	checked := make(map[string]struct{})
-	samples := s.parseSonarData(sonar)
+	samples := w.parseSonarData(sonar)
 	for _, sam := range samples {
 		// TODO: extract literal corpus from sonar instead of from source.
 		// This should give smaller, better corpus which does not contain literals from dead code.
@@ -113,7 +113,7 @@ func (s *Slave) processSonarData(data, sonar []byte, depth int, smash bool) {
 			continue
 		}
 		testInput := func(tmp []byte) {
-			s.testInput(tmp, depth+1, execSonarHint)
+			w.testInput(tmp, depth+1, execSonarHint)
 		}
 		check := func(indexdata, v1, v2 []byte) {
 			if len(v1) == 0 || bytes.Equal(v1, v2) {

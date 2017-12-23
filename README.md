@@ -112,10 +112,10 @@ contains quoted input that can be directly copied into a reproducer program or a
 test, file with .output suffix contains output of the test on this input. Every
 few seconds go-fuzz prints logs of the form:
 ```
-2015/04/25 12:39:53 slaves: 500, corpus: 186 (42s ago), crashers: 3,
+2015/04/25 12:39:53 workers: 500, corpus: 186 (42s ago), crashers: 3,
      restarts: 1/8027, execs: 12009519 (121224/sec), cover: 2746, uptime: 1m39s
 ```
-Where ```slaves``` means number of tests running in parallel (set with -procs
+Where ```workers``` means number of tests running in parallel (set with -procs
 flag). ```corpus``` is current number of interesting inputs the fuzzer has
 discovered, time in brackets says when the last interesting input was
 discovered. ```crashers``` is number of discovered bugs (check out
@@ -140,14 +140,15 @@ If your inputs contain a checksum, it can make sense to append/update the checks
 in the ```Fuzz``` function. The chances that go-fuzz will generate the correct
 checksum are very low, so most work will be in vain otherwise.
 
-Go-fuzz can utilize several machines. To do this, start master process separately:
+Go-fuzz can utilize several machines. To do this, start the coordinator process
+separately:
 ```
-$ go-fuzz -workdir=examples/png -master=127.0.0.1:8745
+$ go-fuzz -workdir=examples/png -coordinator=127.0.0.1:8745
 ```
-It will manage persistent corpus and crashers and coordinate work of slave processes.
-Then run one or more slave processes as:
+It will manage persistent corpus and crashers and coordinate work of worker processes.
+Then run one or more worker processes as:
 ```
-$ go-fuzz -bin=./png-fuzz.zip -slave=127.0.0.1:8745 -procs=10
+$ go-fuzz -bin=./png-fuzz.zip -worker=127.0.0.1:8745 -procs=10
 ```
 
 ## External Articles

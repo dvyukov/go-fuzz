@@ -25,12 +25,12 @@ const (
 	defScore = 10.0
 )
 
-// Hub contains data shared between all slaves in the process (e.g. corpus).
-// This reduces memory consumption for highly parallel slaves.
-// Hub also handles communication with the master.
+// Hub contains data shared between all workers in the process (e.g. corpus).
+// This reduces memory consumption for highly parallel workers.
+// Hub also handles communication with the coordinator.
 type Hub struct {
-	id     int
-	master *rpc.Client
+	id          int
+	coordinator *rpc.Client
 
 	ro atomic.Value // *ROData
 
@@ -42,9 +42,9 @@ type Hub struct {
 	corpusCoverSize int
 	corpusSigs      map[Sig]struct{}
 	corpusStale     bool
-	triageQueue     []MasterInput
+	triageQueue     []CoordinatorInput
 
-	triageC     chan MasterInput
+	triageC     chan CoordinatorInput
 	newInputC   chan Input
 	newCrasherC chan NewCrasherArgs
 	syncC       chan Stats
@@ -74,14 +74,14 @@ func newHub(metadata MetaData) *Hub {
 	procs := *flagProcs
 	hub := &Hub{
 		corpusSigs:  make(map[Sig]struct{}),
-		triageC:     make(chan MasterInput, procs),
+		triageC:     make(chan CoordinatorInput, procs),
 		newInputC:   make(chan Input, procs),
 		newCrasherC: make(chan NewCrasherArgs, procs),
 		syncC:       make(chan Stats, procs),
 	}
 
 	if err := hub.connect(); err != nil {
-		log.Fatalf("failed to connect to master: %v", err)
+		log.Fatalf("failed to connect to coordinator: %v", err)
 	}
 
 	coverBlocks := make(map[int][]CoverBlock)
@@ -121,16 +121,16 @@ func newHub(metadata MetaData) *Hub {
 }
 
 func (hub *Hub) connect() error {
-	c, err := rpc.Dial("tcp", *flagSlave)
+	c, err := rpc.Dial("tcp", *flagWorker)
 	if err != nil {
 		return err
 	}
 	var res ConnectRes
-	if err := c.Call("Master.Connect", &ConnectArgs{Procs: *flagProcs}, &res); err != nil {
+	if err := c.Call("Coordinator.Connect", &ConnectArgs{Procs: *flagProcs}, &res); err != nil {
 		return err
 	}
 
-	hub.master = c
+	hub.coordinator = c
 	hub.id = res.ID
 	hub.initialTriage = uint32(len(res.Corpus))
 	hub.triageQueue = res.Corpus
@@ -139,22 +139,22 @@ func (hub *Hub) connect() error {
 
 func (hub *Hub) loop() {
 	// Local buffer helps to avoid deadlocks on chan overflows.
-	var triageC chan MasterInput
-	var triageInput MasterInput
+	var triageC chan CoordinatorInput
+	var triageInput CoordinatorInput
 
 	syncTicker := time.NewTicker(syncPeriod).C
 	for {
 		if len(hub.triageQueue) > 0 && triageC == nil {
 			n := len(hub.triageQueue) - 1
 			triageInput = hub.triageQueue[n]
-			hub.triageQueue[n] = MasterInput{}
+			hub.triageQueue[n] = CoordinatorInput{}
 			hub.triageQueue = hub.triageQueue[:n]
 			triageC = hub.triageC
 		}
 
 		select {
 		case <-syncTicker:
-			// Sync with the master.
+			// Sync with the coordinator.
 			if *flagV >= 1 {
 				ro := hub.ro.Load().(*ROData)
 				log.Printf("hub: corpus=%v bootstrap=%v fuzz=%v minimize=%v versifier=%v smash=%v sonar=%v",
@@ -173,10 +173,10 @@ func (hub *Hub) loop() {
 			hub.stats.execs = 0
 			hub.stats.restarts = 0
 			var res SyncRes
-			if err := hub.master.Call("Master.Sync", args, &res); err != nil {
-				log.Printf("sync call failed: %v, reconnection to master", err)
+			if err := hub.coordinator.Call("Coordinator.Sync", args, &res); err != nil {
+				log.Printf("sync call failed: %v, reconnection to coordinator", err)
 				if err := hub.connect(); err != nil {
-					log.Printf("failed to connect to master: %v, killing slave", err)
+					log.Printf("failed to connect to coordinator: %v, killing worker", err)
 					return
 				}
 			}
@@ -189,24 +189,24 @@ func (hub *Hub) loop() {
 			}
 
 		case triageC <- triageInput:
-			// Send new input to slaves for triage.
+			// Send new input to workers for triage.
 			if len(hub.triageQueue) > 0 {
 				n := len(hub.triageQueue) - 1
 				triageInput = hub.triageQueue[n]
-				hub.triageQueue[n] = MasterInput{}
+				hub.triageQueue[n] = CoordinatorInput{}
 				hub.triageQueue = hub.triageQueue[:n]
 			} else {
 				triageC = nil
-				triageInput = MasterInput{}
+				triageInput = CoordinatorInput{}
 			}
 
 		case s := <-hub.syncC:
-			// Sync from a slave.
+			// Sync from a worker.
 			hub.stats.execs += s.execs
 			hub.stats.restarts += s.restarts
 
 		case input := <-hub.newInputC:
-			// New interesting input from slaves.
+			// New interesting input from workers.
 			ro := hub.ro.Load().(*ROData)
 			if !compareCover(ro.corpusCover, input.cover) {
 				break
@@ -242,10 +242,10 @@ func (hub *Hub) loop() {
 			hub.corpusOrigins[input.typ]++
 
 			if input.mine {
-				if err := hub.master.Call("Master.NewInput", NewInputArgs{hub.id, input.data, uint64(input.depth)}, nil); err != nil {
-					log.Printf("new input call failed: %v, reconnecting to master", err)
+				if err := hub.coordinator.Call("Coordinator.NewInput", NewInputArgs{hub.id, input.data, uint64(input.depth)}, nil); err != nil {
+					log.Printf("new input call failed: %v, reconnecting to coordinator", err)
 					if err := hub.connect(); err != nil {
-						log.Printf("failed to connect to master: %v, killing slave", err)
+						log.Printf("failed to connect to coordinator: %v, killing worker", err)
 						return
 					}
 				}
@@ -256,7 +256,7 @@ func (hub *Hub) loop() {
 			}
 
 		case crash := <-hub.newCrasherC:
-			// New crasher from slaves. Woohoo!
+			// New crasher from workers. Woohoo!
 			if crash.Hanging || !*flagDup {
 				ro := hub.ro.Load().(*ROData)
 				ro1 := new(ROData)
@@ -277,7 +277,7 @@ func (hub *Hub) loop() {
 				}
 				hub.ro.Store(ro1)
 			}
-			if err := hub.master.Call("Master.NewCrasher", crash, nil); err != nil {
+			if err := hub.coordinator.Call("Coordinator.NewCrasher", crash, nil); err != nil {
 				log.Printf("new crasher call failed: %v", err)
 			}
 		}
