@@ -35,8 +35,8 @@ const (
 	execCount
 )
 
-// Slave manages one testee.
-type Slave struct {
+// Worker manages one testee.
+type Worker struct {
 	id      int
 	hub     *Hub
 	mutator *Mutator
@@ -44,7 +44,7 @@ type Slave struct {
 	coverBin *TestBinary
 	sonarBin *TestBinary
 
-	triageQueue  []MasterInput
+	triageQueue  []CoordinatorInput
 	crasherQueue []NewCrasherArgs
 
 	lastSync time.Time
@@ -66,7 +66,7 @@ type Input struct {
 	runningScoreSum int
 }
 
-func slaveMain() {
+func workerMain() {
 	zipr, err := zip.OpenReader(*flagBin)
 	if err != nil {
 		log.Fatalf("failed to open bin file: %v", err)
@@ -120,7 +120,7 @@ func slaveMain() {
 
 	hub := newHub(metadata)
 	for i := 0; i < *flagProcs; i++ {
-		s := &Slave{
+		s := &Worker{
 			id:      i,
 			hub:     hub,
 			mutator: newMutator(),
@@ -131,30 +131,30 @@ func slaveMain() {
 	}
 }
 
-func (s *Slave) loop() {
+func (w *Worker) loop() {
 	iter, fuzzSonarIter, versifierSonarIter := 0, 0, 0
 	for atomic.LoadUint32(&shutdown) == 0 {
-		if len(s.crasherQueue) > 0 {
-			n := len(s.crasherQueue) - 1
-			crash := s.crasherQueue[n]
-			s.crasherQueue[n] = NewCrasherArgs{}
-			s.crasherQueue = s.crasherQueue[:n]
+		if len(w.crasherQueue) > 0 {
+			n := len(w.crasherQueue) - 1
+			crash := w.crasherQueue[n]
+			w.crasherQueue[n] = NewCrasherArgs{}
+			w.crasherQueue = w.crasherQueue[:n]
 			if *flagV >= 2 {
-				log.Printf("slave %v processes crasher [%v]%v", s.id, len(crash.Data), hash(crash.Data))
+				log.Printf("worker %v processes crasher [%v]%v", w.id, len(crash.Data), hash(crash.Data))
 			}
-			s.processCrasher(crash)
+			w.processCrasher(crash)
 			continue
 		}
 
 		select {
-		case input := <-s.hub.triageC:
+		case input := <-w.hub.triageC:
 			if *flagV >= 2 {
-				log.Printf("slave %v triages master input [%v]%v minimized=%v smashed=%v", s.id, len(input.Data), hash(input.Data), input.Minimized, input.Smashed)
+				log.Printf("worker %v triages coordinator input [%v]%v minimized=%v smashed=%v", w.id, len(input.Data), hash(input.Data), input.Minimized, input.Smashed)
 			}
-			s.triageInput(input)
+			w.triageInput(input)
 			for {
-				x := atomic.LoadUint32(&s.hub.initialTriage)
-				if x == 0 || atomic.CompareAndSwapUint32(&s.hub.initialTriage, x, x-1) {
+				x := atomic.LoadUint32(&w.hub.initialTriage)
+				if x == 0 || atomic.CompareAndSwapUint32(&w.hub.initialTriage, x, x-1) {
 					break
 				}
 			}
@@ -162,8 +162,8 @@ func (s *Slave) loop() {
 		default:
 		}
 
-		if atomic.LoadUint32(&s.hub.initialTriage) != 0 {
-			// Other slaves are still triaging initial inputs.
+		if atomic.LoadUint32(&w.hub.initialTriage) != 0 {
+			// Other workers are still triaging initial inputs.
 			// Wait until they finish, otherwise we can generate
 			// as if new interesting inputs that are not actually new
 			// and thus unnecessary inflate corpus on every run.
@@ -171,21 +171,21 @@ func (s *Slave) loop() {
 			continue
 		}
 
-		if len(s.triageQueue) > 0 {
-			n := len(s.triageQueue) - 1
-			input := s.triageQueue[n]
-			s.triageQueue[n] = MasterInput{}
-			s.triageQueue = s.triageQueue[:n]
+		if len(w.triageQueue) > 0 {
+			n := len(w.triageQueue) - 1
+			input := w.triageQueue[n]
+			w.triageQueue[n] = CoordinatorInput{}
+			w.triageQueue = w.triageQueue[:n]
 			if *flagV >= 2 {
-				log.Printf("slave %v triages local input [%v]%v minimized=%v smashed=%v", s.id, len(input.Data), hash(input.Data), input.Minimized, input.Smashed)
+				log.Printf("worker %v triages local input [%v]%v minimized=%v smashed=%v", w.id, len(input.Data), hash(input.Data), input.Minimized, input.Smashed)
 			}
-			s.triageInput(input)
+			w.triageInput(input)
 			continue
 		}
 
-		ro := s.hub.ro.Load().(*ROData)
+		ro := w.hub.ro.Load().(*ROData)
 		if len(ro.corpus) == 0 {
-			// Some other slave triages corpus inputs.
+			// Some other worker triages corpus inputs.
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
@@ -193,16 +193,16 @@ func (s *Slave) loop() {
 		// 9 out of 10 iterations are random fuzzing.
 		iter++
 		if iter%10 != 0 || ro.verse == nil {
-			data, depth := s.mutator.generate(ro)
+			data, depth := w.mutator.generate(ro)
 			// Every 1000-th iteration goes to sonar.
 			fuzzSonarIter++
 			if *flagSonar && fuzzSonarIter%1000 == 0 {
 				// TODO: ensure that generated hint inputs does not actually take 99% of time.
-				sonar := s.testInputSonar(data, depth)
-				s.processSonarData(data, sonar, depth, false)
+				sonar := w.testInputSonar(data, depth)
+				w.processSonarData(data, sonar, depth, false)
 			} else {
 				// Plain old blind fuzzing.
-				s.testInput(data, depth, execFuzz)
+				w.testInput(data, depth, execFuzz)
 			}
 		} else {
 			// 1 out of 10 iterations goes to versifier.
@@ -214,20 +214,20 @@ func (s *Slave) loop() {
 			// Every 100-th versifier input goes to sonar.
 			versifierSonarIter++
 			if *flagSonar && versifierSonarIter%100 == 0 {
-				sonar := s.testInputSonar(data, 0)
-				s.processSonarData(data, sonar, 0, false)
+				sonar := w.testInputSonar(data, 0)
+				w.processSonarData(data, sonar, 0, false)
 			} else {
-				s.testInput(data, 0, execVersifier)
+				w.testInput(data, 0, execVersifier)
 			}
 		}
 	}
-	s.shutdown()
+	w.shutdown()
 }
 
 // triageInput processes every new input.
 // It calculates per-input metrics like execution time, coverage mask,
 // and minimizes the input to the minimal input with the same coverage.
-func (s *Slave) triageInput(input MasterInput) {
+func (w *Worker) triageInput(input CoordinatorInput) {
 	if len(input.Data) > MaxInputSize {
 		input.Data = input.Data[:MaxInputSize]
 	}
@@ -239,11 +239,11 @@ func (s *Slave) triageInput(input MasterInput) {
 	}
 	// Calculate min exec time, min coverage and max result of 3 runs.
 	for i := 0; i < 3; i++ {
-		s.execs[execTriageInput]++
-		res, ns, cover, _, output, crashed, hanged := s.coverBin.test(inp.data)
+		w.execs[execTriageInput]++
+		res, ns, cover, _, output, crashed, hanged := w.coverBin.test(inp.data)
 		if crashed {
 			// Inputs in corpus should not crash.
-			s.noteCrasher(inp.data, output, hanged)
+			w.noteCrasher(inp.data, output, hanged)
 			return
 		}
 		if inp.cover == nil {
@@ -266,7 +266,7 @@ func (s *Slave) triageInput(input MasterInput) {
 	}
 	if !input.Minimized {
 		inp.mine = true
-		ro := s.hub.ro.Load().(*ROData)
+		ro := w.hub.ro.Load().(*ROData)
 		// When minimizing new inputs we don't pursue exactly the same coverage,
 		// instead we pursue just the "novelty" in coverage.
 		// Here we use corpusCover, because maxCover already includes the input coverage.
@@ -274,19 +274,19 @@ func (s *Slave) triageInput(input MasterInput) {
 		if !ok {
 			return // covered by somebody else
 		}
-		inp.data = s.minimizeInput(inp.data, false, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
+		inp.data = w.minimizeInput(inp.data, false, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if crashed {
-				s.noteCrasher(candidate, output, hanged)
+				w.noteCrasher(candidate, output, hanged)
 				return false
 			}
 			if inp.res != res || worseCover(newCover, cover) {
-				s.noteNewInput(candidate, cover, res, inp.depth+1, execMinimizeInput)
+				w.noteNewInput(candidate, cover, res, inp.depth+1, execMinimizeInput)
 				return false
 			}
 			return true
 		})
 	} else if !input.Smashed {
-		s.smash(inp.data, inp.depth)
+		w.smash(inp.data, inp.depth)
 	}
 	inp.coverSize = 0
 	for _, v := range inp.cover {
@@ -294,38 +294,38 @@ func (s *Slave) triageInput(input MasterInput) {
 			inp.coverSize++
 		}
 	}
-	s.hub.newInputC <- inp
+	w.hub.newInputC <- inp
 }
 
 // processCrasher minimizes new crashers and sends them to the hub.
-func (s *Slave) processCrasher(crash NewCrasherArgs) {
+func (w *Worker) processCrasher(crash NewCrasherArgs) {
 	// Hanging inputs can take very long time to minimize.
 	if !crash.Hanging {
-		crash.Data = s.minimizeInput(crash.Data, true, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
+		crash.Data = w.minimizeInput(crash.Data, true, func(candidate, cover, output []byte, res int, crashed, hanged bool) bool {
 			if !crashed {
 				return false
 			}
 			supp := extractSuppression(output)
 			if hanged || !bytes.Equal(crash.Suppression, supp) {
-				s.noteCrasher(candidate, output, hanged)
+				w.noteCrasher(candidate, output, hanged)
 				return false
 			}
 			crash.Error = output
 			return true
 		})
 	}
-	s.hub.newCrasherC <- crash
+	w.hub.newCrasherC <- crash
 }
 
 // minimizeInput applies series of minimizing transformations to data
 // and asks pred whether the input is equivalent to the original one or not.
-func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidate, cover, output []byte, result int, crashed, hanged bool) bool) []byte {
+func (w *Worker) minimizeInput(data []byte, canonicalize bool, pred func(candidate, cover, output []byte, result int, crashed, hanged bool) bool) []byte {
 	res := make([]byte, len(data))
 	copy(res, data)
 	start := time.Now()
-	stat := &s.execs[execMinimizeInput]
+	stat := &w.execs[execMinimizeInput]
 	if canonicalize {
-		stat = &s.execs[execMinimizeCrasher]
+		stat = &w.execs[execMinimizeCrasher]
 	}
 
 	// First, try to cut tail.
@@ -336,7 +336,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 			}
 			candidate := res[:len(res)-n]
 			*stat++
-			result, _, cover, _, output, crashed, hanged := s.coverBin.test(candidate)
+			result, _, cover, _, output, crashed, hanged := w.coverBin.test(candidate)
 			if !pred(candidate, cover, output, result, crashed, hanged) {
 				break
 			}
@@ -354,7 +354,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 		copy(candidate[:i], res[:i])
 		copy(candidate[i:], res[i+1:])
 		*stat++
-		result, _, cover, _, output, crashed, hanged := s.coverBin.test(candidate)
+		result, _, cover, _, output, crashed, hanged := w.coverBin.test(candidate)
 		if !pred(candidate, cover, output, result, crashed, hanged) {
 			continue
 		}
@@ -372,7 +372,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 			candidate := tmp[:len(res)-j+i]
 			copy(candidate[i:], res[j:])
 			*stat++
-			result, _, cover, _, output, crashed, hanged := s.coverBin.test(candidate)
+			result, _, cover, _, output, crashed, hanged := w.coverBin.test(candidate)
 			if !pred(candidate, cover, output, result, crashed, hanged) {
 				continue
 			}
@@ -394,7 +394,7 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 			copy(candidate, res)
 			candidate[i] = '0'
 			*stat++
-			result, _, cover, _, output, crashed, hanged := s.coverBin.test(candidate)
+			result, _, cover, _, output, crashed, hanged := w.coverBin.test(candidate)
 			if !pred(candidate, cover, output, result, crashed, hanged) {
 				continue
 			}
@@ -406,19 +406,19 @@ func (s *Slave) minimizeInput(data []byte, canonicalize bool, pred func(candidat
 }
 
 // smash gives some minimal attention to every new input.
-func (s *Slave) smash(data []byte, depth int) {
-	ro := s.hub.ro.Load().(*ROData)
+func (w *Worker) smash(data []byte, depth int) {
+	ro := w.hub.ro.Load().(*ROData)
 
 	// Pass it through sonar.
 	if *flagSonar {
-		sonar := s.testInputSonar(data, depth)
-		s.processSonarData(data, sonar, depth, true)
+		sonar := w.testInputSonar(data, depth)
+		w.processSonarData(data, sonar, depth, true)
 	}
 
 	// Flip each bit one-by-one.
 	for i := 0; i < len(data)*8; i++ {
 		data[i/8] ^= 1 << uint(i%8)
-		s.testInput(data, depth, execSmash)
+		w.testInput(data, depth, execSmash)
 		data[i/8] ^= 1 << uint(i%8)
 	}
 
@@ -426,7 +426,7 @@ func (s *Slave) smash(data []byte, depth int) {
 	for i := 0; i < len(data)*8-1; i++ {
 		data[i/8] ^= 1 << uint(i%8)
 		data[(i+1)/8] ^= 1 << uint((i+1)%8)
-		s.testInput(data, depth, execSmash)
+		w.testInput(data, depth, execSmash)
 		data[i/8] ^= 1 << uint(i%8)
 		data[(i+1)/8] ^= 1 << uint((i+1)%8)
 	}
@@ -437,7 +437,7 @@ func (s *Slave) smash(data []byte, depth int) {
 		data[(i+1)/8] ^= 1 << uint((i+1)%8)
 		data[(i+2)/8] ^= 1 << uint((i+2)%8)
 		data[(i+3)/8] ^= 1 << uint((i+3)%8)
-		s.testInput(data, depth, execSmash)
+		w.testInput(data, depth, execSmash)
 		data[i/8] ^= 1 << uint(i%8)
 		data[(i+1)/8] ^= 1 << uint((i+1)%8)
 		data[(i+2)/8] ^= 1 << uint((i+2)%8)
@@ -447,7 +447,7 @@ func (s *Slave) smash(data []byte, depth int) {
 	// Byte flip.
 	for i := 0; i < len(data); i++ {
 		data[i] ^= 0xff
-		s.testInput(data, depth, execSmash)
+		w.testInput(data, depth, execSmash)
 		data[i] ^= 0xff
 	}
 
@@ -455,7 +455,7 @@ func (s *Slave) smash(data []byte, depth int) {
 	for i := 0; i < len(data)-1; i++ {
 		data[i] ^= 0xff
 		data[i+1] ^= 0xff
-		s.testInput(data, depth, execSmash)
+		w.testInput(data, depth, execSmash)
 		data[i] ^= 0xff
 		data[i+1] ^= 0xff
 	}
@@ -466,7 +466,7 @@ func (s *Slave) smash(data []byte, depth int) {
 		data[i+1] ^= 0xff
 		data[i+2] ^= 0xff
 		data[i+3] ^= 0xff
-		s.testInput(data, depth, execSmash)
+		w.testInput(data, depth, execSmash)
 		data[i] ^= 0xff
 		data[i+1] ^= 0xff
 		data[i+2] ^= 0xff
@@ -477,10 +477,10 @@ func (s *Slave) smash(data []byte, depth int) {
 	for i := 0; i < len(data); i++ {
 		for j := uint8(1); j <= 4; j++ {
 			data[i] += j
-			s.testInput(data, depth, execSmash)
+			w.testInput(data, depth, execSmash)
 			data[i] -= j
 			data[i] -= j
-			s.testInput(data, depth, execSmash)
+			w.testInput(data, depth, execSmash)
 			data[i] += j
 		}
 	}
@@ -490,7 +490,7 @@ func (s *Slave) smash(data []byte, depth int) {
 		v := data[i]
 		for _, x := range interesting8 {
 			data[i] = uint8(x)
-			s.testInput(data, depth, execSmash)
+			w.testInput(data, depth, execSmash)
 		}
 		data[i] = v
 	}
@@ -501,10 +501,10 @@ func (s *Slave) smash(data []byte, depth int) {
 		v := *p
 		for _, x := range interesting16 {
 			*p = x
-			s.testInput(data, depth, execSmash)
+			w.testInput(data, depth, execSmash)
 			if x != 0 && x != -1 {
 				*p = int16(swap16(uint16(x)))
-				s.testInput(data, depth, execSmash)
+				w.testInput(data, depth, execSmash)
 			}
 		}
 		*p = v
@@ -516,10 +516,10 @@ func (s *Slave) smash(data []byte, depth int) {
 		v := *p
 		for _, x := range interesting32 {
 			*p = x
-			s.testInput(data, depth, execSmash)
+			w.testInput(data, depth, execSmash)
 			if x != 0 && x != -1 {
 				*p = int32(swap32(uint32(x)))
-				s.testInput(data, depth, execSmash)
+				w.testInput(data, depth, execSmash)
 			}
 		}
 		*p = v
@@ -528,7 +528,7 @@ func (s *Slave) smash(data []byte, depth int) {
 	// Trim after every byte.
 	for i := 1; i < len(data); i++ {
 		tmp := data[:i]
-		s.testInput(tmp, depth, execSmash)
+		w.testInput(tmp, depth, execSmash)
 	}
 
 	// Insert a byte after every byte.
@@ -540,60 +540,60 @@ func (s *Slave) smash(data []byte, depth int) {
 		copy(tmp, data[:i])
 		copy(tmp[i+1:], data[i:])
 		tmp[i] = 0
-		s.testInput(tmp, depth, execSmash)
+		w.testInput(tmp, depth, execSmash)
 		tmp[i] = 'a'
-		s.testInput(tmp, depth, execSmash)
+		w.testInput(tmp, depth, execSmash)
 	}
 
 	// Do a bunch of random mutations so that this input catches up with the rest.
 	for i := 0; i < 1e4; i++ {
-		tmp := s.mutator.mutate(data, ro)
-		s.testInput(tmp, depth+1, execFuzz)
+		tmp := w.mutator.mutate(data, ro)
+		w.testInput(tmp, depth+1, execFuzz)
 	}
 }
 
-func (s *Slave) testInput(data []byte, depth, typ int) {
-	s.testInputImpl(s.coverBin, data, depth, typ)
+func (w *Worker) testInput(data []byte, depth, typ int) {
+	w.testInputImpl(w.coverBin, data, depth, typ)
 }
 
-func (s *Slave) testInputSonar(data []byte, depth int) (sonar []byte) {
-	return s.testInputImpl(s.sonarBin, data, depth, execSonar)
+func (w *Worker) testInputSonar(data []byte, depth int) (sonar []byte) {
+	return w.testInputImpl(w.sonarBin, data, depth, execSonar)
 }
 
-func (s *Slave) testInputImpl(bin *TestBinary, data []byte, depth, typ int) (sonar []byte) {
-	ro := s.hub.ro.Load().(*ROData)
+func (w *Worker) testInputImpl(bin *TestBinary, data []byte, depth, typ int) (sonar []byte) {
+	ro := w.hub.ro.Load().(*ROData)
 	if len(ro.badInputs) > 0 {
 		if _, ok := ro.badInputs[hash(data)]; ok {
 			return nil // no, thanks
 		}
 	}
-	s.execs[typ]++
+	w.execs[typ]++
 	res, _, cover, sonar, output, crashed, hanged := bin.test(data)
 	if crashed {
-		s.noteCrasher(data, output, hanged)
+		w.noteCrasher(data, output, hanged)
 		return nil
 	}
-	s.noteNewInput(data, cover, res, depth, typ)
+	w.noteNewInput(data, cover, res, depth, typ)
 	return sonar
 }
 
-func (s *Slave) noteNewInput(data, cover []byte, res, depth, typ int) {
+func (w *Worker) noteNewInput(data, cover []byte, res, depth, typ int) {
 	if res < 0 {
 		// User said to not add this input to corpus.
 		return
 	}
-	if s.hub.updateMaxCover(cover) {
-		s.triageQueue = append(s.triageQueue, MasterInput{makeCopy(data), uint64(depth), typ, false, false})
+	if w.hub.updateMaxCover(cover) {
+		w.triageQueue = append(w.triageQueue, CoordinatorInput{makeCopy(data), uint64(depth), typ, false, false})
 	}
 }
 
-func (s *Slave) noteCrasher(data, output []byte, hanged bool) {
-	ro := s.hub.ro.Load().(*ROData)
+func (w *Worker) noteCrasher(data, output []byte, hanged bool) {
+	ro := w.hub.ro.Load().(*ROData)
 	supp := extractSuppression(output)
 	if _, ok := ro.suppressions[hash(supp)]; ok {
 		return
 	}
-	s.crasherQueue = append(s.crasherQueue, NewCrasherArgs{
+	w.crasherQueue = append(w.crasherQueue, NewCrasherArgs{
 		Data:        makeCopy(data),
 		Error:       output,
 		Suppression: supp,
@@ -601,32 +601,32 @@ func (s *Slave) noteCrasher(data, output []byte, hanged bool) {
 	})
 }
 
-func (s *Slave) periodicCheck() {
+func (w *Worker) periodicCheck() {
 	if atomic.LoadUint32(&shutdown) != 0 {
-		s.shutdown()
+		w.shutdown()
 		select {}
 	}
-	if time.Since(s.lastSync) < syncPeriod {
+	if time.Since(w.lastSync) < syncPeriod {
 		return
 	}
-	s.execs[execTotal] += s.stats.execs
-	s.lastSync = time.Now()
-	s.hub.syncC <- s.stats
-	s.stats.execs = 0
-	s.stats.restarts = 0
+	w.execs[execTotal] += w.stats.execs
+	w.lastSync = time.Now()
+	w.hub.syncC <- w.stats
+	w.stats.execs = 0
+	w.stats.restarts = 0
 	if *flagV >= 2 {
-		log.Printf("slave %v: triageq=%v execs=%v mininp=%v mincrash=%v triage=%v fuzz=%v versifier=%v smash=%v sonar=%v hint=%v",
-			s.id, len(s.triageQueue),
-			s.execs[execTotal], s.execs[execMinimizeInput], s.execs[execMinimizeCrasher],
-			s.execs[execTriageInput], s.execs[execFuzz], s.execs[execVersifier], s.execs[execSmash],
-			s.execs[execSonar], s.execs[execSonarHint])
+		log.Printf("worker %v: triageq=%v execs=%v mininp=%v mincrash=%v triage=%v fuzz=%v versifier=%v smash=%v sonar=%v hint=%v",
+			w.id, len(w.triageQueue),
+			w.execs[execTotal], w.execs[execMinimizeInput], w.execs[execMinimizeCrasher],
+			w.execs[execTriageInput], w.execs[execFuzz], w.execs[execVersifier], w.execs[execSmash],
+			w.execs[execSonar], w.execs[execSonarHint])
 	}
 }
 
-// shutdown cleanups after slave, it is not guaranteed to be called.
-func (s *Slave) shutdown() {
-	s.coverBin.close()
-	s.sonarBin.close()
+// shutdown cleanups after worker, it is not guaranteed to be called.
+func (w *Worker) shutdown() {
+	w.coverBin.close()
+	w.sonarBin.close()
 }
 
 func extractSuppression(out []byte) []byte {
