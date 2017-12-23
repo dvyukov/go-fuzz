@@ -67,11 +67,11 @@ Corpus progression:
 
 * High-level architecture
 
-- Master: manages persistent artifacts
+- Coordinator: manages persistent artifacts
 - Hub: manages corpus in memory
-- Slave: manages a single testee subprocess
-- N slaves are collocated with Hub in a single process.
-- Master and Hub communicate via RPC
+- Worker: manages a single testee subprocess
+- N workers are collocated with Hub in a single process.
+- Coordinator and Hub communicate via RPC
 - go-fuzz-build builds test binary
 
 * go-fuzz-build
@@ -81,11 +81,11 @@ Creates a zip archive with:
 - coverage instrumented binary
 - sonar instrumented binary
 - coverage and sonar metadata
-- int and string literals 
+- int and string literals
 
 Also generates a bit of code to glue test and driver.
 
-* Master process
+* Coordinator process
 
 - Persistent corpus (SHA-1 + input depth)
 - Persistent suppressions (SHA-1)
@@ -93,7 +93,7 @@ Also generates a bit of code to glue test and driver.
 - Final deduplication
 - Total stats
 
-* Hub/slace process
+* Hub/worker process
 
 - Does actual fuzzing
 

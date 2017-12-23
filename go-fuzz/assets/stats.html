@@ -10,8 +10,8 @@
         <h1 class="page-header">Go Fuzz</h1>
         <div class="row placeholders">
           <div class="col-xs-3 col-sm-1 placeholder">
-            <h4 id="slaves"></h4>
-            <span class="text-muted">Slaves</span>
+            <h4 id="workers"></h4>
+            <span class="text-muted">Workers</span>
           </div>
           <div class="col-xs-3 col-sm-1 placeholder">
             <h4 id="corpus"></h4>
@@ -44,7 +44,7 @@
           <table class="table table-striped">
             <thead>
               <tr>
-                <th>Slaves</th>
+                <th>Workers</th>
                 <th>Corpus</th>
                 <th>Crashers</th>
                 <th>Restarts</th>
@@ -95,7 +95,7 @@ if (navigator.userAgent.match(/IEMobile\/10\.0/)) {
 if (!String.prototype.format) {
 	String.prototype.format = function() {
 		var args = arguments;
-		return this.replace(/{(\d+)}/g, function(match, number) { 
+		return this.replace(/{(\d+)}/g, function(match, number) {
 			return typeof args[number] != 'undefined'
 			? args[number]
 			: match
@@ -110,7 +110,7 @@ var evtSource = new EventSource("/eventsource");
 evtSource.addEventListener("ping", function(e) {
 	var data = JSON.parse(e.data);
 	$("tbody").prepend(rowFmt.format(
-		data.Slaves,
+		data.Workers,
 		data.Corpus,
 		data.Crashers,
 		"1/" + data.RestartsDenom,
@@ -119,7 +119,7 @@ evtSource.addEventListener("ping", function(e) {
 		data.Uptime
 	));
 
-	$("#slaves").text(data.Slaves)
+	$("#workers").text(data.Workers)
 	$("#corpus").text(data.Corpus)
 	$("#crashers").text(data.Crashers)
 	$("#restarts").text("1/" + data.RestartsDenom)
