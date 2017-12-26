@@ -110,7 +110,7 @@ to continue after restart. Discovered bad inputs are stored in workdir/crashers
 dir; where file without a suffix contains binary input, file with .quoted suffix
 contains quoted input that can be directly copied into a reproducer program or a
 test, file with .output suffix contains output of the test on this input. Every
-few seconds go-fuzz prints logs of the form:
+few seconds go-fuzz prints logs to stderr of the form:
 ```
 2015/04/25 12:39:53 workers: 500, corpus: 186 (42s ago), crashers: 3,
      restarts: 1/8027, execs: 12009519 (121224/sec), cover: 2746, uptime: 1m39s
