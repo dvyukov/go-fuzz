@@ -522,5 +522,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/unidoc/unidoc: runtime: goroutine stack exceeds 1000000000-byte limit](https://github.com/unidoc/unidoc/issues/80) **fixed**
 - [github.com/spenczar/tdigest: check slice bounds when unmarshaling](https://github.com/spenczar/tdigest/commit/91fdfcefc42381c63363418ad38d7d33233f79cd) **fixed**
 - [github.com/spenczar/tdigest: check expected invariants while unmarshaling](https://github.com/spenczar/tdigest/commit/1ee0185dad51692b26b4ee6f9e111349f0cdb581) **fixed**
+- [github.com/vcabbage/amqp: index out of range](https://github.com/vcabbage/amqp/commit/69a58fc911413722779226664a5a858b84758f94) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
