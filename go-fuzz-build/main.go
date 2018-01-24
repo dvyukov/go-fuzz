@@ -31,6 +31,7 @@ var (
 
 	workdir string
 	GOROOT  string
+	GOPATH  string
 )
 
 func makeTags() string {
@@ -48,14 +49,25 @@ func main() {
 	if len(flag.Args()) != 1 || len(flag.Arg(0)) == 0 {
 		failf("usage: go-fuzz-build pkg")
 	}
-	GOROOT = os.Getenv("GOROOT")
-	if GOROOT == "" {
-		out, err := exec.Command("go", "env", "GOROOT").CombinedOutput()
-		if err != nil || len(out) == 0 {
-			failf("GOROOT is not set and failed to locate it: 'go env GOROOT' returned '%s' (%v)", out, err)
-		}
-		GOROOT = strings.Trim(string(out), "\n\t ")
+	env := map[string]string{
+		"GOROOT": "",
+		"GOPATH": "",
 	}
+	for k := range env {
+		v := os.Getenv(k)
+		if v != "" {
+			env[k] = v
+			continue
+		}
+		out, err := exec.Command("go", "env", k).CombinedOutput()
+		if err != nil || len(out) == 0 {
+			failf("%s is not set and failed to locate it: 'go env %s' returned '%s' (%v)", k, k, out, err)
+		}
+		env[k] = strings.TrimSpace(string(out))
+	}
+	GOROOT = env["GOROOT"]
+	GOPATH = env["GOPATH"]
+
 	pkg := flag.Arg(0)
 	if pkg[0] == '.' {
 		failf("relative import paths are not supported, please specify full package name")
@@ -145,7 +157,7 @@ func testNormalBuild(pkg string) {
 		}
 		cmd.Env = append(cmd.Env, v)
 	}
-	cmd.Env = append(cmd.Env, "GOPATH="+os.Getenv("GOPATH")+string(os.PathListSeparator)+filepath.Join(workdir, "gopath"))
+	cmd.Env = append(cmd.Env, "GOPATH="+GOPATH+string(os.PathListSeparator)+filepath.Join(workdir, "gopath"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
@@ -437,9 +449,11 @@ func copyDir(dir, newDir string, rec bool, pred func(string) bool) {
 
 func goListList(pkg, what string) []string {
 	templ := fmt.Sprintf("{{range .%v}}{{.}}|{{end}}", what)
-	out, err := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg).CombinedOutput()
+	cmd := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg)
+	cmd.Env = append(os.Environ(), "GOPATH="+GOPATH)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
+		failf("failed to execute 'go list -f %q %v': %v\n%v", templ, pkg, err, string(out))
 	}
 	if len(out) < 2 {
 		return nil
@@ -453,9 +467,11 @@ func goListProps(pkg string, props ...string) []string {
 	for _, p := range props {
 		templ += fmt.Sprintf("{{.%v}}|", p)
 	}
-	out, err := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg).CombinedOutput()
+	cmd := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg)
+	cmd.Env = append(os.Environ(), "GOPATH="+GOPATH)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
-		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
+		failf("failed to execute 'go list -f %q %v': %v\n%v", templ, pkg, err, string(out))
 	}
 	if len(out) == 0 {
 		failf("goListProps: go list output is empty")
@@ -466,7 +482,9 @@ func goListProps(pkg string, props ...string) []string {
 
 func goListBool(pkg, what string) bool {
 	templ := fmt.Sprintf("{{.%v}}", what)
-	out, err := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg).CombinedOutput()
+	cmd := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg)
+	cmd.Env = append(os.Environ(), "GOPATH="+GOPATH)
+	out, err := cmd.CombinedOutput()
 	if err != nil {
 		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
 	}
