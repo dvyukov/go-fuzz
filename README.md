@@ -157,6 +157,7 @@ $ go-fuzz -bin=./png-fuzz.zip -worker=127.0.0.1:8745 -procs=10
 - [DNS parser, meet Go fuzzer](https://blog.cloudflare.com/dns-parser-meet-go-fuzzer/): A success story with suggestions on how to write the ```Fuzz``` function
 - [Automated Testing with go-fuzz](https://speakerdeck.com/filosottile/automated-testing-with-go-fuzz)
 - [Going down the rabbit hole with go-fuzz](https://mijailovic.net/2017/07/29/go-fuzz/)
+- [Fuzzing markdown parser with go-fuzz](https://blog.kowalczyk.info/article/n/fuzzing-markdown-parser-written-in-go.html)
 
 ## Credits and technical details
 
@@ -523,5 +524,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/spenczar/tdigest: check slice bounds when unmarshaling](https://github.com/spenczar/tdigest/commit/91fdfcefc42381c63363418ad38d7d33233f79cd) **fixed**
 - [github.com/spenczar/tdigest: check expected invariants while unmarshaling](https://github.com/spenczar/tdigest/commit/1ee0185dad51692b26b4ee6f9e111349f0cdb581) **fixed**
 - [github.com/vcabbage/amqp: index out of range](https://github.com/vcabbage/amqp/commit/69a58fc911413722779226664a5a858b84758f94) **fixed**
+- [github.com/gomarkdown/markdown: inifinite loop](https://github.com/gomarkdown/markdown/commit/5d96569c5a0d3cd46d961eddbb61e936e627774c) **fixed**
+- [github.com/gomarkdown/markdown: inifinite loop](https://github.com/gomarkdown/markdown/commit/e0fc813169b926a2182bc6554888eb37d12261f7) **fixed**
+- [github.com/gomarkdown/markdown: index out of range](https://github.com/gomarkdown/markdown/commit/5dd4b50fe81eda60f173e242ece05f24c5cc5cec) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
