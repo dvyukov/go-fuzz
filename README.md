@@ -99,8 +99,7 @@ input corpuses for various packages.
 
 The next step is to get go-fuzz:
 ```
-$ go get -u github.com/dvyukov/go-fuzz/go-fuzz
-$ go install github.com/dvyukov/go-fuzz/go-fuzz-build
+$ go get -u github.com/dvyukov/go-fuzz/...
 ```
 
 Then, build the test program with necessary instrumentation:
