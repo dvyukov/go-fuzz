@@ -5,6 +5,16 @@ Fuzzing is mainly applicable to packages that parse complex inputs (both text
 and binary), and is especially useful for hardening of systems that parse inputs
 from potentially malicious users (e.g. anything accepted over a network).
 
+## History rewrite
+
+go-fuzz repository history was recently rewritten to exclude examples directory
+to reduce total repository size and download time (see
+[#88](https://github.com/dvyukov/go-fuzz/issues/88),
+[#114](https://github.com/dvyukov/go-fuzz/issues/114) and
+https://github.com/dvyukov/go-fuzz-corpus). Unfortunately, that means that
+`go get -u` command will fail if you had a previous version installed.
+Please remove $GOPATH/github.com/dvyukov/go-fuzz before running `go get` again.
+
 ## Usage
 
 First, you need to write a test function of the form:
@@ -89,8 +99,8 @@ input corpuses for various packages.
 
 The next step is to get go-fuzz:
 ```
-$ go get github.com/dvyukov/go-fuzz/go-fuzz
-$ go get github.com/dvyukov/go-fuzz/go-fuzz-build
+$ go get -u github.com/dvyukov/go-fuzz/go-fuzz
+$ go install github.com/dvyukov/go-fuzz/go-fuzz-build
 ```
 
 Then, build the test program with necessary instrumentation:
