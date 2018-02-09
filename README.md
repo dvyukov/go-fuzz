@@ -536,5 +536,8 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/gomarkdown/markdown: inifinite loop](https://github.com/gomarkdown/markdown/commit/5d96569c5a0d3cd46d961eddbb61e936e627774c) **fixed**
 - [github.com/gomarkdown/markdown: inifinite loop](https://github.com/gomarkdown/markdown/commit/e0fc813169b926a2182bc6554888eb37d12261f7) **fixed**
 - [github.com/gomarkdown/markdown: index out of range](https://github.com/gomarkdown/markdown/commit/5dd4b50fe81eda60f173e242ece05f24c5cc5cec) **fixed**
+- [github.com/hajimehoshi/go-mp3: index out of range (1)](https://github.com/hajimehoshi/go-mp3/commit/22bc0be280079723dbb8e10295db01e925dc5640) **fixed**
+- [github.com/hajimehoshi/go-mp3: index out of range (2)](https://github.com/hajimehoshi/go-mp3/commit/81bb838ef7ce492a3ea9d097a781ae1ed7f318b9) **fixed**
+- [github.com/hajimehoshi/go-mp3: index out of range (3)](https://github.com/hajimehoshi/go-mp3/commit/3c185f92b8dbceefa913b64cae634ba47f452769) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
