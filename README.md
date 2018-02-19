@@ -539,5 +539,10 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/hajimehoshi/go-mp3: index out of range (1)](https://github.com/hajimehoshi/go-mp3/commit/22bc0be280079723dbb8e10295db01e925dc5640) **fixed**
 - [github.com/hajimehoshi/go-mp3: index out of range (2)](https://github.com/hajimehoshi/go-mp3/commit/81bb838ef7ce492a3ea9d097a781ae1ed7f318b9) **fixed**
 - [github.com/hajimehoshi/go-mp3: index out of range (3)](https://github.com/hajimehoshi/go-mp3/commit/3c185f92b8dbceefa913b64cae634ba47f452769) **fixed**
+- [github.com/dhowden/tag: slice bounds out of range (1)](https://github.com/dhowden/tag/commit/737d3560ddb3e8e7319a5e9c494ccd749150d675) **fixed**
+- [github.com/dhowden/tag: slice bounds out of range (2)](https://github.com/dhowden/tag/commit/1582ebc2a4525aeaccf7138ffd37e56f5117e49e) **fixed**
+- [github.com/dhowden/tag: len out of range (3)](https://github.com/dhowden/tag/commit/d449289c5e6fec9ad6a68a9e850f22fe14fa7c97) **fixed**
+- [github.com/dhowden/tag: slice bounds out of range (4)](https://github.com/dhowden/tag/commit/d2206af145611b630d612027486ffd9129bd3e09) **fixed**
+- [github.com/tealeg/xlsx: slice bounds out of range (1)](https://github.com/tealeg/xlsx/commit/d40e2bb185733dd4bc3c4a1929c35ee844ed3379) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
