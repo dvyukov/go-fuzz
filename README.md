@@ -102,9 +102,10 @@ The next step is to get go-fuzz:
 $ go get -u github.com/dvyukov/go-fuzz/...
 ```
 
-Then, build the test program with necessary instrumentation:
+Then, download the corpus and build the test program with necessary instrumentation:
 ```
-$ go-fuzz-build github.com/dvyukov/go-fuzz/examples/png
+$ go get -d github.com/dvyukov/go-fuzz-corpus
+$ go-fuzz-build github.com/dvyukov/go-fuzz-corpus/png
 ```
 This will produce png-fuzz.zip archive.
 
