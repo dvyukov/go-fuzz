@@ -315,13 +315,15 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 		"errors":                          true, // nothing to see here (also creates import cycle with go-fuzz-dep)
 		"syscall":                         true, // creates import cycle with go-fuzz-dep (and probably nothing to see here)
 		"internal/syscall/windows/sysdll": true, //syscall depends on it
-		"sync":          true, // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
-		"sync/atomic":   true, // not interesting (also creates import cycle with go-fuzz-dep)
-		"time":          true, // creates import cycle with go-fuzz-dep
-		"internal/race": true, // runtime depends on it
-		"runtime/cgo":   true, // why would we instrument it?
-		"runtime/pprof": true, // why would we instrument it?
-		"runtime/race":  true, // why would we instrument it?
+		"sync":             true, // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
+		"sync/atomic":      true, // not interesting (also creates import cycle with go-fuzz-dep)
+		"time":             true, // creates import cycle with go-fuzz-dep
+		"internal/bytealg": true, // runtime depends on it
+		"internal/cpu":     true, // runtime depends on it
+		"internal/race":    true, // runtime depends on it
+		"runtime/cgo":      true, // why would we instrument it?
+		"runtime/pprof":    true, // why would we instrument it?
+		"runtime/race":     true, // why would we instrument it?
 	}
 	if runtime.GOOS == "windows" {
 		// Cross-compilation is not implemented.
