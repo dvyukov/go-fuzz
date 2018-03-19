@@ -216,6 +216,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: does not compile correct program](https://github.com/golang/go/issues/13273)
 - [cmd/compile: compiles incorrect program (2)](https://github.com/golang/go/issues/13274) **fixed**
 - [cmd/compile: internal compiler error: want FUNC, but have int](https://github.com/golang/go/issues/17038)
+- [cmd/compile: nil deref](https://github.com/golang/go/issues/24447)
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759) **fixed**
 - [cmd/asm: index out of range (2)](https://github.com/golang/go/issues/12466) **fixed**
 - [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467) **fixed**
@@ -286,6 +287,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/gob: excessive memory consumption](https://github.com/golang/go/issues/10490) **fixed**
 - [encoding/gob: decoding hangs](https://github.com/golang/go/issues/10491) **fixed**
 - [encoding/gob: pointers to zero values are not initialized in Decode](https://github.com/golang/go/issues/11119)
+- [encoding/gob: crash on malicious input](https://github.com/golang/go/issues/24447)
 - [encoding/xml: allows invalid comments](https://github.com/golang/go/issues/11112)
 - [encoding/json: detect circular data structures when encoding](https://github.com/golang/go/issues/10769)
 - [encoding/asn1: index out of range](https://github.com/golang/go/issues/11129) **fixed**
