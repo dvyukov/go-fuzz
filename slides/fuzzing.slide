@@ -1,0 +1,403 @@
+Fuzzing
+the new unit testing
+17 Mar 2018
+
+Dmitry Vyukov
+Bug Slaughterer, Google
+@dvyukov
+
+* Agenda
+
+- What is fuzzing?
+- Coverage-guided fuzzing
+- go-fuzz tutorial
+- Effective fuzzers
+
+* Wikipedia
+
+*Fuzzing* is a software *testing*technique*, often automated or semi-automated,
+that involves providing *invalid*, *unexpected*, or *random* data to the inputs
+of a computer program.
+
+* A brief history of fuzzing
+
+*1950s*:
+
+  We didn't call it fuzzing back in the 1950s, but it was our standard practice
+  to test programs by inputting decks of punch cards taken from the trash.
+  This type of testing was so common that it had no name.
+
+[[http://secretsofconsulting.blogspot.de/2017/02/fuzz-testing-and-fuzz-history.html][_Gerald_M._Weinberg_]]
+
+: Some called it monkey testing or random_testing
+
+*1988*: term *fuzzing* is coined by Barton Miller
+
+*1991*: *crashme*: generate random bytes and jump to them
+
+*2012*: ClusterFuzz
+
+*2014-2015*: AFL, libFuzzer, go-fuzz
+
+*2016*: Project Springfield, OSS-Fuzz
+
+* What can be fuzzed?
+
+Anything that consumes complex inputs:
+
+- deserialization (xml, json, gob, asn.1)
+- network protocols (HTTP, SMTP, MIME)
+- media codecs (audio, video, raster & vector images, pdf)
+- crypto (boringssl, openssl)
+- compression (zip, gzip, bzip2, brotli)
+- text/UTF/font processing (fmt, regexp, text/template, icu, truetype)
+- compilers, interpreters, databases, kernels, supervisors, etc
+
+*Must*have* for everything that consumes untrusted inputs, open to internet or
+is otherwise *security* sensitive.
+
+* Why fuzz?
+
+- more code coverage
+- no bias
+- cheap to use
+
+Complementary to unit-testing!
+
+* But who cares?
+
+- We are not testing/checking anything!
+- Random data will not trigger any bugs!
+
+* Types of bugs fuzzing can find
+
+- nil derefs
+- out-of-bounds accesses
+- division by 0
+- floating-point exceptions
+- huge slice allocation requests
+- infinite recursion
+- infinite loops
+- deadlocks
+- data races
+- send on closed chans
+- chan double close
+- logical bugs (asserts, but stay tuned for more)
+
+* Types of fuzzers
+
+- generation-based or mutation-based
+- aware of input structure or not
+- aware of program structure or not
+
+: Mutation-based generally require a pre-collected corpus of inputs.
+: Input structure can be provided or learned.
+: Program structure can be learned dynamically (code coverage)
+: or statically (code analysis) or via symbolic execution.
+
+* Coverage-guided fuzzing
+
+  Instrument program for code coverage
+  Collect initial corpus of inputs
+  for {
+    Randomly mutate an input from the corpus
+    Execute and collect coverage
+    if the input gives new coverage {
+      Add the input to corpus
+    }
+  }
+
+* Coverage-guiding in action
+
+The following code wants "ABCD" input:
+
+	if input[0] == 'A' {
+		if input[1] == 'B' {
+			if input[2] == 'C' {
+				if input[3] == 'D' {
+					slice[input[4]] = 1  // out-of-bounds here
+	}}}}
+
+Blind generation needs O(2^8^4) = O(2^32) tries.
+
+Corpus progression:
+
+	0. {}
+	1. {"A"}
+	2. {"A", "AB"}
+	3. {"A", "AB", "ABC"}
+	4. {"A", "AB", "ABC", "ABCD"}
+
+Coverage-guided fuzzer needs O(4 * 2^8) = O(2^10) tries.
+
+: Coverage-guiding turns exponential problem into polynomial.
+: + incremental progress
+: + persisted progress
+
+* go-fuzz tutorial
+
+* go-fuzz tutorial
+
+1. Write fuzz function:
+
+  func Fuzz(data []byte) int {
+    gob.NewDecoder(bytes.NewReader(data)).Decode(new(interface{}))
+    return 0
+  }
+
+2. Build:
+
+  go get github.com/dvyukov/go-fuzz/...
+  go-fuzz-build github.com/dvyukov/go-fuzz-corpus/gob
+
+3. Run:
+
+  go-fuzz -bin gob-fuzz.zip -workdir ./workdir
+
+  workers: 8, corpus: 1525 (6s ago), crashers: 6, execs: 0 (0/sec), cover: 1651, uptime: 6s
+  workers: 8, corpus: 1525 (9s ago), crashers: 6, execs: 16787 (1860/sec), cover: 1651, uptime: 9s
+  workers: 8, corpus: 1525 (12s ago), crashers: 6, execs: 29840 (2482/sec), cover: 1651, uptime: 12s
+
+* [Some] bugs in standard library
+
+.image bugs.png 550 _
+
+* Quick Quiz: what std lib package did not contain a bug?
+
+- compress/flate
+- fmt
+- go/format
+- html/template
+- image/bmp
+- image/png
+- time
+
+* [This slide intentionally left blank]
+
+* Quick quiz: what std lib package did not contain a bug?
+
+- compress/flate
+- fmt
+- go/format
+- html/template
+- *image/bmp* _(_because_it_does_not_exist_)_
+- image/png
+- time
+
+* encoding/gob DoS
+
+.play gob.go /START OMIT/,/END OMIT/
+
+* encoding/gob crash
+
+  fatal error: runtime: out of memory
+  
+  goroutine 1 [running]:
+  runtime.mallocgc(0x3740000000, ...)
+  	runtime/malloc.go:895
+  runtime.newarray(..., 0x44000000, ...)
+  	runtime/malloc.go:1030
+  reflect.MakeMapWithSize(..., 0xff003030, ...)
+  	reflect/value.go:2136
+  encoding/gob.(*Decoder).decodeMap(...)
+  	encoding/gob/decode.go:562
+  encoding/gob.(*Decoder).decodeStruct(...)
+  	encoding/gob/decode.go:471
+  encoding/gob.(*Decoder).Decode(...)
+  	encoding/gob/decoder.go:187
+  main.main()
+  	gob.go:26
+
+* Go compiler crash
+
+.play crash.go
+
+  panic: runtime error: invalid memory address or nil pointer dereference
+  
+  goroutine 1 [running]:
+  cmd/compile/internal/gc.dowidth()
+  cmd/compile/internal/types.(*Type).Fields()
+  cmd/compile/internal/gc.expandiface()
+  cmd/compile/internal/gc.dowidth()
+  cmd/compile/internal/types.(*Type).Fields()
+  cmd/compile/internal/gc.expandiface()
+  cmd/compile/internal/gc.dowidth()
+  cmd/compile/internal/gc.resumecheckwidth()
+  cmd/compile/internal/gc.Main()
+  main.main()
+
+* How to write effective fuzzers
+
+* Involve as much code as possble
+
+The more code fuzzer runs, the more bugs it finds:
+
+- just bugs in the additional code
+- additional code provides coverage-guidance help
+
+For example:
+
+- run code in different modes (compression levels, syntax variations)
+- run auxillary functions (code formatting, protobuf text serialization)
+- run functions that act on parsing result (regexp match)
+
+* regexp example
+
+	for _, ctor := range []func(string) (*regexp.Regexp, error){
+		regexp.Compile,
+		regexp.CompilePOSIX,
+		CompileLongest,
+		CompilePOSIXLongest
+	} {
+		re, err := ctor(restr)
+		if err != nil { continue }
+		re.LiteralPrefix()
+		re.SubexpNames()
+		re.NumSubexp()
+		re.Split(sstr, 1)
+		re.Split(sstr, -1)
+		re.FindAll(str, 1)
+		re.FindAll(str, -1)
+		re.FindAllSubmatch(str, 1)
+		re.FindAllSubmatch(str, -1)
+		str1, str2 := str[:len(str)/2], str[len(str)/2:]
+		match := re.FindSubmatchIndex(str1)
+		re.Expand(nil, str2, str1, match)
+		re.ReplaceAll(str1, str2)
+		re.ReplaceAllLiteral(str1, str2)
+	}
+
+* Logical bugs
+
+Not only security/stability bugs. But we don't know the right result!
+
+Sanity checks on results:
+
+- know that some substring must be present in output, but it is not
+- result must be in `[0.0, 1.0)` range
+- uncompressesed image decoder: 100 byte input -> 100 MB output?
+- encrypt, check that decryption with wrong key fails
+- function returns both error and object, or no error and no object
+- any sorting: check that each element is present, check that it's not descending
+- building a trie: check size, all elements are present
+
+* Round-trip test
+
+Pair functions like:
+
+- serialize <-> deserialize
+- compress <-> decompress
+- encrypt <-> decrypt
+
+Round-trip is:
+
+  deserialize -> serialize -> deserialize
+
+Can check that:
+
+- `serialize` does not fail
+- second `deserialize` does not fail
+- `deserialize` results are equal
+
+Finds tons of bugs!
+
+* Golden implementation
+
+Comparing two (or more) implementations gives phenomenal results:
+
+- check that output is equal
+- or at least check that ok/fail result is the same
+
+But I don't want to write the second impl!
+
+- there can be several packages already (`json` vs `jsonfast` vs `jsonveryfast`)
+- implementation in a different language (Go's `regexp` vs C++ `re2`)
+- compare "fast but complex" with "slow but dumb" (sometimes easy to write)
+- compare different functions (`marshalBinary` vs `marshalText`)
+
+* Corpus
+
+Providing a good corpus helps:
+
+- collect inputs from tests
+- samples from production
+- examples from web (HTTP/XML)
+- hand write
+- write a generator (PNGs with different sizes/contents/palettes)
+
+* Complex inputs
+
+What if input is not `[]byte`?
+
+.code regexp.go /START OMIT/,/END OMIT/
+
+* Complex inputs (2)
+
+Unmarshalling a complex struct:
+
+	var input struct {
+		X float32
+		Y float32
+		Z int64
+		F bool
+	}
+	binary.Read(bytes.NewReader([]byte(data)), binary.LittleEndian, &input)
+
+Without changing input format:
+
+	x := crc32.ChecksumIEEE(data)
+	f1 := x&1 != 0
+	f2 := x&2 != 0
+
+* Quick Quiz: how to fuzz go fmt?
+
+Let's imaging destiny of mankind depends on correctness of go fmt!
+
+How would you fuzz test it?
+
+* [This slide intentionally left blank]
+
+* Quick Quiz: how to fuzz go fmt?
+
+- format twice, compare results (e.g. relies on map order)
+- format, then format result (must be idempotent)
+- strip all whitespaces, compare before/after
+- parse with go/ast, compare AST before/after
+- compile before/after (formatting breaks/unbreaks code)
+- also parse with go/types to improve coverage feedback
+- provide corpus (compiler tests)
+
+* go tool support
+
+Issue #19109: proposal: cmd/go: make fuzzing a first class citizen
+
+encoding/hex/fuzz_test.go:
+
+  package hex
+  
+  import "testing"
+  
+  func FuzzDecodeString(f *testing.F, data []byte) {
+    DecodeString(string(data))
+  }
+
+Running:
+
+  go test -fuzz=FuzzDecodeString
+
+Regression testing (runs all inputs from corpus):
+
+  go test ./...
+
+* The bottom line
+
+- fuzzing is complimentary to any other testing technique
+- fuzzing is mandatory for anything security-related
+- fuzzing finds LOTS of bugs
+- fuzzing is easy to use
+
+* Call to action
+
+- choose 1 package that uses complex inputs
+- write a fuzzer using go-fuzz
+- run it and see what happens
