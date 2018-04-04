@@ -547,5 +547,11 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/dhowden/tag: len out of range (3)](https://github.com/dhowden/tag/commit/d449289c5e6fec9ad6a68a9e850f22fe14fa7c97) **fixed**
 - [github.com/dhowden/tag: slice bounds out of range (4)](https://github.com/dhowden/tag/commit/d2206af145611b630d612027486ffd9129bd3e09) **fixed**
 - [github.com/tealeg/xlsx: slice bounds out of range (1)](https://github.com/tealeg/xlsx/commit/d40e2bb185733dd4bc3c4a1929c35ee844ed3379) **fixed**
+- [github.com/hashicorp/hcl: crasher (logic error)](https://github.com/hashicorp/hcl/pull/239) **fixed**
+- [github.com/hashicorp/hcl: crasher (off-by-one)](https://github.com/hashicorp/hcl/pull/240) **fixed**
+- [github.com/hashicorp/hcl: format produces unparsable output (1)](https://github.com/hashicorp/hcl/pull/241) **fixed**
+- [github.com/hashicorp/hcl: format produces unparsable output (2)](https://github.com/hashicorp/hcl/pull/243) **fixed**
+- [github.com/hashicorp/hcl: format produces unparsable output (3)](https://github.com/hashicorp/hcl/pull/244) **fixed**
+- [github.com/hashicorp/hcl: format produces unparsable output (4)](https://github.com/hashicorp/hcl/pull/245) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
