@@ -553,5 +553,9 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/hashicorp/hcl: format produces unparsable output (2)](https://github.com/hashicorp/hcl/pull/243) **fixed**
 - [github.com/hashicorp/hcl: format produces unparsable output (3)](https://github.com/hashicorp/hcl/pull/244) **fixed**
 - [github.com/hashicorp/hcl: format produces unparsable output (4)](https://github.com/hashicorp/hcl/pull/245) **fixed**
+- [github.com/francoispqt/gojay: panic on malformed JSON integers](https://github.com/francoispqt/gojay/issues/27) **fixed**
+- [github.com/francoispqt/gojay: panic on malformed JSON floats](https://github.com/francoispqt/gojay/issues/32) **fixed**
+- [github.com/eapache/go-xerial-snappy multiple panics with malformed inputs](https://github.com/eapache/go-xerial-snappy/commit/58803384a8be76cd0f84789b302c7b52d791d95f) **fixed**
+- [github.com/trustelem/zxcvbn: multiple panics in password strength estimator](https://github.com/trustelem/zxcvbn/issues/1) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
