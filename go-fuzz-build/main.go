@@ -268,6 +268,8 @@ type Package struct {
 	info    types.Info
 	nimport int
 	deps    []*Package
+	imports []*Package
+	done    bool
 }
 
 type Importer struct {
@@ -353,6 +355,7 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 			}
 			p.nimport++
 			p1.deps = append(p1.deps, p)
+			p.imports = append(p.imports, p1)
 		}
 		if p.nimport == 0 {
 			ready = append(ready, p)
@@ -419,10 +422,22 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 			}
 		}
 
+		p.done = true
 		for _, p1 := range p.deps {
 			p1.nimport--
 			if p1.nimport == 0 {
 				ready = append(ready, p1)
+			}
+		}
+	}
+	for _, p := range pkgs {
+		if p.done {
+			continue
+		}
+		fmt.Printf("unscheduled package %v, unsatisfied deps:\n", p.name)
+		for _, p1 := range p.imports {
+			if !p1.done {
+				fmt.Printf("  %v\n", p1.name)
 			}
 		}
 	}
