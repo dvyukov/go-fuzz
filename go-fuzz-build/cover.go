@@ -325,8 +325,8 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 		}
 		return v
 	}
-	v1 = conv("v1", v1)
-	v2 = conv("v2", v2)
+	v1 = conv("__gofuzz_v1", v1)
+	v2 = conv("__gofuzz_v2", v2)
 
 	block.List = append(block.List,
 		&ast.ExprStmt{
