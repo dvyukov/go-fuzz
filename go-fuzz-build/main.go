@@ -310,6 +310,7 @@ func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]s
 	ignore := map[string]bool{
 		"runtime":                         true, // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
 		"runtime/internal/atomic":         true, // runtime depends on it
+		"runtime/internal/math":           true, // runtime depends on it
 		"runtime/internal/sys":            true, // runtime depends on it
 		"unsafe":                          true, // nothing to see here (also creates import cycle with go-fuzz-dep)
 		"errors":                          true, // nothing to see here (also creates import cycle with go-fuzz-dep)
