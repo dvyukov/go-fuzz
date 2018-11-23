@@ -4,8 +4,8 @@
 package testdep
 
 type (
-	I interface {}
-	B      bool
+	I  interface{}
+	B  bool
 	V1 struct{}
-	V2      struct{}
+	V2 struct{}
 )
