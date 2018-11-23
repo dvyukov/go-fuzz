@@ -10,7 +10,7 @@ import (
 	// Test vendoring support.
 	vendored_foo "non.existent.com/foo"
 
-	"github.com/dvyukov/go-fuzz-corpus/test/testdep"
+	"github.com/dvyukov/go-fuzz/test/testdep"
 )
 
 func init() {
