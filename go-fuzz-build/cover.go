@@ -224,7 +224,8 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	// Replace:
 	//	x != y
 	// with:
-	//	func() bool { v1 := x; v2 := y; go-fuzz-dep.Sonar(v1, v2, flags); return v1 != v2 }() == true
+	//	func() _go_fuzz_dep_.Bool { v1 := x; v2 := y; go-fuzz-dep.Sonar(v1, v2, flags); return v1 != v2 }() == true
+	// Using "== true" lets us modify the AST Node in-place.
 	v1 := nn.X
 	v2 := nn.Y
 	ast.Walk(s, v1)
@@ -339,7 +340,7 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	)
 	nn.X = &ast.CallExpr{
 		Fun: &ast.FuncLit{
-			Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: ast.NewIdent("bool")}}}},
+			Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: ast.NewIdent("_go_fuzz_dep_.Bool")}}}},
 			Body: block,
 		},
 	}
