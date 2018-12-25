@@ -108,11 +108,11 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 			sw.Init = nil
 		}
 		const tmpvar = "__go_fuzz_tmp"
-		tmp := &ast.Ident{Name: tmpvar}
+		tmp := ast.NewIdent(tmpvar)
 		typ := s.info.Types[sw.Tag]
 		s.info.Types[tmp] = typ
 		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{tmp}, Tok: token.DEFINE, Rhs: []ast.Expr{sw.Tag}})
-		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{&ast.Ident{Name: "_"}}, Tok: token.ASSIGN, Rhs: []ast.Expr{tmp}})
+		stmts = append(stmts, &ast.AssignStmt{Lhs: []ast.Expr{ast.NewIdent("_")}, Tok: token.ASSIGN, Rhs: []ast.Expr{tmp}})
 		sw.Tag = nil
 		stmts = append(stmts, sw)
 		for _, cas1 := range sw.Body.List {
@@ -311,7 +311,7 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 		}
 		if badConst || isWeirdShift(s.info, v) {
 			v = &ast.CallExpr{
-				Fun:  &ast.Ident{Name: typstr},
+				Fun:  ast.NewIdent(typstr),
 				Args: []ast.Expr{v},
 			}
 			s.info.Types[v] = tv
@@ -331,7 +331,7 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	block.List = append(block.List,
 		&ast.ExprStmt{
 			X: &ast.CallExpr{
-				Fun:  &ast.SelectorExpr{X: &ast.Ident{Name: fuzzdepPkg}, Sel: &ast.Ident{Name: "Sonar"}},
+				Fun:  &ast.SelectorExpr{X: ast.NewIdent(fuzzdepPkg), Sel: ast.NewIdent("Sonar")},
 				Args: []ast.Expr{v1, v2, &ast.BasicLit{Kind: token.INT, Value: strconv.Itoa(id)}},
 			},
 		},
@@ -339,7 +339,7 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	)
 	nn.X = &ast.CallExpr{
 		Fun: &ast.FuncLit{
-			Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: "bool"}}}}},
+			Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: ast.NewIdent("bool")}}}},
 			Body: block,
 		},
 	}
@@ -635,7 +635,7 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 
 			n.Y = &ast.CallExpr{
 				Fun: &ast.FuncLit{
-					Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: typ}}}}},
+					Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: ast.NewIdent(typ)}}}},
 					Body: &ast.BlockStmt{List: []ast.Stmt{&ast.ReturnStmt{Results: []ast.Expr{n.Y}}}},
 				},
 			}
