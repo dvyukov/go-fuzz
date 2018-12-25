@@ -185,3 +185,12 @@ func test6() {
 func issue194(v testdep.I) testdep.I {
 	return testdep.B(v == testdep.V1{} || v == testdep.V2{})
 }
+
+func shadowedBool() {
+	var bool int
+	var x int
+	if x == 0 {
+		return
+	}
+	_ = bool
+}
