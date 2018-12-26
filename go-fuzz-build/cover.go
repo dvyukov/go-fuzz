@@ -607,14 +607,32 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 			// Replace:
 			//	x && y
 			// with:
-			//	x && func() bool { return y }
-			typ := f.info.Types[n].Type.String()
+			//	x && func() T { return y }
+			// where T is a bool of the same type as n (and x and y).
+
+			// Spelling T correctly is a little tricky.
+			// go/types gives us a canonical name for T,
+			// but we can't always use that canonical name in the code directly;
+			// in the general case, it is of the form a/b/c/d.U.
+			// When U is the built-in bool, or defined in the current package,
+			// or defined in a dot-imported package, we want just U.
+			// When U is in another package, we want d.U.
+			// When U is in another package, imported under the name e, we want e.U.
+			// (And when the built-in bool type is shadowed, we're just screwed.)
+			// Handling all of these cases correctly is hard (it requires parsing the imports),
+			// so we handle just the common cases.
+
+			// types.Default maps untyped bools to typed bools.
+			typ := types.Default(f.info.Types[n].Type).String()
+			// If we're in the current package, strip the package path.
 			if strings.HasPrefix(typ, f.pkg+".") {
 				typ = typ[len(f.pkg)+1:]
 			}
-			if typ == "untyped bool" {
-				typ = "bool"
+			// If we're still in a package, assume it was imported with a reasonable name.
+			if i := strings.LastIndexByte(typ, '/'); i >= 0 {
+				typ = typ[i+1:]
 			}
+
 			n.Y = &ast.CallExpr{
 				Fun: &ast.FuncLit{
 					Type: &ast.FuncType{Results: &ast.FieldList{List: []*ast.Field{{Type: &ast.Ident{Name: typ}}}}},
