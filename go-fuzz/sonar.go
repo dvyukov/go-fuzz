@@ -198,6 +198,8 @@ func (w *Worker) processSonarData(data, sonar []byte, depth int, smash bool) {
 					check(data, reverse(v1), reverse(v2))
 					check(data, reverse(v1), reverse(increment(v2)))
 					check(data, reverse(v1), reverse(decrement(v2)))
+					check(data, v1, reverse(increment(reverse(v2))))
+					check(data, v1, reverse(decrement(reverse(v2))))
 				}
 
 				// Base-128.
