@@ -151,13 +151,18 @@ func serialize(v, v2 interface{}, buf []byte) (n, flags uint8) {
 	}
 }
 
+// The serialization routines here match those of encoding/binary.LittleEndian.
+// They are copied here because importing encoding/binary creates import cycles.
+
 func serialize16(buf []byte, v uint16) uint8 {
+	_ = buf[1]
 	buf[0] = byte(v >> 0)
 	buf[1] = byte(v >> 8)
 	return 2
 }
 
 func serialize32(buf []byte, v uint32) uint8 {
+	_ = buf[3]
 	buf[0] = byte(v >> 0)
 	buf[1] = byte(v >> 8)
 	buf[2] = byte(v >> 16)
@@ -166,6 +171,7 @@ func serialize32(buf []byte, v uint32) uint8 {
 }
 
 func serialize64(buf []byte, v uint64) uint8 {
+	_ = buf[7]
 	buf[0] = byte(v >> 0)
 	buf[1] = byte(v >> 8)
 	buf[2] = byte(v >> 16)
@@ -178,6 +184,7 @@ func serialize64(buf []byte, v uint64) uint8 {
 }
 
 func deserialize64(buf []byte) uint64 {
+	_ = buf[7]
 	return uint64(buf[0])<<0 |
 		uint64(buf[1])<<8 |
 		uint64(buf[2])<<16 |
