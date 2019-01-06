@@ -119,6 +119,11 @@ func (w *Worker) processSonarData(data, sonar []byte, depth int, smash bool) {
 			if len(v1) == 0 || bytes.Equal(v1, v2) {
 				return
 			}
+			if len(indexdata) != len(data) {
+				// We use indices into indexdata to construct indices into data below.
+				// If they don't have the same size, this operation is nonsensical and may panic.
+				panic("len(indexdata) != len(data)")
+			}
 			vv := string(v1) + "\t|\t" + string(v2)
 			if _, ok := checked[vv]; ok {
 				return
@@ -157,10 +162,14 @@ func (w *Worker) processSonarData(data, sonar []byte, depth int, smash bool) {
 			// TODO: for strings check upper/lower case.
 			if flags&SonarString != 0 {
 				if bytes.Equal(v1, bytes.ToLower(v1)) && bytes.Equal(v2, bytes.ToLower(v2)) {
-					check(bytes.ToLower(data), v1, v2)
+					if lower := bytes.ToLower(data); len(lower) == len(data) {
+						check(lower, v1, v2)
+					}
 				}
 				if bytes.Equal(v1, bytes.ToUpper(v1)) && bytes.Equal(v2, bytes.ToUpper(v2)) {
-					check(bytes.ToUpper(data), v1, v2)
+					if upper := bytes.ToUpper(data); len(upper) == len(data) {
+						check(upper, v1, v2)
+					}
 				}
 			} else {
 				// Try several common wire encodings of the values:
@@ -169,10 +178,14 @@ func (w *Worker) processSonarData(data, sonar []byte, depth int, smash bool) {
 				// base-64, quoted-printable, xml-escaping, hex+increment/decrement.
 
 				if len(v1) == 1 && len(v2) == 1 && unicode.IsLower(rune(v1[0])) && unicode.IsLower(rune(v2[0])) {
-					check(bytes.ToLower(data), v1, v2)
+					if lower := bytes.ToLower(data); len(lower) == len(data) {
+						check(lower, v1, v2)
+					}
 				}
 				if len(v1) == 1 && len(v2) == 1 && unicode.IsUpper(rune(v1[0])) && unicode.IsUpper(rune(v2[0])) {
-					check(bytes.ToUpper(data), v1, v2)
+					if upper := bytes.ToUpper(data); len(upper) == len(data) {
+						check(upper, v1, v2)
+					}
 				}
 
 				// Increment and decrement take care of less and greater comparison operators
