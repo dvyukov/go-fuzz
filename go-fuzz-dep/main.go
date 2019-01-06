@@ -83,10 +83,7 @@ func write(fd FD, vals ...uint64) {
 	var tmp [3 * 8]byte
 	buf := tmp[:len(vals)*8]
 	for i, v := range vals {
-		for j := 0; j < 8; j++ {
-			buf[i*8+j] = byte(v)
-			v >>= 8
-		}
+		serialize64(buf[i*8:], v)
 	}
 	wr := 0
 	for wr != len(buf) {
