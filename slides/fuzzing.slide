@@ -238,7 +238,7 @@ The more code fuzzer runs, the more bugs it finds:
 For example:
 
 - run code in different modes (compression levels, syntax variations)
-- run auxillary functions (code formatting, protobuf text serialization)
+- run auxiliary functions (code formatting, protobuf text serialization)
 - run functions that act on parsing result (regexp match)
 
 * regexp example
@@ -275,7 +275,7 @@ Sanity checks on results:
 
 - know that some substring must be present in output, but it is not
 - result must be in `[0.0, 1.0)` range
-- uncompressesed image decoder: 100 byte input -> 100 MB output?
+- uncompressed image decoder: 100 byte input -> 100 MB output?
 - encrypt, check that decryption with wrong key fails
 - function returns both error and object, or no error and no object
 - any sorting: check that each element is present, check that it's not descending
