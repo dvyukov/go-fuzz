@@ -686,6 +686,7 @@ func reverse(data []byte) []byte {
 
 func increment(data []byte) []byte {
 	tmp := make([]byte, len(data))
+	copy(tmp, data)
 	for i, v := range data {
 		tmp[i] = v + 1
 		if v != 0xff {
@@ -697,6 +698,7 @@ func increment(data []byte) []byte {
 
 func decrement(data []byte) []byte {
 	tmp := make([]byte, len(data))
+	copy(tmp, data)
 	for i, v := range data {
 		tmp[i] = v - 1
 		if v != 0 {
