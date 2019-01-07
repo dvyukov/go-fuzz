@@ -116,7 +116,7 @@ func (w *Worker) processSonarData(data, sonar []byte, depth int, smash bool) {
 			w.testInput(tmp, depth+1, execSonarHint)
 		}
 		check := func(indexdata, v1, v2 []byte) {
-			if len(v1) == 0 || bytes.Equal(v1, v2) {
+			if len(v1) == 0 || bytes.Equal(v1, v2) || !bytes.Contains(indexdata, v1) {
 				return
 			}
 			if len(indexdata) != len(data) {
