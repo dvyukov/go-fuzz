@@ -76,7 +76,7 @@ func workerMain() {
 	for _, zipf := range zipr.File {
 		r, err := zipf.Open()
 		if err != nil {
-			log.Fatalf("failed to uzip file from input archive: %v", err)
+			log.Fatalf("failed to unzip file from input archive: %v", err)
 		}
 		if zipf.Name == "metadata" {
 			if err := json.NewDecoder(r).Decode(&metadata); err != nil {
