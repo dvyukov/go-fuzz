@@ -151,7 +151,7 @@ Each input receives score 1..1000.
 - user boost multiplier 1-4x
 
 Then choose favored inputs: minimal set of highest-score inputs that give full counter coverage. The rest receive score 1 (can be discarded as well).
-During mutations inputs are selected accoring to the priority.
+During mutations inputs are selected according to the priority.
 
 
 * Game over
