@@ -400,8 +400,11 @@ func (hub *Hub) updateScores() {
 	for idx, inp := range corpus {
 		corpus[idx].favored = false
 		for i, c := range inp.cover {
+			if c == 0 {
+				continue
+			}
 			c = roundUpCover(c)
-			if c == 0 || c != ro.corpusCover[i] {
+			if c != ro.corpusCover[i] {
 				continue
 			}
 			if c > ro.corpusCover[i] {
@@ -420,8 +423,12 @@ func (hub *Hub) updateScores() {
 		inp := &corpus[cand.index]
 		inp.favored = true
 		for i := ci + 1; i < CoverSize; i++ {
-			c := roundUpCover(inp.cover[i])
-			if c == 0 || c != ro.corpusCover[i] {
+			c := inp.cover[i]
+			if c == 0 {
+				continue
+			}
+			c = roundUpCover(c)
+			if c != ro.corpusCover[i] {
 				continue
 			}
 			candidates[i].score = 0
