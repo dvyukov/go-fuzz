@@ -181,14 +181,14 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 ## Trophies
 
 - [spec: non-integral constant can be converted to int](https://github.com/golang/go/issues/11350) **fixed**
-- [cmd/compile: out of fixed registers](https://github.com/golang/go/issues/11352)
+- [cmd/compile: out of fixed registers](https://github.com/golang/go/issues/11352) **fixed**
 - [cmd/compile: truncates constants](https://github.com/golang/go/issues/11326) **fixed**
-- [cmd/compile: overflow in int -> string](https://github.com/golang/go/issues/11330)
+- [cmd/compile: overflow in int -> string](https://github.com/golang/go/issues/11330) **fixed**
 - [cmd/compile: bad HMUL](https://github.com/golang/go/issues/11358) **fixed**
-- [cmd/compile: treecopy Name](https://github.com/golang/go/issues/11361)
+- [cmd/compile: treecopy Name](https://github.com/golang/go/issues/11361) **fixed**
 - [cmd/compile: accepts invalid identifiers](https://github.com/golang/go/issues/11359) **fixed**
-- [cmd/compile: hangs compiling hex fp constant](https://github.com/golang/go/issues/11364)
-- [cmd/compile: mishandles int->complex conversion](https://github.com/golang/go/issues/11365)
+- [cmd/compile: hangs compiling hex fp constant](https://github.com/golang/go/issues/11364) **fixed**
+- [cmd/compile: mishandles int->complex conversion](https://github.com/golang/go/issues/11365) **fixed**
 - [cmd/compile: allows to define blank methods on builtin types](https://github.com/golang/go/issues/11366) **fixed**
 - [cmd/compile: mis-calculates a constant](https://github.com/golang/go/issues/11369) **fixed**
 - [cmd/compile: interface conversion panic](https://github.com/golang/go/issues/11540) **fixed**
@@ -197,26 +197,26 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/compile: internal compiler error: plain block b3 len(Succs)==2, want 1](https://github.com/golang/go/issues/11589) **fixed**
 - [cmd/compile: internal compiler error: b3.Succs has duplicate block b3](https://github.com/golang/go/issues/11593) **fixed**
 - [cmd/compile: internal compiler error: newname nil](https://github.com/golang/go/issues/11610) **fixed**
-- [cmd/compile: accepts invalid function type](https://github.com/golang/go/issues/11595)
+- [cmd/compile: accepts invalid function type](https://github.com/golang/go/issues/11595) **fixed**
 - [cmd/compile: internal compiler error: getinarg: not a func int](https://github.com/golang/go/issues/11596) **fixed**
-- [cmd/compile: hangs converting int const to complex64](https://github.com/golang/go/issues/11597)
+- [cmd/compile: hangs converting int const to complex64](https://github.com/golang/go/issues/11597) **fixed**
 - [cmd/compile: nil deref in error message](https://github.com/golang/go/issues/11614) **fixed**
 - [cmd/compile: use of untyped nil in switch](https://github.com/golang/go/issues/11668) **fixed**
 - [cmd/compile: implicitly converts complex constant to integer](https://github.com/golang/go/issues/11669) **fixed**
 - [cmd/compile: assignment to entry in nil map](https://github.com/golang/go/issues/11670) **fixed**
-- [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674)
-- [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698)
+- [cmd/compile: does not diagnose constant division by zero](https://github.com/golang/go/issues/11674) **fixed**
+- [cmd/compile: does not detect a missing return](https://github.com/golang/go/issues/11698) **fixed**
 - [cmd/compile: symbol ""._.args_stackmap listed multiple times](https://github.com/golang/go/issues/11699) **fixed**
-- [cmd/compile: "0"[0] should not be a constant](https://github.com/golang/go/issues/11370)
+- [cmd/compile: "0"[0] should not be a constant](https://github.com/golang/go/issues/11370) **fixed**
 - [cmd/compile: unexpected %!(NOVERB)](https://github.com/golang/go/issues/13266) **fixed**
 - [cmd/compile: wrong line number in error message](https://github.com/golang/go/issues/13267) **fixed**
-- [cmd/compile: not-deterministic output](https://github.com/golang/go/issues/13268)
+- [cmd/compile: not-deterministic output](https://github.com/golang/go/issues/13268) **fixed**
 - [cmd/compile: parsing problem](https://github.com/golang/go/issues/13270) **fixed**
 - [cmd/compile: compiles incorrect program](https://github.com/golang/go/issues/13272) **fixed**
 - [cmd/compile: does not compile correct program](https://github.com/golang/go/issues/13273)
 - [cmd/compile: compiles incorrect program (2)](https://github.com/golang/go/issues/13274) **fixed**
-- [cmd/compile: internal compiler error: want FUNC, but have int](https://github.com/golang/go/issues/17038)
-- [cmd/compile: nil deref](https://github.com/golang/go/issues/24447)
+- [cmd/compile: internal compiler error: want FUNC, but have int](https://github.com/golang/go/issues/17038) **fixed**
+- [cmd/compile: nil deref](https://github.com/golang/go/issues/24447) **fixed**
 - [cmd/asm: index out of range](https://github.com/golang/go/issues/11759) **fixed**
 - [cmd/asm: index out of range (2)](https://github.com/golang/go/issues/12466) **fixed**
 - [cmd/asm: index out of range (3)](https://github.com/golang/go/issues/12467) **fixed**
@@ -229,7 +229,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [cmd/asm: nil deref (2)](https://github.com/golang/go/issues/12468) **fixed**
 - [cmd/asm: nil deref (3)](https://github.com/golang/go/issues/12614) **fixed**
 - [cmd/asm: nil deref (4)](https://github.com/golang/go/issues/12627) **fixed**
-- [cmd/asm: nil deref (5)](https://github.com/golang/go/issues/12655)
+- [cmd/asm: nil deref (5)](https://github.com/golang/go/issues/12655) **fixed**
 - [cmd/asm: cannot happen: slice col](https://github.com/golang/go/issues/12654) **fixed**
 - [cmd/asm: unactionable "invalid local variable type 0"](https://github.com/golang/go/issues/12658)
 - [internal/trace: index out of range](https://github.com/golang/go/issues/11766) **fixed**
@@ -253,9 +253,9 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [regexp: considers "\Q\E*" as valid regexp](https://github.com/golang/go/issues/11187) **fixed**
 - [time: allows signs for year/tz in format string](https://github.com/golang/go/issues/11128)
 - [time: RFC3339 time.Parse can not parse string that come from time.Format](https://github.com/golang/go/issues/20555)
-- [time: Parse panic: runtime error: index out of range](https://github.com/golang/go/issues/21113)
-- [math/big: incorrect string->Float conversion](https://github.com/golang/go/issues/11341)
-- [math/big: MakeFromLiteral with 0 mantissa and large exponent hangs](https://github.com/golang/go/issues/16176)
+- [time: Parse panic: runtime error: index out of range](https://github.com/golang/go/issues/21113) **fixed**
+- [math/big: incorrect string->Float conversion](https://github.com/golang/go/issues/11341) **fixed**
+- [math/big: MakeFromLiteral with 0 mantissa and large exponent hangs](https://github.com/golang/go/issues/16176) **fixed**
 - [net/http: can't send star request](https://github.com/golang/go/issues/11202) **fixed**
 - [net/http: allows empty header names](https://github.com/golang/go/issues/11205) **fixed**
 - [net/http: allows invalid characters in header values](https://github.com/golang/go/issues/11207) **fixed**
@@ -278,7 +278,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [archive/tar: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/11168) **fixed**
 - [archive/tar: invalid memory address or nil pointer dereference (2)](https://github.com/golang/go/issues/12435) **fixed**
 - [archive/tar: Reader.Next returns nil header](https://github.com/golang/go/issues/11169) **fixed**
-- [archive/tar: Writer incorrectly encodes header data](https://github.com/golang/go/issues/11171)
+- [archive/tar: Writer incorrectly encodes header data](https://github.com/golang/go/issues/11171) **fixed**
 - [archive/tar: incorrectly claims huge file size](https://github.com/golang/go/issues/12434)
 - [archive/tar: reader returns bogus headers](https://github.com/golang/go/issues/12436) **fixed**
 - [encoding/gob: panic: drop](https://github.com/golang/go/issues/10272) **fixed**
@@ -292,7 +292,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [encoding/json: detect circular data structures when encoding](https://github.com/golang/go/issues/10769)
 - [encoding/asn1: index out of range](https://github.com/golang/go/issues/11129) **fixed**
 - [encoding/asn1: incorrectly handles incorrect utf8 strings](https://github.com/golang/go/issues/11126) **fixed**
-- [encoding/asn1: slice is lost during marshal/unmarshal](https://github.com/golang/go/issues/11130)
+- [encoding/asn1: slice is lost during marshal/unmarshal](https://github.com/golang/go/issues/11130) **fixed**
 - [encoding/asn1: call of reflect.Value.Type on zero Value](https://github.com/golang/go/issues/11127) **fixed**
 - [encoding/asn1: Unmarshal accepts negative dates](https://github.com/golang/go/issues/11134) **fixed**
 - [encoding/pem: can't decode encoded message](https://github.com/golang/go/issues/10980) **fixed**
@@ -355,8 +355,10 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [go/types: allows multiple-value in switch and case](https://github.com/golang/go/issues/11687) **fixed**
 - [go/types: invalid error message for valid conversion to complex64](https://github.com/golang/go/issues/11590) **fixed**
 - [debug/elf: index out of range](https://github.com/golang/go/issues/10996)
-- [debug/elf: makeslice: len out of range](https://github.com/golang/go/issues/10997)
+- [debug/elf: makeslice: len out of range](https://github.com/golang/go/issues/10997) **fixed**
 - [debug/elf: slice bounds out of range](https://github.com/golang/go/issues/10999)
+- [debug/pe: panic on interface conversion](https://github.com/golang/go/issues/30250)
+- [debug/pe: slice bounds out of range](https://github.com/golang/go/issues/30253)
 - [x/image/webp: index out of range](https://github.com/golang/go/issues/10383) **fixed**
 - [x/image/webp: invalid memory address or nil pointer dereference](https://github.com/golang/go/issues/10384) **fixed**
 - [x/image/webp: excessive memory consumption](https://github.com/golang/go/issues/10790)
