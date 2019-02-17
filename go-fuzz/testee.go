@@ -6,6 +6,7 @@ package main
 import (
 	"encoding/binary"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -28,6 +29,8 @@ type Testee struct {
 	inPipe      *os.File
 	outPipe     *os.File
 	stdoutPipe  *os.File
+	datalen     [8]byte  // reusable encoded data length
+	resbuf      [24]byte // reusable results buffer
 	execs       int
 	startTime   int64
 	outputC     chan []byte
@@ -258,7 +261,8 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover, sonar []byte, cra
 
 	copy(t.inputRegion[:], data)
 	atomic.StoreInt64(&t.startTime, time.Now().UnixNano())
-	if err := binary.Write(t.outPipe, binary.LittleEndian, uint64(len(data))); err != nil {
+	binary.LittleEndian.PutUint64(t.datalen[:], uint64(len(data)))
+	if _, err := t.outPipe.Write(t.datalen[:]); err != nil {
 		if *flagV >= 1 {
 			log.Printf("write to testee failed: %v", err)
 		}
@@ -272,8 +276,12 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover, sonar []byte, cra
 		Ns    uint64
 		Sonar uint64
 	}
-	var r Reply
-	err := binary.Read(t.inPipe, binary.LittleEndian, &r)
+	_, err := io.ReadFull(t.inPipe, t.resbuf[:])
+	r := Reply{
+		Res:   binary.LittleEndian.Uint64(t.resbuf[:]),
+		Ns:    binary.LittleEndian.Uint64(t.resbuf[8:]),
+		Sonar: binary.LittleEndian.Uint64(t.resbuf[16:]),
+	}
 	hanged = atomic.LoadInt64(&t.startTime) == -1
 	atomic.StoreInt64(&t.startTime, 0)
 	if err != nil || hanged {
