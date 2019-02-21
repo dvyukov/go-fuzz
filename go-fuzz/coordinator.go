@@ -202,7 +202,7 @@ type ConnectRes struct {
 type CoordinatorInput struct {
 	Data      []byte
 	Prio      uint64
-	Type      int
+	Type      execType
 	Minimized bool
 	Smashed   bool
 }
