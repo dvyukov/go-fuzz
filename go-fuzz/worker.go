@@ -20,8 +20,11 @@ import (
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
+type execType byte
+
+//go:generate stringer -type execType -trimprefix exec
 const (
-	execBootstrap = iota
+	execBootstrap execType = iota
 	execCorpus
 	execMinimizeInput
 	execMinimizeCrasher
@@ -59,7 +62,7 @@ type Input struct {
 	coverSize       int
 	res             int
 	depth           int
-	typ             int
+	typ             execType
 	execTime        uint64
 	favored         bool
 	score           int
@@ -552,7 +555,7 @@ func (w *Worker) smash(data []byte, depth int) {
 	}
 }
 
-func (w *Worker) testInput(data []byte, depth, typ int) {
+func (w *Worker) testInput(data []byte, depth int, typ execType) {
 	w.testInputImpl(w.coverBin, data, depth, typ)
 }
 
@@ -560,7 +563,7 @@ func (w *Worker) testInputSonar(data []byte, depth int) (sonar []byte) {
 	return w.testInputImpl(w.sonarBin, data, depth, execSonar)
 }
 
-func (w *Worker) testInputImpl(bin *TestBinary, data []byte, depth, typ int) (sonar []byte) {
+func (w *Worker) testInputImpl(bin *TestBinary, data []byte, depth int, typ execType) (sonar []byte) {
 	ro := w.hub.ro.Load().(*ROData)
 	if len(ro.badInputs) > 0 {
 		if _, ok := ro.badInputs[hash(data)]; ok {
@@ -577,7 +580,7 @@ func (w *Worker) testInputImpl(bin *TestBinary, data []byte, depth, typ int) (so
 	return sonar
 }
 
-func (w *Worker) noteNewInput(data, cover []byte, res, depth, typ int) {
+func (w *Worker) noteNewInput(data, cover []byte, res, depth int, typ execType) {
 	if res < 0 {
 		// User said to not add this input to corpus.
 		return
