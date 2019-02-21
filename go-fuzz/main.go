@@ -20,6 +20,7 @@ import (
 
 //go:generate go build github.com/dvyukov/go-fuzz/go-fuzz/vendor/github.com/elazarl/go-bindata-assetfs/go-bindata-assetfs
 //go:generate ./go-bindata-assetfs assets/...
+//go:generate goimports -w bindata_assetfs.go
 //go:generate rm go-bindata-assetfs
 
 var (
