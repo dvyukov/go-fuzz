@@ -12,7 +12,7 @@ import (
 	"time"
 	"unsafe"
 
-	. "go-fuzz-defs"
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
 // Bool is just a bool.

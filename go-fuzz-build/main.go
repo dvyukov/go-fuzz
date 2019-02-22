@@ -12,15 +12,18 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
-	"go/types"
+	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"runtime/pprof"
 	"strings"
 
-	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+	"golang.org/x/tools/go/packages"
+
+	. "github.com/dvyukov/go-fuzz/internal/go-fuzz-types"
 )
 
 var (
@@ -28,10 +31,7 @@ var (
 	flagOut  = flag.String("o", "", "output file")
 	flagFunc = flag.String("func", "Fuzz", "entry function")
 	flagWork = flag.Bool("work", false, "don't remove working directory")
-
-	workdir string
-	GOROOT  string
-	GOPATH  string
+	flagCPU  = flag.Bool("cpuprofile", false, "generate cpu profile in cpu.pprof")
 )
 
 func makeTags() string {
@@ -42,13 +42,110 @@ func makeTags() string {
 	return tags
 }
 
-// Copies the package with all dependent packages into a temp dir,
-// instruments Go source files there and builds setting GOROOT to the temp dir.
+// main copies the package with all dependent packages into a temp dir,
+// instruments Go source files there, and builds setting GOROOT to the temp dir.
 func main() {
 	flag.Parse()
-	if len(flag.Args()) != 1 || len(flag.Arg(0)) == 0 {
-		failf("usage: go-fuzz-build pkg")
+	c := new(Context)
+
+	if flag.NArg() > 1 {
+		c.failf("usage: go-fuzz-build [pkg]")
 	}
+
+	pkg := "."
+	if flag.NArg() == 1 {
+		pkg = flag.Arg(0)
+	}
+
+	c.startProfiling()  // start pprof as requested
+	c.loadPkg(pkg)      // load and typecheck pkg
+	c.getEnv()          // discover GOROOT, GOPATH
+	c.loadStd()         // load standard library
+	c.calcIgnore()      // calculate set of packages to ignore
+	c.makeWorkdir()     // create workdir
+	defer c.cleanup()   // delete workdir as needed, etc.
+	c.populateWorkdir() // copy tools and packages to workdir as needed
+
+	// Gather literals, instrument, and compile.
+	// Order matters here!
+	// buildInstrumentedBinary (and instrumentPackages) modify the AST.
+	// (We don't want to re-parse and re-typecheck every time, for performance.)
+	// So we gather literals first, while the AST is pristine.
+	// Then we add coverage and build.
+	// Then we add sonar and build.
+	// TODO: migrate to use cmd/internal/edit instead of AST modification.
+	// This has several benefits: (1) It is easier to work with.
+	// (2) 'go cover' has switched to it; we would get the benefit of
+	// upstream bug fixes, of which there has been at least one (around gotos and labels).
+	// (3) It leaves the AST intact, so we are less order-sensitive.
+	// The primary blocker is that we want good line numbers for when we find crashers.
+	// go/printer handles this automatically using Mode printer.SourcePos.
+	// We'd need to implement that support ourselves. (It's do-able but non-trivial.)
+	// See also https://golang.org/issue/29824.
+	lits := c.gatherLiterals()
+	var blocks, sonar []CoverBlock
+	coverBin := c.buildInstrumentedBinary(&blocks, nil)
+	sonarBin := c.buildInstrumentedBinary(nil, &sonar)
+	metaData := c.createMeta(lits, blocks, sonar)
+	defer func() {
+		os.Remove(coverBin)
+		os.Remove(sonarBin)
+		os.Remove(metaData)
+	}()
+
+	if *flagOut == "" {
+		// TODO: Context method
+		*flagOut = c.pkgs[0].Name + "-fuzz.zip"
+	}
+	outf, err := os.Create(*flagOut)
+	if err != nil {
+		c.failf("failed to create output file: %v", err)
+	}
+	zipw := zip.NewWriter(outf)
+	zipFile := func(name, datafile string) {
+		w, err := zipw.Create(name)
+		if err != nil {
+			c.failf("failed to create zip file: %v", err)
+		}
+		f, err := os.Open(datafile)
+		if err != nil {
+			c.failf("failed to open data file %v", datafile)
+		}
+		if _, err := io.Copy(w, f); err != nil {
+			c.failf("failed to write %v to zip file: %v", datafile, err)
+		}
+		// best effort: close and remove our temp file
+		f.Close()
+		os.Remove(datafile)
+	}
+	zipFile("cover.exe", coverBin)
+	zipFile("sonar.exe", sonarBin)
+	zipFile("metadata", metaData)
+	if err := zipw.Close(); err != nil {
+		c.failf("failed to close zip file: %v", err)
+	}
+	if err := outf.Close(); err != nil {
+		c.failf("failed to close out file: %v", err)
+	}
+}
+
+// Context holds state for a go-fuzz-build run.
+type Context struct {
+	pkgpath string              // import path of package containing Fuzz function
+	pkgs    []*packages.Package // typechecked root packages
+
+	std    map[string]bool // set of packages in the standard library
+	ignore map[string]bool // set of packages to ignore during instrumentation
+
+	workdir string
+	GOROOT  string
+	GOPATH  string
+
+	cpuprofile *os.File
+}
+
+// getEnv determines GOROOT and GOPATH and updates c accordingly.
+func (c *Context) getEnv() {
 	env := map[string]string{
 		"GOROOT": "",
 		"GOPATH": "",
@@ -59,478 +156,418 @@ func main() {
 			env[k] = v
 			continue
 		}
+		// TODO: make a single call ("go env GOROOT GOPATH") instead
 		out, err := exec.Command("go", "env", k).CombinedOutput()
 		if err != nil || len(out) == 0 {
-			failf("%s is not set and failed to locate it: 'go env %s' returned '%s' (%v)", k, k, out, err)
+			c.failf("%s is not set and failed to locate it: 'go env %s' returned '%s' (%v)", k, k, out, err)
 		}
 		env[k] = strings.TrimSpace(string(out))
 	}
-	GOROOT = env["GOROOT"]
-	GOPATH = env["GOPATH"]
-
-	pkg := flag.Arg(0)
-	if pkg[0] == '.' {
-		failf("relative import paths are not supported, please specify full package name")
-	}
-
-	// To produce error messages (this is much faster and gives correct line numbers).
-	if !strings.Contains(pkg, "internal") {
-		// Can't test normal build for internal packages.
-		// For internal packages we need to create main package in the same dir
-		// as the internal package. But since we don't mess with real GOPATH
-		// we can't do that.
-		testNormalBuild(pkg)
-	}
-
-	deps := make(map[string]bool)
-	for _, p := range goListList(pkg, "Deps") {
-		deps[p] = goListBool(p, "Standard")
-	}
-	deps[pkg] = goListBool(pkg, "Standard")
-	// Also add all go-fuzz-dep dependencies.
-	for _, p := range goListList("github.com/dvyukov/go-fuzz/go-fuzz-dep", "Deps") {
-		if p == "go-fuzz-defs" {
-			continue
-		}
-		deps[p] = true
-	}
-
-	lits := make(map[Literal]struct{})
-	var blocks, sonar []CoverBlock
-	sonarBin := buildInstrumentedBinary(pkg, deps, nil, nil, &sonar)
-	coverBin := buildInstrumentedBinary(pkg, deps, lits, &blocks, nil)
-	metaData := createMeta(lits, blocks, sonar)
-	defer func() {
-		os.Remove(coverBin)
-		os.Remove(sonarBin)
-		os.Remove(metaData)
-	}()
-
-	if *flagOut == "" {
-		*flagOut = goListProps(pkg, "Name")[0] + "-fuzz.zip"
-	}
-	outf, err := os.Create(*flagOut)
-	if err != nil {
-		failf("failed to create output file: %v", err)
-	}
-	zipw := zip.NewWriter(outf)
-	zipFile := func(name, datafile string) {
-		w, err := zipw.Create(name)
-		if err != nil {
-			failf("failed to create zip file: %v", err)
-		}
-		if _, err := w.Write(readFile(datafile)); err != nil {
-			failf("failed to write to zip file: %v", err)
-		}
-	}
-	zipFile("cover.exe", coverBin)
-	zipFile("sonar.exe", sonarBin)
-	zipFile("metadata", metaData)
-	if err := zipw.Close(); err != nil {
-		failf("failed to close zip file: %v", err)
-	}
-	if err := outf.Close(); err != nil {
-		failf("failed to close out file: %v", err)
-	}
+	c.GOROOT = env["GOROOT"]
+	c.GOPATH = env["GOPATH"]
 }
 
-func testNormalBuild(pkg string) {
+// startProfiling starts pprof profiling, if requested.
+func (c *Context) startProfiling() {
+	if !*flagCPU {
+		return
+	}
 	var err error
-	workdir, err = ioutil.TempDir("", "go-fuzz-build")
+	c.cpuprofile, err = os.Create("cpu.pprof")
 	if err != nil {
-		failf("failed to create temp dir: %v", err)
+		c.failf("could not create cpu profile: %v", err)
+	}
+	pprof.StartCPUProfile(c.cpuprofile)
+}
+
+// loadPkg loads, parses, and typechecks pkg (the package containing the Fuzz function),
+// go-fuzz-dep, and their dependencies.
+func (c *Context) loadPkg(pkg string) {
+	// Load, parse, and type-check all packages.
+	// We'll use the type information later.
+	// This also provides better error messages in the case
+	// of invalid code than trying to compile instrumented code.
+	cfg := &packages.Config{
+		Mode:       packages.LoadAllSyntax,
+		BuildFlags: []string{"-tags", makeTags()},
+		// use custom ParseFile in order to get comments
+		ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
+			return parser.ParseFile(fset, filename, src, parser.ParseComments)
+		},
+	}
+	initial, err := packages.Load(cfg, pkg, "github.com/dvyukov/go-fuzz/go-fuzz-dep")
+	if err != nil {
+		c.failf("could not load packages: %v", err)
+	}
+
+	// Stop if any package had errors.
+	if packages.PrintErrors(initial) > 0 {
+		c.failf("typechecking of %v failed", pkg)
+	}
+
+	c.pkgs = initial
+
+	// Set pkgpath to fully resolved package path.
+	c.pkgpath = initial[0].PkgPath
+}
+
+// loadStd finds the set of standard library package paths.
+func (c *Context) loadStd() {
+	// Find out what packages are in the standard library.
+	stdpkgs, err := packages.Load(nil, "std")
+	if err != nil {
+		c.failf("could not load standard library: %v", err)
+	}
+	c.std = dependencies(stdpkgs)
+}
+
+// makeWorkdir creates the workdir, logging as requested.
+func (c *Context) makeWorkdir() {
+	// TODO: make workdir stable, so that we can use cmd/go's build cache?
+	// See https://github.com/golang/go/issues/29430.
+	var err error
+	c.workdir, err = ioutil.TempDir("", "go-fuzz-build")
+	if err != nil {
+		c.failf("failed to create temp dir: %v", err)
 	}
 	if *flagWork {
-		fmt.Printf("workdir: %v\n", workdir)
-	} else {
-		defer os.RemoveAll(workdir)
-	}
-	defer func() {
-		workdir = ""
-	}()
-	copyFuzzDep(workdir, false)
-	mainPkg := createFuzzMain(pkg)
-	cmd := exec.Command("go", "build", "-tags", makeTags(), "-o", filepath.Join(workdir, "bin"), mainPkg)
-	cmd.Env = append(os.Environ(), "GOPATH="+GOPATH+string(os.PathListSeparator)+filepath.Join(workdir, "gopath"))
-	if out, err := cmd.CombinedOutput(); err != nil {
-		failf("failed to execute go build: %v\n%v", err, string(out))
+		fmt.Printf("workdir: %v\n", c.workdir)
 	}
 }
 
-func createMeta(lits map[Literal]struct{}, blocks []CoverBlock, sonar []CoverBlock) string {
+// cleanup ensures a clean exit. It should be called on all (controllable) exit paths.
+func (c *Context) cleanup() {
+	if !*flagWork && c.workdir != "" {
+		os.RemoveAll(c.workdir)
+	}
+	if c.cpuprofile != nil {
+		pprof.StopCPUProfile()
+		c.cpuprofile.Close()
+	}
+}
+
+// populateWorkdir prepares workdir for builds.
+func (c *Context) populateWorkdir() {
+	// TODO: instead of reconstructing the world,
+	// can we use a bunch of replace directives in a go.mod?
+
+	// TODO: make all this I/O concurrent (up to a limit).
+	// It's a non-trivial part of build time.
+	// Question: Do it here or in copyDir?
+
+	// TODO: consider using hard links for
+	// GOROOT/pkg/tool and GOROOT/pkg/include.
+	// Even better, see if we can avoid making some copies
+	// at all, using some combination of env vars and toolexec.
+	c.copyDir(filepath.Join(c.GOROOT, "pkg", "tool"), filepath.Join(c.workdir, "goroot", "pkg", "tool"))
+	if _, err := os.Stat(filepath.Join(c.GOROOT, "pkg", "include")); err == nil {
+		c.copyDir(filepath.Join(c.GOROOT, "pkg", "include"), filepath.Join(c.workdir, "goroot", "pkg", "include"))
+	} else {
+		// Cross-compilation is not implemented.
+		c.copyDir(filepath.Join(c.GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(c.workdir, "goroot", "pkg", runtime.GOOS+"_"+runtime.GOARCH))
+	}
+
+	// Clone our package, go-fuzz-deps, and all dependencies.
+	// TODO: we might not need to do this for all packages.
+	// We know that we'll be writing out instrumented Go code later;
+	// we could instead just os.MkdirAll and copy non-Go files here.
+	// We'd still need to do a full package clone for packages that
+	// we aren't instrumenting (c.ignore).
+	packages.Visit(c.pkgs, nil, func(p *packages.Package) {
+		c.clonePackage(p)
+	})
+	c.copyFuzzDep()
+}
+
+// dependencies returns the set of all packages in root packages and their dependencies.
+func dependencies(root []*packages.Package) map[string]bool {
+	deps := make(map[string]bool)
+	packages.Visit(root, nil, func(p *packages.Package) { deps[p.PkgPath] = true })
+	return deps
+}
+
+func (c *Context) createMeta(lits map[Literal]struct{}, blocks []CoverBlock, sonar []CoverBlock) string {
 	meta := MetaData{Blocks: blocks, Sonar: sonar}
 	for k := range lits {
 		meta.Literals = append(meta.Literals, k)
 	}
 	data, err := json.Marshal(meta)
 	if err != nil {
-		failf("failed to serialize meta information: %v", err)
+		c.failf("failed to serialize meta information: %v", err)
 	}
-	f := tempFile()
-	writeFile(f, data)
+	f := c.tempFile()
+	c.writeFile(f, data)
 	return f
 }
 
-func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) string {
-	var err error
-	workdir, err = ioutil.TempDir("", "go-fuzz-build")
-	if err != nil {
-		failf("failed to create temp dir: %v", err)
-	}
-	if *flagWork {
-		fmt.Printf("workdir: %v\n", workdir)
-	} else {
-		defer func() {
-			os.RemoveAll(workdir)
-			workdir = ""
-		}()
-	}
+func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBlock) string {
+	c.instrumentPackages(blocks, sonar)
+	mainPkg := c.createFuzzMain(c.pkgpath)
 
-	if deps["runtime/cgo"] {
-		// Trick go command into thinking that it has up-to-date sources for cmd/cgo.
-		cgoDir := filepath.Join(workdir, "goroot", "src", "cmd", "cgo")
-		mkdirAll(cgoDir)
-		src := "// +build never\npackage main\n"
-		writeFile(filepath.Join(cgoDir, "fake.go"), []byte(src))
-	}
-	copyDir(filepath.Join(GOROOT, "pkg", "tool"), filepath.Join(workdir, "goroot", "pkg", "tool"), true, nil)
-	if _, err := os.Stat(filepath.Join(GOROOT, "pkg", "include")); err == nil {
-		copyDir(filepath.Join(GOROOT, "pkg", "include"), filepath.Join(workdir, "goroot", "pkg", "include"), true, nil)
-	} else {
-		// Cross-compilation is not implemented.
-		copyDir(filepath.Join(GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(workdir, "goroot", "pkg", runtime.GOOS+"_"+runtime.GOARCH), true, nil)
-	}
-	for p, std := range deps {
-		clonePackage(workdir, p, p, std)
-	}
-	instrumentPackages(workdir, deps, lits, blocks, sonar)
-	copyFuzzDep(workdir, true)
-	mainPkg := createFuzzMain(pkg)
-
-	outf := tempFile()
+	outf := c.tempFile()
 	os.Remove(outf)
 	outf += ".exe"
 	cmd := exec.Command("go", "build", "-tags", makeTags(), "-o", outf, mainPkg)
 	cmd.Env = append(os.Environ(),
-		"GOROOT="+filepath.Join(workdir, "goroot"),
-		"GOPATH="+filepath.Join(workdir, "gopath"),
+		"GOROOT="+filepath.Join(c.workdir, "goroot"),
+		"GOPATH="+filepath.Join(c.workdir, "gopath"),
 	)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		failf("failed to execute go build: %v\n%v", err, string(out))
+		c.failf("failed to execute go build: %v\n%v", err, string(out))
 	}
 	return outf
 }
 
-func copyFuzzDep(workdir string, std bool) {
-	// In Go1.6 standard packages can't depend on non-standard ones.
-	// So we pretend that go-fuzz-dep is a standard one.
-	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-dep", "go-fuzz-dep", std)
-	clonePackage(workdir, "github.com/dvyukov/go-fuzz/go-fuzz-defs", "go-fuzz-defs", std)
+func (c *Context) calcIgnore() {
+	// No reason to instrument these.
+	c.ignore = map[string]bool{
+		"runtime/cgo":   true,
+		"runtime/pprof": true,
+		"runtime/race":  true,
+	}
+
+	// Roots: must not instrument these, nor any of their dependencies, to avoid import cycles.
+	// Fortunately, these are mostly packages that are non-deterministic,
+	// noisy (because they are low level), and/or not interesting.
+	// We could manually maintain this list, but that makes go-fuzz-build
+	// fragile in the face of internal standard library package changes.
+	roots := c.packagesNamed("runtime", "github.com/dvyukov/go-fuzz/go-fuzz-dep")
+	packages.Visit(roots, func(p *packages.Package) bool {
+		c.ignore[p.PkgPath] = true
+		return true
+	}, nil)
 }
 
-func createFuzzMain(pkg string) string {
-	mainPkg := filepath.Join(pkg, "go.fuzz.main")
-	path := filepath.Join(workdir, "gopath", "src", mainPkg)
-	mkdirAll(path)
-	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
-	writeFile(filepath.Join(path, "main.go"), []byte(src))
-	return mainPkg
-}
-
-func clonePackage(workdir, pkg, targetPkg string, std bool) {
-	dir := goListProps(pkg, "Dir")[0]
-	if !strings.HasSuffix(filepath.ToSlash(dir), pkg) {
-		failf("package dir '%v' does not end with import path '%v'", dir, pkg)
-	}
-	root := "goroot"
-	if !std {
-		root = "gopath"
-	}
-	newDir := filepath.Join(workdir, root, "src", targetPkg)
-	copyDir(dir, newDir, false, isSourceFile)
-}
-
-type Package struct {
-	name    string
-	fset    *token.FileSet
-	ast     map[string]*ast.File
-	typed   *types.Package
-	info    types.Info
-	nimport int
-	deps    []*Package
-}
-
-type Importer struct {
-	pkgs map[string]*types.Package
-	deps map[string]bool
-}
-
-func (imp *Importer) Import(path string) (*types.Package, error) {
-	panic("must not be called")
-}
-
-func (imp *Importer) ImportFrom(path, srcDir string, mode types.ImportMode) (*types.Package, error) {
-	if pkg := imp.pkgs[path]; pkg != nil {
-		return pkg, nil
-	}
-
-	// Vendor hackery.
-	if prefix := filepath.Join(workdir, "goroot", "src") + string(os.PathSeparator); strings.HasPrefix(srcDir, prefix) {
-		srcDir = srcDir[len(prefix):]
-	}
-	if prefix := filepath.Join(workdir, "gopath", "src") + string(os.PathSeparator); strings.HasPrefix(srcDir, prefix) {
-		srcDir = srcDir[len(prefix):]
-	}
-	parts := strings.Split(srcDir, string(os.PathSeparator))
-	for i := 0; i <= len(parts); i++ {
-		vendorPath := strings.Join(parts[:len(parts)-i], "/")
-		if len(vendorPath) > 0 {
-			vendorPath += "/"
-		}
-		vendorPath += strings.Join([]string{"vendor", path}, "/")
-		if pkg := imp.pkgs[vendorPath]; pkg != nil {
-			return pkg, nil
-		}
-	}
-	failf("can't find imported package %v", path)
-	return nil, nil
-}
-
-func instrumentPackages(workdir string, deps map[string]bool, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
-	ignore := map[string]bool{
-		"runtime":                         true, // lots of non-determinism and irrelevant code paths (e.g. different paths in mallocgc, chans and maps)
-		"runtime/internal/atomic":         true, // runtime depends on it
-		"runtime/internal/math":           true, // runtime depends on it
-		"runtime/internal/sys":            true, // runtime depends on it
-		"unsafe":                          true, // nothing to see here (also creates import cycle with go-fuzz-dep)
-		"errors":                          true, // nothing to see here (also creates import cycle with go-fuzz-dep)
-		"syscall":                         true, // creates import cycle with go-fuzz-dep (and probably nothing to see here)
-		"internal/syscall/windows/sysdll": true, //syscall depends on it
-		"sync":                            true, // non-deterministic and not interesting (also creates import cycle with go-fuzz-dep)
-		"sync/atomic":                     true, // not interesting (also creates import cycle with go-fuzz-dep)
-		"time":                            true, // creates import cycle with go-fuzz-dep
-		"internal/bytealg":                true, // runtime depends on it
-		"internal/cpu":                    true, // runtime depends on it
-		"internal/race":                   true, // runtime depends on it
-		"runtime/cgo":                     true, // why would we instrument it?
-		"runtime/pprof":                   true, // why would we instrument it?
-		"runtime/race":                    true, // why would we instrument it?
-	}
-	if runtime.GOOS == "windows" {
-		// Cross-compilation is not implemented.
-		ignore["unicode/utf16"] = true                     // syscall depends on unicode/utf16
-		ignore["internal/syscall/windows/registry"] = true // time depends on this
-		ignore["io"] = true                                // internal/syscall/windows/registry depends on this
-	}
+func (c *Context) gatherLiterals() map[Literal]struct{} {
 	nolits := map[string]bool{
 		"math":    true,
 		"os":      true,
 		"unicode": true,
 	}
 
-	var ready []*Package
-	pkgs := make(map[string]*Package)
-	for pkg := range deps {
-		p := pkgs[pkg]
-		if p == nil {
-			p = &Package{name: pkg}
-			pkgs[pkg] = p
+	lits := make(map[Literal]struct{})
+	visit := func(pkg *packages.Package) {
+		if c.ignore[pkg.PkgPath] || nolits[pkg.PkgPath] {
+			return
 		}
-		for _, imp := range goListList(pkg, "Imports") {
-			p1 := pkgs[imp]
-			if p1 == nil {
-				p1 = &Package{name: imp}
-				pkgs[imp] = p1
-			}
-			p.nimport++
-			p1.deps = append(p1.deps, p)
-		}
-		if p.nimport == 0 {
-			ready = append(ready, p)
+		for _, f := range pkg.Syntax {
+			ast.Walk(&LiteralCollector{lits: lits, ctxt: c}, f)
 		}
 	}
-	typedPackages := make(map[string]*types.Package)
-	importer := &Importer{typedPackages, deps}
-	for len(ready) != 0 {
-		p := ready[len(ready)-1]
-		ready = ready[:len(ready)-1]
 
-		if p.name == "unsafe" {
-			typedPackages["unsafe"] = types.Unsafe
-		} else {
-			p.fset = token.NewFileSet()
-			p.ast = make(map[string]*ast.File)
-			p.info.Types = make(map[ast.Expr]types.TypeAndValue)
-			root := "goroot"
-			if !deps[p.name] {
-				root = "gopath"
-			}
-			path := filepath.Join(workdir, root, "src", p.name)
-			var files []*ast.File
-			for _, fn := range append(goListList(p.name, "GoFiles"), goListList(p.name, "CgoFiles")...) {
-				astFile, err := parser.ParseFile(p.fset, filepath.Join(path, fn), nil, parser.ParseComments)
-				if err != nil {
-					failf("failed to parse package %v: %v", p.name, err)
-				}
-				astFile.Comments = trimComments(astFile, p.fset)
-				p.ast[fn] = astFile
-				files = append(files, astFile)
-			}
+	packages.Visit(c.pkgs, nil, visit)
+	return lits
+}
 
-			cfg := &types.Config{
-				Importer: importer,
-			}
-			typed, err := cfg.Check(p.name, p.fset, files, &p.info)
-			if err != nil {
-				failf("failed to type check package %v: %v", p.name, err)
-			}
-			typedPackages[p.name] = typed
+func (c *Context) copyFuzzDep() {
+	// Standard library packages can't depend on non-standard ones.
+	// So we pretend that go-fuzz-dep is a standard one.
+	// go-fuzz-dep depends on go-fuzz-defs, which creates a problem.
+	// Fortunately (and intentionally), go-fuzz-defs contains only constants,
+	// which can be duplicated safely.
+	// So we eliminate the import statement and copy go-fuzz-defs/defs.go
+	// directly into the go-fuzz-dep package.
+	newDir := filepath.Join(c.workdir, "goroot", "src", "go-fuzz-dep")
+	c.mkdirAll(newDir)
+	dep := c.packageNamed("github.com/dvyukov/go-fuzz/go-fuzz-dep")
+	for _, f := range dep.GoFiles {
+		data := c.readFile(f)
+		// Eliminate the dot import.
+		data = bytes.Replace(data, []byte(`. "github.com/dvyukov/go-fuzz/go-fuzz-defs"`), nil, -1)
+		c.writeFile(filepath.Join(newDir, filepath.Base(f)), data)
+	}
 
-			if !ignore[p.name] {
-				lits1 := lits
-				if nolits[p.name] {
-					lits1 = nil
-				}
-				for fname, f := range p.ast {
-					fullName := filepath.Join(path, fname)
-					buf := new(bytes.Buffer)
-					content := readFile(fullName)
-					buf.Write(initialComments(content)) // Retain '// +build' directives.
-					instrument(p.name, filepath.Join(p.name, fname), p.fset, f, &p.info, buf, lits1, blocks, sonar)
-					tmp := tempFile()
-					if runtime.GOOS == "windows" {
-						os.Remove(fullName)
-					}
-					writeFile(tmp, buf.Bytes())
-					err := os.Rename(tmp, fullName)
-					if err != nil {
-						failf("failed to rename file: %v", err)
-					}
-				}
-			}
-		}
-
-		for _, p1 := range p.deps {
-			p1.nimport--
-			if p1.nimport == 0 {
-				ready = append(ready, p1)
-			}
-		}
+	defs := c.packageNamed("github.com/dvyukov/go-fuzz/go-fuzz-defs")
+	for _, f := range defs.GoFiles {
+		data := c.readFile(f)
+		// Adjust package name to match go-fuzz-deps.
+		data = bytes.Replace(data, []byte("\npackage base"), []byte("\npackage gofuzzdep"), -1)
+		c.writeFile(filepath.Join(newDir, "defs.go"), data)
 	}
 }
 
-func copyDir(dir, newDir string, rec bool, pred func(string) bool) {
-	mkdirAll(newDir)
+func (c *Context) createFuzzMain(pkg string) string {
+	mainPkg := filepath.Join(pkg, "go.fuzz.main")
+	path := filepath.Join(c.workdir, "gopath", "src", mainPkg)
+	c.mkdirAll(path)
+	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
+	c.writeFile(filepath.Join(path, "main.go"), []byte(src))
+	return mainPkg
+}
+
+func (c *Context) clonePackage(p *packages.Package) {
+	root := "goroot"
+	if !c.std[p.PkgPath] {
+		root = "gopath"
+	}
+	newDir := filepath.Join(c.workdir, root, "src", p.PkgPath)
+	c.mkdirAll(newDir)
+
+	if p.PkgPath == "unsafe" {
+		// Write a dummy file. go/packages explicitly returns an empty GoFiles for it,
+		// for reasons that are unclear, but cmd/go wants there to be a Go file in the package.
+		c.writeFile(filepath.Join(newDir, "unsafe.go"), []byte(`package unsafe`))
+		return
+	}
+
+	// Copy all the source code.
+
+	// Use GoFiles instead of CompiledGoFiles here.
+	// If we use CompiledGoFiles, we end up with code that cmd/go won't compile.
+	// See https://golang.org/issue/30479 and Context.instrumentPackages.
+	for _, f := range p.GoFiles {
+		dst := filepath.Join(newDir, filepath.Base(f))
+		c.copyFile(f, dst)
+	}
+	for _, f := range p.OtherFiles {
+		dst := filepath.Join(newDir, filepath.Base(f))
+		c.copyFile(f, dst)
+	}
+
+	// TODO: do we need to look for and copy go.mod?
+}
+
+// packageNamed extracts the package listed in path.
+func (c *Context) packageNamed(path string) (pkgs *packages.Package) {
+	all := c.packagesNamed(path)
+	if len(all) != 1 {
+		c.failf("got multiple packages, requested only %v", path)
+	}
+	return all[0]
+}
+
+// packagesNamed extracts the packages listed in paths.
+func (c *Context) packagesNamed(paths ...string) (pkgs []*packages.Package) {
+	pre := func(p *packages.Package) bool {
+		for _, path := range paths {
+			if p.PkgPath == path {
+				pkgs = append(pkgs, p)
+				break
+			}
+		}
+		return len(pkgs) < len(paths) // continue only if we have not succeeded yet
+	}
+	packages.Visit(c.pkgs, pre, nil)
+	return pkgs
+}
+
+func (c *Context) instrumentPackages(blocks *[]CoverBlock, sonar *[]CoverBlock) {
+	visit := func(pkg *packages.Package) {
+		if c.ignore[pkg.PkgPath] {
+			return
+		}
+
+		root := "goroot"
+		if !c.std[pkg.PkgPath] {
+			root = "gopath"
+		}
+		path := filepath.Join(c.workdir, root, "src", pkg.PkgPath) // TODO: need filepath.FromSlash for pkg.PkgPath?
+
+		for i, fullName := range pkg.CompiledGoFiles {
+			fname := filepath.Base(fullName)
+			if !strings.HasSuffix(fname, ".go") {
+				// This is a cgo-generated file.
+				// Instrumenting it currently does not work.
+				// We copied the original Go file as part of copyPackageRewrite,
+				// so we can just skip this one.
+				// See https://golang.org/issue/30479.
+				continue
+			}
+			f := pkg.Syntax[i]
+
+			// TODO: rename trimComments?
+			f.Comments = trimComments(f, pkg.Fset)
+
+			buf := new(bytes.Buffer)
+			content := c.readFile(fullName)
+			buf.Write(initialComments(content)) // Retain '// +build' directives.
+			instrument(pkg.PkgPath, fullName, pkg.Fset, f, pkg.TypesInfo, buf, blocks, sonar)
+			tmp := c.tempFile()
+			c.writeFile(tmp, buf.Bytes())
+			outpath := filepath.Join(path, fname)
+			if runtime.GOOS == "windows" {
+				os.Remove(outpath)
+			}
+			err := os.Rename(tmp, outpath)
+			if err != nil {
+				c.failf("failed to rename file: %v", err)
+			}
+		}
+	}
+
+	packages.Visit(c.pkgs, nil, visit)
+}
+
+func (c *Context) copyDir(dir, newDir string) {
+	c.mkdirAll(newDir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
-		failf("failed to scan dir '%v': %v", dir, err)
+		c.failf("failed to scan dir '%v': %v", dir, err)
 	}
 	for _, f := range files {
 		if f.IsDir() {
-			if rec {
-				copyDir(filepath.Join(dir, f.Name()), filepath.Join(newDir, f.Name()), rec, pred)
-			}
+			c.copyDir(filepath.Join(dir, f.Name()), filepath.Join(newDir, f.Name()))
 			continue
 		}
-		if pred != nil && !pred(f.Name()) {
-			continue
-		}
-		data := readFile(filepath.Join(dir, f.Name()))
-		writeFile(filepath.Join(newDir, f.Name()), data)
+		src := filepath.Join(dir, f.Name())
+		dst := filepath.Join(newDir, f.Name())
+		c.copyFile(src, dst)
 	}
 }
 
-func goListList(pkg, what string) []string {
-	templ := fmt.Sprintf("{{range .%v}}{{.}}|{{end}}", what)
-	cmd := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg)
-	cmd.Env = append(os.Environ(), "GOPATH="+GOPATH)
-	out, err := cmd.CombinedOutput()
+func (c *Context) copyFile(src, dst string) {
+	r, err := os.Open(src)
 	if err != nil {
-		failf("failed to execute 'go list -f %q %v': %v\n%v", templ, pkg, err, string(out))
+		c.failf("copyFile: could not read %v", src, err)
 	}
-	if len(out) < 2 {
-		return nil
-	}
-	out = out[:len(out)-2]
-	return strings.Split(string(out), "|")
-}
-
-func goListProps(pkg string, props ...string) []string {
-	templ := ""
-	for _, p := range props {
-		templ += fmt.Sprintf("{{.%v}}|", p)
-	}
-	cmd := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg)
-	cmd.Env = append(os.Environ(), "GOPATH="+GOPATH)
-	out, err := cmd.CombinedOutput()
+	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0700)
 	if err != nil {
-		failf("failed to execute 'go list -f %q %v': %v\n%v", templ, pkg, err, string(out))
+		c.failf("copyFile: could not write %v: %v", dst, err)
 	}
-	if len(out) == 0 {
-		failf("goListProps: go list output is empty")
+	if _, err := io.Copy(w, r); err != nil {
+		c.failf("copyFile: copying failed: %v", err)
 	}
-	out = out[:len(out)-1]
-	return strings.Split(string(out), "|")
+	if err := r.Close(); err != nil {
+		c.failf("copyFile: closing %v failed: %v", src, err)
+	}
+	if err := w.Close(); err != nil {
+		c.failf("copyFile: closing %v failed: %v", dst, err)
+	}
 }
 
-func goListBool(pkg, what string) bool {
-	templ := fmt.Sprintf("{{.%v}}", what)
-	cmd := exec.Command("go", "list", "-tags", makeTags(), "-f", templ, pkg)
-	cmd.Env = append(os.Environ(), "GOPATH="+GOPATH)
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		failf("failed to execute 'go list -f \"%v\" %v': %v\n%v", templ, pkg, err, string(out))
-	}
-	return string(out) == "true\n"
-}
-
-func failf(str string, args ...interface{}) {
-	if !*flagWork && workdir != "" {
-		os.RemoveAll(workdir)
-	}
+func (c *Context) failf(str string, args ...interface{}) {
+	c.cleanup()
 	fmt.Fprintf(os.Stderr, str+"\n", args...)
 	os.Exit(1)
 }
 
-func tempFile() string {
+func (c *Context) tempFile() string {
 	outf, err := ioutil.TempFile("", "go-fuzz")
 	if err != nil {
-		failf("failed to create temp file: %v", err)
+		c.failf("failed to create temp file: %v", err)
 	}
 	outf.Close()
 	return outf.Name()
 }
 
-func readFile(name string) []byte {
+func (c *Context) readFile(name string) []byte {
 	data, err := ioutil.ReadFile(name)
 	if err != nil {
-		failf("failed to read temp file: %v", err)
+		c.failf("failed to read temp file: %v", err)
 	}
 	return data
 }
 
-func writeFile(name string, data []byte) {
+func (c *Context) writeFile(name string, data []byte) {
 	if err := ioutil.WriteFile(name, data, 0700); err != nil {
-		failf("failed to write temp file: %v", err)
+		c.failf("failed to write temp file: %v", err)
 	}
 }
 
-func mkdirAll(dir string) {
+func (c *Context) mkdirAll(dir string) {
 	if err := os.MkdirAll(dir, 0700); err != nil {
-		failf("failed to create temp dir: %v", err)
+		c.failf("failed to create temp dir: %v", err)
 	}
-}
-
-func isSourceFile(f string) bool {
-	return (strings.HasSuffix(f, ".go") && !strings.HasSuffix(f, "_test.go")) ||
-		strings.HasSuffix(f, ".s") ||
-		strings.HasSuffix(f, ".S") ||
-		strings.HasSuffix(f, ".c") ||
-		strings.HasSuffix(f, ".h") ||
-		strings.HasSuffix(f, ".cxx") ||
-		strings.HasSuffix(f, ".cpp") ||
-		strings.HasSuffix(f, ".c++") ||
-		strings.HasSuffix(f, ".cc")
 }
 
 var mainSrc = `
@@ -538,7 +575,7 @@ package main
 
 import (
 	target "%v"
-	dep "go-fuzz-dep"
+	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
 )
 
 func main() {
