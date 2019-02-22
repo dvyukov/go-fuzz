@@ -17,11 +17,12 @@ import (
 	"strings"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+	. "github.com/dvyukov/go-fuzz/internal/go-fuzz-types"
 )
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(pkg, fullName string, fset *token.FileSet, parsedFile *ast.File, info *types.Info, out io.Writer, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
+func instrument(pkg, fullName string, fset *token.FileSet, parsedFile *ast.File, info *types.Info, out io.Writer, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	file := &File{
 		fset:     fset,
 		pkg:      pkg,
@@ -30,15 +31,10 @@ func instrument(pkg, fullName string, fset *token.FileSet, parsedFile *ast.File,
 		blocks:   blocks,
 		info:     info,
 	}
-	file.addImport("go-fuzz-dep", fuzzdepPkg, "Main")
-
-	if lits != nil {
-		ast.Walk(&LiteralCollector{lits}, file.astFile)
-	}
-
-	ast.Walk(file, file.astFile)
-
-	if sonar != nil {
+	if sonar == nil {
+		file.addImport("go-fuzz-dep", fuzzdepPkg, "Main")
+		ast.Walk(file, file.astFile)
+	} else {
 		s := &Sonar{
 			fset:     fset,
 			fullName: fullName,
@@ -391,6 +387,7 @@ func isLen(n ast.Expr) bool {
 }
 
 type LiteralCollector struct {
+	ctxt *Context
 	lits map[Literal]struct{}
 }
 
@@ -418,18 +415,18 @@ func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
 		lit := nn.Value
 		switch nn.Kind {
 		case token.STRING:
-			lc.lits[Literal{unquote(lit), true}] = struct{}{}
+			lc.lits[Literal{lc.unquote(lit), true}] = struct{}{}
 		case token.CHAR:
-			lc.lits[Literal{unquote(lit), false}] = struct{}{}
+			lc.lits[Literal{lc.unquote(lit), false}] = struct{}{}
 		case token.INT:
 			if lit[0] < '0' || lit[0] > '9' {
-				failf("unsupported literal '%v'", lit)
+				lc.ctxt.failf("unsupported literal '%v'", lit)
 			}
 			v, err := strconv.ParseInt(lit, 0, 64)
 			if err != nil {
 				u, err := strconv.ParseUint(lit, 0, 64)
 				if err != nil {
-					failf("failed to parse int literal '%v': %v", lit, err)
+					lc.ctxt.failf("failed to parse int literal '%v': %v", lit, err)
 				}
 				v = int64(u)
 			}
@@ -894,10 +891,10 @@ func hasFuncLiteral(n ast.Node) (bool, token.Pos) {
 	return literal.found(), token.Pos(literal)
 }
 
-func unquote(s string) string {
+func (lc *LiteralCollector) unquote(s string) string {
 	t, err := strconv.Unquote(s)
 	if err != nil {
-		failf("cover: improperly quoted string %q\n", s)
+		lc.ctxt.failf("cover: improperly quoted string %q\n", s)
 	}
 	return t
 }

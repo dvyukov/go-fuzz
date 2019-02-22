@@ -1,7 +1,14 @@
 // Copyright 2015 Dmitry Vyukov. All rights reserved.
 // Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
 
+// Package defs provides constants required by go-fuzz-build, go-fuzz, and instrumented code.
 package base
+
+// This package has a special interaction with go-fuzz-dep:
+// It is copied into a package with it by go-fuzz-build.
+// Only things that can be safely duplicated without confusion,
+// like constants, should be added to this package.
+// And any additions should be tested carefully. :)
 
 const (
 	CoverSize       = 64 << 10
@@ -27,24 +34,3 @@ const (
 	SonarHdrLen = 6
 	SonarMaxLen = 20
 )
-
-type CoverBlock struct {
-	ID        int
-	File      string
-	StartLine int
-	StartCol  int
-	EndLine   int
-	EndCol    int
-	NumStmt   int
-}
-
-type Literal struct {
-	Val   string
-	IsStr bool
-}
-
-type MetaData struct {
-	Literals []Literal
-	Blocks   []CoverBlock
-	Sonar    []CoverBlock
-}
