@@ -21,15 +21,14 @@ import (
 
 const fuzzdepPkg = "_go_fuzz_dep_"
 
-func instrument(pkg, shortName, fullName string, fset *token.FileSet, parsedFile *ast.File, info *types.Info, out io.Writer, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
+func instrument(pkg, fullName string, fset *token.FileSet, parsedFile *ast.File, info *types.Info, out io.Writer, lits map[Literal]struct{}, blocks *[]CoverBlock, sonar *[]CoverBlock) {
 	file := &File{
-		fset:      fset,
-		pkg:       pkg,
-		shortName: shortName,
-		fullName:  fullName,
-		astFile:   parsedFile,
-		blocks:    blocks,
-		info:      info,
+		fset:     fset,
+		pkg:      pkg,
+		fullName: fullName,
+		astFile:  parsedFile,
+		blocks:   blocks,
+		info:     info,
 	}
 	file.addImport("go-fuzz-dep", fuzzdepPkg, "Main")
 
@@ -41,12 +40,11 @@ func instrument(pkg, shortName, fullName string, fset *token.FileSet, parsedFile
 
 	if sonar != nil {
 		s := &Sonar{
-			fset:      fset,
-			shortName: shortName,
-			fullName:  fullName,
-			pkg:       pkg,
-			blocks:    sonar,
-			info:      info,
+			fset:     fset,
+			fullName: fullName,
+			pkg:      pkg,
+			blocks:   sonar,
+			info:     info,
 		}
 		ast.Walk(s, file.astFile)
 	}
@@ -55,12 +53,11 @@ func instrument(pkg, shortName, fullName string, fset *token.FileSet, parsedFile
 }
 
 type Sonar struct {
-	fset      *token.FileSet
-	shortName string
-	fullName  string
-	pkg       string
-	blocks    *[]CoverBlock
-	info      *types.Info
+	fset     *token.FileSet
+	fullName string
+	pkg      string
+	blocks   *[]CoverBlock
+	info     *types.Info
 }
 
 var sonarSeq = 0
@@ -492,13 +489,12 @@ func initialComments(content []byte) []byte {
 }
 
 type File struct {
-	fset      *token.FileSet
-	pkg       string
-	shortName string
-	fullName  string
-	astFile   *ast.File
-	blocks    *[]CoverBlock
-	info      *types.Info
+	fset     *token.FileSet
+	pkg      string
+	fullName string
+	astFile  *ast.File
+	blocks   *[]CoverBlock
+	info     *types.Info
 }
 
 var slashslash = []byte("//")
