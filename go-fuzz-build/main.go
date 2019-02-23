@@ -151,13 +151,7 @@ func testNormalBuild(pkg string) {
 	copyFuzzDep(workdir, false)
 	mainPkg := createFuzzMain(pkg)
 	cmd := exec.Command("go", "build", "-tags", makeTags(), "-o", filepath.Join(workdir, "bin"), mainPkg)
-	for _, v := range os.Environ() {
-		if strings.HasPrefix(v, "GOPATH") {
-			continue
-		}
-		cmd.Env = append(cmd.Env, v)
-	}
-	cmd.Env = append(cmd.Env, "GOPATH="+GOPATH+string(os.PathListSeparator)+filepath.Join(workdir, "gopath"))
+	cmd.Env = append(os.Environ(), "GOPATH="+GOPATH+string(os.PathListSeparator)+filepath.Join(workdir, "gopath"))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
@@ -217,14 +211,10 @@ func buildInstrumentedBinary(pkg string, deps map[string]bool, lits map[Literal]
 	os.Remove(outf)
 	outf += ".exe"
 	cmd := exec.Command("go", "build", "-tags", makeTags(), "-o", outf, mainPkg)
-	for _, v := range os.Environ() {
-		if strings.HasPrefix(v, "GOROOT") || strings.HasPrefix(v, "GOPATH") {
-			continue
-		}
-		cmd.Env = append(cmd.Env, v)
-	}
-	cmd.Env = append(cmd.Env, "GOROOT="+filepath.Join(workdir, "goroot"))
-	cmd.Env = append(cmd.Env, "GOPATH="+filepath.Join(workdir, "gopath"))
+	cmd.Env = append(os.Environ(),
+		"GOROOT="+filepath.Join(workdir, "goroot"),
+		"GOPATH="+filepath.Join(workdir, "gopath"),
+	)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		failf("failed to execute go build: %v\n%v", err, string(out))
 	}
