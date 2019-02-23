@@ -533,10 +533,6 @@ func isSourceFile(f string) bool {
 		strings.HasSuffix(f, ".cc")
 }
 
-func isHeaderFile(f string) bool {
-	return strings.HasSuffix(f, ".h")
-}
-
 var mainSrc = `
 package main
 
