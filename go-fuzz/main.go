@@ -16,6 +16,8 @@ import (
 	"sync/atomic"
 	"syscall"
 	"time"
+
+	"golang.org/x/tools/go/packages"
 )
 
 //go:generate go build github.com/dvyukov/go-fuzz/go-fuzz/vendor/github.com/elazarl/go-bindata-assetfs/go-bindata-assetfs
@@ -93,7 +95,21 @@ func main() {
 
 	if *flagWorker != "" {
 		if *flagBin == "" {
-			log.Fatalf("-bin is not set")
+			// Try the default. Best effort only.
+			var bin string
+			pkgs, err := packages.Load(nil, ".")
+			if err == nil && len(pkgs) == 1 {
+				// TODO: If go-fuzz-build adds a Context method, apply it here as well.
+				bin = pkgs[0].Name + "-fuzz.zip"
+				_, err := os.Stat(bin)
+				if err != nil {
+					bin = ""
+				}
+			}
+			if bin == "" {
+				log.Fatalf("-bin is not set")
+			}
+			*flagBin = bin
 		}
 		go workerMain()
 	}
