@@ -255,11 +255,8 @@ func (c *Context) populateWorkdir() {
 	// It's a non-trivial part of build time.
 	// Question: Do it here or in copyDir?
 
-	// TODO: consider using hard links for
-	// GOROOT/pkg/tool and GOROOT/pkg/include.
-	// Even better, see if we can avoid making some copies
-	// at all, using some combination of env vars and toolexec.
-	c.copyDir(filepath.Join(c.GOROOT, "pkg", "tool"), filepath.Join(c.workdir, "goroot", "pkg", "tool"))
+	// TODO: See if we can avoid making toolchain copies,
+	// using some combination of env vars and toolexec.
 	if _, err := os.Stat(filepath.Join(c.GOROOT, "pkg", "include")); err == nil {
 		c.copyDir(filepath.Join(c.GOROOT, "pkg", "include"), filepath.Join(c.workdir, "goroot", "pkg", "include"))
 	} else {
