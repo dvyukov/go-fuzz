@@ -105,13 +105,15 @@ $ go get -u github.com/dvyukov/go-fuzz/...
 Then, download the corpus and build the test program with necessary instrumentation:
 ```
 $ go get -d github.com/dvyukov/go-fuzz-corpus
-$ go-fuzz-build github.com/dvyukov/go-fuzz-corpus/png
+$ cd $GOPATH/src/github.com/dvyukov/go-fuzz-corpus
+$ cd png
+$ go-fuzz-build
 ```
 This will produce png-fuzz.zip archive.
 
 Now we are ready to go:
 ```
-$ go-fuzz -bin=./png-fuzz.zip -workdir=examples/png
+$ go-fuzz
 ```
 
 Go-fuzz will generate and test various inputs in an infinite loop. Workdir is
