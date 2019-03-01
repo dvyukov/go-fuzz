@@ -26,7 +26,7 @@ import (
 //go:generate rm go-bindata-assetfs
 
 var (
-	flagWorkdir       = flag.String("workdir", "", "dir with persistent work data")
+	flagWorkdir       = flag.String("workdir", ".", "dir with persistent work data")
 	flagProcs         = flag.Int("procs", runtime.NumCPU(), "parallelism level")
 	flagTimeout       = flag.Int("timeout", 10, "test timeout, in seconds")
 	flagMinimize      = flag.Duration("minimize", 1*time.Minute, "time limit for input minimization")
