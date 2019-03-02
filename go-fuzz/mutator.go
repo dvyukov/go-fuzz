@@ -4,25 +4,29 @@
 package main
 
 import (
-	"math/rand"
 	"sort"
 	"strconv"
-	"time"
 	"unsafe"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
+	"github.com/dvyukov/go-fuzz/go-fuzz/internal/pcg"
 )
 
 type Mutator struct {
-	r *rand.Rand
+	r *pcg.Rand
 }
 
 func newMutator() *Mutator {
-	return &Mutator{r: rand.New(rand.NewSource(time.Now().UnixNano()))}
+	return &Mutator{r: pcg.New()}
 }
 
 func (m *Mutator) rand(n int) int {
 	return m.r.Intn(n)
+}
+
+// randbig generates a number in [0, 2³⁰).
+func (m *Mutator) randbig() int64 {
+	return int64(m.r.Uint32() >> 2)
 }
 
 func (m *Mutator) generate(ro *ROData) ([]byte, int) {
@@ -40,10 +44,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 	corpus := ro.corpus
 	res := make([]byte, len(data))
 	copy(res, data)
-	nm := 1
-	for m.rand(2) == 0 {
-		nm++
-	}
+	nm := 1 + m.r.Exp2()
 	for iter := 0; iter < nm; iter++ {
 		switch m.rand(20) {
 		case 0:
@@ -140,7 +141,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			}
 			pos := m.rand(len(res))
 			v := byte(m.rand(35) + 1)
-			if m.rand(2) == 0 {
+			if m.r.Bool() {
 				res[pos] += v
 			} else {
 				res[pos] -= v
@@ -221,7 +222,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			}
 			pos := m.rand(len(res) - 1)
 			v := uint16(interesting16[m.rand(len(interesting16))])
-			if m.rand(2) == 0 {
+			if m.r.Bool() {
 				v = swap16(v)
 			}
 			*(*uint16)(unsafe.Pointer(&res[pos])) = v
@@ -233,7 +234,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			}
 			pos := m.rand(len(res) - 3)
 			v := uint32(interesting32[m.rand(len(interesting32))])
-			if m.rand(2) == 0 {
+			if m.r.Bool() {
 				v = swap32(v)
 			}
 			*(*uint32)(unsafe.Pointer(&res[pos])) = v
@@ -283,11 +284,11 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			case 0:
 				v = int64(m.rand(1000))
 			case 1:
-				v = int64(m.rand(1 << 30))
+				v = m.randbig()
 			case 2:
-				v = int64(m.rand(1<<30)) * int64(m.rand(1<<30))
+				v = m.randbig() * m.randbig()
 			case 3:
-				v = -int64(m.rand(1 << 30))
+				v = -m.randbig()
 			}
 			str := strconv.FormatInt(v, 10)
 			tmp := make([]byte, len(res)-(r.end-r.start)+len(str))
@@ -351,7 +352,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			var lit []byte
-			if len(ro.strLits) != 0 && m.rand(2) == 0 {
+			if len(ro.strLits) != 0 && m.r.Bool() {
 				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
 			} else {
 				lit = ro.intLits[m.rand(len(ro.intLits))]
@@ -372,7 +373,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			var lit []byte
-			if len(ro.strLits) != 0 && m.rand(2) == 0 {
+			if len(ro.strLits) != 0 && m.r.Bool() {
 				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
 			} else {
 				lit = ro.intLits[m.rand(len(ro.intLits))]
