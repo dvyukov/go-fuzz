@@ -27,15 +27,21 @@ import (
 )
 
 var (
-	flagTag  = flag.String("tags", "", "a space-separated list of build tags to consider satisfied during the build")
-	flagOut  = flag.String("o", "", "output file")
-	flagFunc = flag.String("func", "Fuzz", "entry function")
-	flagWork = flag.Bool("work", false, "don't remove working directory")
-	flagCPU  = flag.Bool("cpuprofile", false, "generate cpu profile in cpu.pprof")
+	flagTag       = flag.String("tags", "", "a space-separated list of build tags to consider satisfied during the build")
+	flagOut       = flag.String("o", "", "output file")
+	flagFunc      = flag.String("func", "Fuzz", "entry function")
+	flagWork      = flag.Bool("work", false, "don't remove working directory")
+	flagCPU       = flag.Bool("cpuprofile", false, "generate cpu profile in cpu.pprof")
+	flagLibFuzzer = flag.Bool("libfuzzer", false, "output static archive for use with libFuzzer")
 )
 
 func makeTags() string {
 	tags := "gofuzz"
+
+	if *flagLibFuzzer {
+		tags += " " + "gofuzz_libfuzzer"
+	}
+
 	if len(*flagTag) > 0 {
 		tags += " " + *flagTag
 	}
@@ -84,6 +90,21 @@ func main() {
 	// See also https://golang.org/issue/29824.
 	lits := c.gatherLiterals()
 	var blocks, sonar []CoverBlock
+
+	if *flagLibFuzzer {
+		archive := c.buildInstrumentedBinary(&blocks, nil)
+
+		if *flagOut == "" {
+			*flagOut = c.pkgs[0].Name + ".a"
+		}
+
+		err := os.Rename(archive, *flagOut)
+		if err != nil {
+			c.failf("failed to rename file: %v", err)
+		}
+		return
+	}
+
 	coverBin := c.buildInstrumentedBinary(&blocks, nil)
 	sonarBin := c.buildInstrumentedBinary(nil, &sonar)
 	metaData := c.createMeta(lits, blocks, sonar)
@@ -257,6 +278,9 @@ func (c *Context) populateWorkdir() {
 
 	// TODO: See if we can avoid making toolchain copies,
 	// using some combination of env vars and toolexec.
+	if *flagLibFuzzer {
+		c.copyDir(filepath.Join(c.GOROOT, "src", "runtime", "cgo"), filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo"))
+	}
 	c.copyDir(filepath.Join(c.GOROOT, "pkg", "tool"), filepath.Join(c.workdir, "goroot", "pkg", "tool"))
 	if _, err := os.Stat(filepath.Join(c.GOROOT, "pkg", "include")); err == nil {
 		c.copyDir(filepath.Join(c.GOROOT, "pkg", "include"), filepath.Join(c.workdir, "goroot", "pkg", "include"))
@@ -298,14 +322,27 @@ func (c *Context) createMeta(lits map[Literal]struct{}, blocks []CoverBlock, son
 	return f
 }
 
+func extraBuildFlags() string {
+	if *flagLibFuzzer {
+		return "-buildmode=c-archive"
+	}
+	return ""
+}
+
 func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBlock) string {
 	c.instrumentPackages(blocks, sonar)
 	mainPkg := c.createFuzzMain(c.pkgpath)
 
 	outf := c.tempFile()
 	os.Remove(outf)
-	outf += ".exe"
-	cmd := exec.Command("go", "build", "-tags", makeTags(), "-o", outf, mainPkg)
+
+	if !*flagLibFuzzer {
+		outf += ".exe"
+	} else {
+		outf += ".a"
+	}
+
+	cmd := exec.Command("go", "build", "-tags", makeTags(), extraBuildFlags(), "-o", outf, mainPkg)
 	cmd.Env = append(os.Environ(),
 		"GOROOT="+filepath.Join(c.workdir, "goroot"),
 		"GOPATH="+filepath.Join(c.workdir, "gopath"),
@@ -384,11 +421,19 @@ func (c *Context) copyFuzzDep() {
 	}
 }
 
+func funcMain() string {
+	if !*flagLibFuzzer {
+		return mainSrc
+	}
+
+	return mainSrcLibFuzzer
+}
+
 func (c *Context) createFuzzMain(pkg string) string {
 	mainPkg := filepath.Join(pkg, "go.fuzz.main")
 	path := filepath.Join(c.workdir, "gopath", "src", mainPkg)
 	c.mkdirAll(path)
-	src := fmt.Sprintf(mainSrc, pkg, *flagFunc)
+	src := fmt.Sprintf(funcMain(), pkg, *flagFunc)
 	c.writeFile(filepath.Join(path, "main.go"), []byte(src))
 	return mainPkg
 }
@@ -578,5 +623,48 @@ import (
 
 func main() {
 	dep.Main(target.%v)
+}
+`
+
+var mainSrcLibFuzzer = `
+package main
+
+import (
+	"unsafe"
+	"reflect"
+	target "%v"
+	dep "go-fuzz-dep"
+)
+
+// #cgo CFLAGS: -Wall -Werror
+// #ifdef __linux__
+// __attribute__((weak, section("__libfuzzer_extra_counters")))
+// #else
+// #error Currently only Linux is supported
+// #endif
+// unsigned char GoFuzzCoverageCounters[65536];
+import "C"
+
+//export LLVMFuzzerInitialize
+func LLVMFuzzerInitialize(argc uintptr, argv uintptr) int {
+	dep.Initialize(unsafe.Pointer(&C.GoFuzzCoverageCounters[0]), 65536)
+	return 0
+}
+
+//export LLVMFuzzerTestOneInput
+func LLVMFuzzerTestOneInput(data uintptr, size uint64) int {
+	sh := &reflect.SliceHeader{
+	    Data: data,
+	    Len:  int(size),
+	    Cap:  int(size),
+	}
+
+	input := *(*[]byte)(unsafe.Pointer(sh))
+	target.%v(input)
+
+	return 0
+}
+
+func main() {
 }
 `
