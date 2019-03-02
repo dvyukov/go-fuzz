@@ -28,10 +28,11 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"math/rand"
 	"reflect"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/dvyukov/go-fuzz/go-fuzz/internal/pcg"
 )
 
 func BuildVerse(oldv *Verse, data []byte) *Verse {
@@ -61,6 +62,7 @@ func BuildVerse(oldv *Verse, data []byte) *Verse {
 	b.Visit(func(n Node) {
 		newv.allNodes = append(newv.allNodes, n)
 	})
+	newv.r = pcg.New()
 	return newv
 }
 
@@ -466,6 +468,7 @@ func (n *BlockNode) Generate(w io.Writer, v *Verse) {
 type Verse struct {
 	blocks   []*BlockNode
 	allNodes []Node
+	r        *pcg.Rand
 }
 
 func (v *Verse) Print(w io.Writer) {
@@ -482,9 +485,7 @@ func (v *Verse) Rhyme() []byte {
 }
 
 func (v *Verse) Rand(n int) int {
-	// TODO: accept a local rand in Rhyme.
-	// math/rand is thread-safe, but causes contention.
-	return rand.Intn(n)
+	return v.r.Intn(n)
 }
 
 func (v *Verse) RandNode() Node {
