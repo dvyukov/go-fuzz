@@ -1,4 +1,4 @@
-// Copyright 2019 Dmitry Vyukov. All rights reserved.
+// Copyright 2019 go-fuzz project authors. All rights reserved.
 // Use of this source code is governed by Apache 2 LICENSE that can be found in the LICENSE file.
 
 // Package pcg implements a 32 bit PRNG with a 64 bit period: pcg xsh rr 64 32.
