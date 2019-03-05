@@ -198,9 +198,6 @@ retry:
 			case <-t.downC:
 			}
 			n, err := t.stdoutPipe.Read(data[filled:])
-			if err != nil {
-				break
-			}
 			if *flagV >= 3 {
 				log.Printf("testee: %v\n", string(data[filled:filled+n]))
 			}
@@ -208,6 +205,9 @@ retry:
 			if filled > testeeBufferSize/4*3 {
 				copy(data, data[testeeBufferSize/2:filled])
 				filled -= testeeBufferSize / 2
+			}
+			if err != nil {
+				break
 			}
 		}
 		ticker.Stop()
