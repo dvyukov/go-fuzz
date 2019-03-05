@@ -49,7 +49,8 @@ type TestBinary struct {
 	inputRegion []byte
 	sonarRegion []byte
 
-	testee *Testee
+	testee       *Testee
+	testeeBuffer []byte // reusable buffer for collecting testee output
 
 	stats *Stats
 }
@@ -60,6 +61,10 @@ func init() {
 		panic("bad atomic field offset")
 	}
 }
+
+// testeeBufferSize is how much output a test binary can emit
+// before we start to overwrite old output.
+const testeeBufferSize = 1 << 20
 
 func newTestBinary(fileName string, periodicCheck func(), stats *Stats) *TestBinary {
 	comm, err := ioutil.TempFile("", "go-fuzz-comm")
@@ -78,6 +83,7 @@ func newTestBinary(fileName string, periodicCheck func(), stats *Stats) *TestBin
 		inputRegion:   mem[CoverSize : CoverSize+SonarRegionSize],
 		sonarRegion:   mem[CoverSize+SonarRegionSize:],
 		stats:         stats,
+		testeeBuffer:  make([]byte, testeeBufferSize),
 	}
 }
 
@@ -102,7 +108,7 @@ func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, outp
 		bin.stats.execs++
 		if bin.testee == nil {
 			bin.stats.restarts++
-			bin.testee = newTestee(bin.fileName, bin.comm, bin.coverRegion, bin.inputRegion, bin.sonarRegion)
+			bin.testee = newTestee(bin.fileName, bin.comm, bin.coverRegion, bin.inputRegion, bin.sonarRegion, bin.testeeBuffer)
 		}
 		var retry bool
 		res, ns, cover, sonar, crashed, hanged, retry = bin.testee.test(data)
@@ -124,7 +130,7 @@ func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, outp
 	}
 }
 
-func newTestee(bin string, comm *Mapping, coverRegion, inputRegion, sonarRegion []byte) *Testee {
+func newTestee(bin string, comm *Mapping, coverRegion, inputRegion, sonarRegion []byte, buffer []byte) *Testee {
 retry:
 	rIn, wIn, err := os.Pipe()
 	if err != nil {
@@ -184,8 +190,7 @@ retry:
 		// deadlock we periodically read out stdout.
 		// This goroutine also collects crash output.
 		ticker := time.NewTicker(time.Second)
-		const N = 1 << 20
-		data := make([]byte, N)
+		data := buffer
 		filled := 0
 		for {
 			select {
@@ -200,9 +205,9 @@ retry:
 				log.Printf("testee: %v\n", string(data[filled:filled+n]))
 			}
 			filled += n
-			if filled > N/4*3 {
-				copy(data, data[N/2:filled])
-				filled -= N / 2
+			if filled > testeeBufferSize/4*3 {
+				copy(data, data[testeeBufferSize/2:filled])
+				filled -= testeeBufferSize / 2
 			}
 		}
 		ticker.Stop()
