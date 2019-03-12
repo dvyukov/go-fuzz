@@ -32,7 +32,7 @@ func instrument(pkg, fullName string, fset *token.FileSet, parsedFile *ast.File,
 		info:     info,
 	}
 	if sonar == nil {
-		file.addImport("go-fuzz-dep", fuzzdepPkg, "Main")
+		file.addImport("go-fuzz-dep", fuzzdepPkg, "CoverTab")
 		ast.Walk(file, file.astFile)
 	} else {
 		s := &Sonar{

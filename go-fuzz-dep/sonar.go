@@ -12,6 +12,11 @@ import (
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
+var (
+	sonarRegion []byte
+	sonarPos    uint32
+)
+
 const failure = ^uint8(0)
 
 type iface struct {
