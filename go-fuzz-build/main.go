@@ -20,6 +20,7 @@ import (
 	"runtime"
 	"runtime/pprof"
 	"strings"
+	"text/template"
 
 	"golang.org/x/tools/go/packages"
 
@@ -37,11 +38,9 @@ var (
 
 func makeTags() string {
 	tags := "gofuzz"
-
 	if *flagLibFuzzer {
 		tags += " " + "gofuzz_libfuzzer"
 	}
-
 	if len(*flagTag) > 0 {
 		tags += " " + *flagTag
 	}
@@ -72,6 +71,15 @@ func main() {
 	defer c.cleanup()   // delete workdir as needed, etc.
 	c.populateWorkdir() // copy tools and packages to workdir as needed
 
+	if *flagOut == "" {
+		// TODO: Context method
+		ext := ".zip"
+		if *flagLibFuzzer {
+			ext = ".a"
+		}
+		*flagOut = c.pkgs[0].Name + "-fuzz" + ext
+	}
+
 	// Gather literals, instrument, and compile.
 	// Order matters here!
 	// buildInstrumentedBinary (and instrumentPackages) modify the AST.
@@ -93,11 +101,6 @@ func main() {
 
 	if *flagLibFuzzer {
 		archive := c.buildInstrumentedBinary(&blocks, nil)
-
-		if *flagOut == "" {
-			*flagOut = c.pkgs[0].Name + ".a"
-		}
-
 		err := os.Rename(archive, *flagOut)
 		if err != nil {
 			c.failf("failed to rename file: %v", err)
@@ -114,10 +117,6 @@ func main() {
 		os.Remove(metaData)
 	}()
 
-	if *flagOut == "" {
-		// TODO: Context method
-		*flagOut = c.pkgs[0].Name + "-fuzz.zip"
-	}
 	outf, err := os.Create(*flagOut)
 	if err != nil {
 		c.failf("failed to create output file: %v", err)
@@ -322,27 +321,16 @@ func (c *Context) createMeta(lits map[Literal]struct{}, blocks []CoverBlock, son
 	return f
 }
 
-func extraBuildFlags() string {
-	if *flagLibFuzzer {
-		return "-buildmode=c-archive"
-	}
-	return ""
-}
-
 func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBlock) string {
 	c.instrumentPackages(blocks, sonar)
-	mainPkg := c.createFuzzMain(c.pkgpath)
-
+	mainPkg := c.createFuzzMain()
 	outf := c.tempFile()
-	os.Remove(outf)
-
-	if !*flagLibFuzzer {
-		outf += ".exe"
-	} else {
-		outf += ".a"
+	args := []string{"build", "-tags", makeTags()}
+	if *flagLibFuzzer {
+		args = append(args, "-buildmode=c-archive")
 	}
-
-	cmd := exec.Command("go", "build", "-tags", makeTags(), extraBuildFlags(), "-o", outf, mainPkg)
+	args = append(args, "-o", outf, mainPkg)
+	cmd := exec.Command("go", args...)
 	cmd.Env = append(os.Environ(),
 		"GOROOT="+filepath.Join(c.workdir, "goroot"),
 		"GOPATH="+filepath.Join(c.workdir, "gopath"),
@@ -421,20 +409,24 @@ func (c *Context) copyFuzzDep() {
 	}
 }
 
-func funcMain() string {
-	if !*flagLibFuzzer {
-		return mainSrc
+func (c *Context) funcMain() []byte {
+	t := mainSrc
+	if *flagLibFuzzer {
+		t = mainSrcLibFuzzer
 	}
-
-	return mainSrcLibFuzzer
+	dot := map[string]string{"Pkg": c.pkgpath, "Func": *flagFunc}
+	buf := new(bytes.Buffer)
+	if err := t.Execute(buf, dot); err != nil {
+		c.failf("could not execute template: %v", err)
+	}
+	return buf.Bytes()
 }
 
-func (c *Context) createFuzzMain(pkg string) string {
-	mainPkg := filepath.Join(pkg, "go.fuzz.main")
+func (c *Context) createFuzzMain() string {
+	mainPkg := filepath.Join(c.pkgpath, "go.fuzz.main")
 	path := filepath.Join(c.workdir, "gopath", "src", mainPkg)
 	c.mkdirAll(path)
-	src := fmt.Sprintf(funcMain(), pkg, *flagFunc)
-	c.writeFile(filepath.Join(path, "main.go"), []byte(src))
+	c.writeFile(filepath.Join(path, "main.go"), c.funcMain())
 	return mainPkg
 }
 
@@ -613,27 +605,27 @@ func (c *Context) mkdirAll(dir string) {
 	}
 }
 
-var mainSrc = `
+var mainSrc = template.Must(template.New("main").Parse(`
 package main
 
 import (
-	target "%v"
+	target "{{.Pkg}}"
 	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
 )
 
 func main() {
-	dep.Main(target.%v)
+	dep.Main(target.{{.Func}})
 }
-`
+`))
 
-var mainSrcLibFuzzer = `
+var mainSrcLibFuzzer = template.Must(template.New("main").Parse(`
 package main
 
 import (
 	"unsafe"
 	"reflect"
-	target "%v"
-	dep "go-fuzz-dep"
+	target "{{.Pkg}}"
+	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
 )
 
 // #cgo CFLAGS: -Wall -Werror
@@ -660,11 +652,11 @@ func LLVMFuzzerTestOneInput(data uintptr, size uint64) int {
 	}
 
 	input := *(*[]byte)(unsafe.Pointer(sh))
-	target.%v(input)
+	target.{{.Func}}(input)
 
 	return 0
 }
 
 func main() {
 }
-`
+`))
