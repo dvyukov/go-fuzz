@@ -12,6 +12,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"io"
 	"io/ioutil"
 	"os"
@@ -77,7 +78,7 @@ func main() {
 		if *flagLibFuzzer {
 			ext = ".a"
 		}
-		*flagOut = c.pkgs[0].Name + "-fuzz" + ext
+		*flagOut = c.fuzzpkg.Name + "-fuzz" + ext
 	}
 
 	// Gather literals, instrument, and compile.
@@ -153,6 +154,9 @@ func main() {
 type Context struct {
 	pkgpath string              // import path of package containing Fuzz function
 	pkgs    []*packages.Package // typechecked root packages
+	fuzzpkg *packages.Package   // typechecked package containing Fuzz function
+
+	fuzzsig *types.Signature // signature of the fuzz function
 
 	std    map[string]bool // set of packages in the standard library
 	ignore map[string]bool // set of packages to ignore during instrumentation
@@ -203,6 +207,15 @@ func (c *Context) startProfiling() {
 // loadPkg loads, parses, and typechecks pkg (the package containing the Fuzz function),
 // go-fuzz-dep, and their dependencies.
 func (c *Context) loadPkg(pkg string) {
+	// Before we do anything else, resolve the target package.
+	target, err := packages.Load(nil, pkg)
+	if err != nil {
+		c.failf("could not load target package: %v", err)
+	}
+	if len(target) != 1 {
+		c.failf("go-fuzz-build must be called with only one target package, found %d packages matching %v", len(target), pkg)
+	}
+
 	// Load, parse, and type-check all packages.
 	// We'll use the type information later.
 	// This also provides better error messages in the case
@@ -215,7 +228,11 @@ func (c *Context) loadPkg(pkg string) {
 			return parser.ParseFile(fset, filename, src, parser.ParseComments)
 		},
 	}
-	initial, err := packages.Load(cfg, pkg, "github.com/dvyukov/go-fuzz/go-fuzz-dep")
+	// We need to load:
+	// * the target package, obviously
+	// * go-fuzz-dep, since we use it for instrumentation
+	// * fmt, strings, os, and runtime, since the generated main function for fuzz.F users requires them
+	initial, err := packages.Load(cfg, pkg, "github.com/dvyukov/go-fuzz/go-fuzz-dep", "fmt", "strings", "os", "runtime")
 	if err != nil {
 		c.failf("could not load packages: %v", err)
 	}
@@ -227,8 +244,67 @@ func (c *Context) loadPkg(pkg string) {
 
 	c.pkgs = initial
 
-	// Set pkgpath to fully resolved package path.
-	c.pkgpath = initial[0].PkgPath
+	// Find the package containing the Fuzz function.
+	for _, pkg := range initial {
+		if pkg.PkgPath == target[0].PkgPath {
+			c.fuzzpkg = pkg
+			break
+		}
+	}
+	if c.fuzzpkg == nil {
+		c.failf("could not determine fuzz package! please file an issue with reproduction instructions.")
+	}
+
+	// Check fuzz function signature.
+	obj := c.fuzzpkg.Types.Scope().Lookup(*flagFunc)
+	if obj == nil {
+		c.failf("could not find fuzz function %s", *flagFunc)
+	}
+	sigType := obj.Type()
+	sig, ok := sigType.(*types.Signature)
+	if !ok {
+		c.failf("%s is not a function", *flagFunc)
+	}
+	if sig.Variadic() {
+		c.failf("fuzz functions cannot be variadic")
+	}
+	if !isLegacyFuzzSig(sig) && !isFuzzFSig(sig) {
+		c.failf("fuzz function must have one of these signatures:\n\n" +
+			"\tfunc Fuzz(data []byte) int\n\n" +
+			"or\n\n" +
+			"\timport \"github.com/dvyukov/go-fuzz\"\n\n" +
+			"\tfunc Fuzz(f fuzz.F, data []byte)\n")
+	}
+	if isFuzzFSig(sig) && *flagLibFuzzer {
+		c.failf("-libfuzzer is incompatible with using fuzz.F; use 'func Fuzz(data []byte) int' instead")
+	}
+	c.fuzzsig = sig
+}
+
+// isLegacyFuzzSig reports whether sig is of the form
+//   func FuzzFunc(data []byte) int
+func isLegacyFuzzSig(sig *types.Signature) bool {
+	return tupleHasTypes(sig.Params(), "[]byte") && tupleHasTypes(sig.Results(), "int")
+}
+
+// isFuzzFSig reports whether sig is of the form
+//   func FuzzFunc(f fuzz.F, data []byte)
+func isFuzzFSig(sig *types.Signature) bool {
+	return tupleHasTypes(sig.Params(), "github.com/dvyukov/go-fuzz.F", "[]byte") && tupleHasTypes(sig.Results())
+}
+
+// tupleHasTypes reports whether tuple is composed of
+// elements with exactly the types in types.
+func tupleHasTypes(tuple *types.Tuple, types ...string) bool {
+	if tuple.Len() != len(types) {
+		return false
+	}
+	for i, t := range types {
+		if tuple.At(i).Type().String() != t {
+			return false
+		}
+	}
+	return true
 }
 
 // loadStd finds the set of standard library package paths.
@@ -414,7 +490,15 @@ func (c *Context) funcMain() []byte {
 	if *flagLibFuzzer {
 		t = mainSrcLibFuzzer
 	}
-	dot := map[string]string{"Pkg": c.pkgpath, "Func": *flagFunc}
+	dot := struct {
+		Pkg     string
+		Func    string
+		IsFuzzF bool
+	}{
+		Pkg:     c.fuzzpkg.PkgPath,
+		Func:    *flagFunc,
+		IsFuzzF: isFuzzFSig(c.fuzzsig),
+	}
 	buf := new(bytes.Buffer)
 	if err := t.Execute(buf, dot); err != nil {
 		c.failf("could not execute template: %v", err)
@@ -423,7 +507,7 @@ func (c *Context) funcMain() []byte {
 }
 
 func (c *Context) createFuzzMain() string {
-	mainPkg := filepath.Join(c.pkgpath, "go.fuzz.main")
+	mainPkg := filepath.Join(c.fuzzpkg.PkgPath, "go.fuzz.main")
 	path := filepath.Join(c.workdir, "gopath", "src", mainPkg)
 	c.mkdirAll(path)
 	c.writeFile(filepath.Join(path, "main.go"), c.funcMain())
@@ -611,11 +695,116 @@ package main
 import (
 	target "{{.Pkg}}"
 	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
+	{{ if .IsFuzzF }}
+	"fmt"
+	"os"
+	"runtime"
+	"strings"
+	{{ end }}
 )
 
+
 func main() {
+	{{ if .IsFuzzF }}
+	dep.Main(Fuzz)
+	{{ else }}
 	dep.Main(target.{{.Func}})
+	{{ end }}
 }
+
+{{ if .IsFuzzF }}
+func Fuzz(data []byte) int {
+	f := new(F)
+	f.name = "{{.Func}}"
+	done := make(chan bool)
+	go func() {
+		defer close(done)
+		target.{{.Func}}(f, data)
+	}()
+	<-done
+	return f.rc
+}
+
+// See github.com/dvukov/go-fuzz.F for documentation of F and its methods.
+type F struct {
+	name string
+	rc int
+}
+
+func (f *F) FailNow() {
+	// TODO: communicate this to go-fuzz instead of dying,
+	// so that we don't have to restart on failure.
+	os.Exit(1)
+}
+
+func (f *F) SkipNow() {
+	f.rc = -1
+	runtime.Goexit()
+}
+
+func (f *F) Name() string {
+	return f.name
+}
+
+func (f *F) Log(args ...interface{}) {
+	fmt.Println(args...)
+}
+
+func (f *F) Logf(format string, args ...interface{}) {
+	fmt.Printf(format, args...)
+	if !strings.HasSuffix(format, "\n") {
+		fmt.Println()
+	}
+}
+
+func (f *F) Interesting() {
+	f.rc++
+}
+
+// ------------
+// Functions below are implemented in terms of functions above.
+// ------------
+
+func (f *F) Error(args ...interface{}) {
+	f.Fatal(args...)
+}
+
+func (f *F) Errorf(format string, args ...interface{}) {
+	f.Fatalf(format, args...)
+}
+
+func (f *F) Fail() {
+	f.FailNow()
+}
+
+func (f *F) Fatal(args ...interface{}) {
+	f.Log(args...)
+	f.FailNow()
+}
+
+func (f *F) Fatalf(format string, args ...interface{}) {
+	f.Logf(format, args...)
+	f.FailNow()
+}
+
+func (f *F) Failed() bool {
+	return false
+}
+
+func (f *F) Skip(args ...interface{}) {
+	f.SkipNow()
+}
+
+func (f *F) Skipf(format string, args ...interface{}) {
+	f.SkipNow()
+}
+
+func (f *F) Skipped() bool {
+	return false
+}
+
+func (f *F) Helper() {}
+{{ end }}
 `))
 
 var mainSrcLibFuzzer = template.Must(template.New("main").Parse(`
