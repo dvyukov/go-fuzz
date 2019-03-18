@@ -70,7 +70,7 @@ script:
   # End early for Windows. 'timeout' does not seem to kill this fuzzing session on Windows.
   # Presumably we could solve that with an alternative timeout/kill mechanism, but for
   # now workaround by skipping that last test on Windows.
-  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then travis_terminate 0; fi
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then travis_terminate "${TRAVIS_TEST_RESULT}"; fi
 
   # Run go-fuzz on the result. Stop after 20 sec of fuzzing.
   - which go-fuzz
