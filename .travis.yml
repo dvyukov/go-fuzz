@@ -1,0 +1,83 @@
+# There are currently two main sets of tests
+#   1. Running go-fuzz-build and go-fuzz on dvyukov/go-fuzz-corpus/png starting with an empty corpus,
+#      and it validates >1 entry appears in the corpus. This uses what was formerly the required
+#      arguments like -workdir and -bin.
+#   2. Running go-fuzz-build and go-fuzz on dvyukov/go-fuzz/test, which contains some regression tests, etc.
+#      This uses the newer ability to not supply any required arguments to go-fuzz-build and go-fuzz.
+
+language: go
+
+matrix:
+  include:
+    - os: linux
+      go: "1.12.x"
+    - os: linux
+      go: "1.11.x"
+    - os: osx
+      go: "1.12.x"
+    - os: osx
+      go: "1.11.x"
+    - os: windows
+      go: "1.12.x"
+    - os: windows
+      go: "1.11.x"
+
+# Install coreutils for the 'timeout(1)' utility on windows and osx.
+before_install:
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install gnuwin32-coreutils.install; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout ; fi
+
+# Set the import path (including to help with forks).
+go_import_path: github.com/dvyukov/go-fuzz
+
+script:
+  # Sanity check 'timeout(1)'.
+  - which timeout
+  - "echo 'verify the timeout utility works, including that it exits with status 124 on timeout.'"
+  -  "(timeout 2 sleep 10; ret=$?; echo timeout ret=$ret; if [[ $ret -eq 124 ]]; then exit 0; fi; exit $ret)"
+
+  # Prepare to test the png example from dvyukov/go-fuzz-corpus.
+  - go get -v -d github.com/dvyukov/go-fuzz-corpus/png
+  - cd $GOPATH/src/github.com/dvyukov/go-fuzz-corpus/
+  - cd png
+  - ls -l
+  
+  # Reduce chances of future surprises due to any caching.
+  - rm -rf fuzz.zip ./freshworkdir
+
+  # Instrument using go-fuzz-build on the png example Fuzz function.
+  - which go-fuzz-build
+  - go-fuzz-build -o=./fuzz.zip github.com/dvyukov/go-fuzz-corpus/png
+
+  # Run go-fuzz on the result of instrumenting the png example Fuzz function.
+  # Stop after 20 sec of fuzzing.
+  - which go-fuzz
+  -  "(timeout 20 go-fuzz -bin=./fuzz.zip -workdir=./freshworkdir; ret=$?; echo timeout ret=$ret; if [[ $ret -eq 124 ]]; then exit 0; fi; exit $ret)"
+
+  # Lightly validate that we have more than 1 result in the corpus.
+  # Some chance this could fail if unlucky, but so far seems unlikely to have a false failure on this validation.
+  - ls -lrt ./freshworkdir/corpus | tail -30
+  - find ./freshworkdir/corpus/ -type f | wc -l
+  - "(if [[ $(find ./freshworkdir/corpus/ -type f | wc -l) -gt 1 ]]; then exit 0; fi; exit 1)"
+
+  # Instrument the test package from dvyukov/go-fuzz/test.
+  - cd $GOPATH/src/github.com/dvyukov/go-fuzz
+  - cd test
+  - ls -l
+  - rm -rf test-fuzz.zip
+  - go-fuzz-build
+
+  # End early for Windows. 'timeout' does not seem to kill this fuzzing session on Windows.
+  # Presumably we could solve that with an alternative timeout/kill mechanism, but for
+  # now workaround by skipping that last test on Windows.
+  - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then travis_terminate 0; fi
+
+  # Run go-fuzz on the result. Stop after 20 sec of fuzzing.
+  - which go-fuzz
+  -  "(timeout 20 go-fuzz; ret=$?; echo timeout ret=$ret; if [[ $ret -eq 124 ]]; then exit 0; fi; exit $ret)"
+
+# Windows seems a bit flakey about capturing output on failure. This seems to help.
+after_failure: 
+  - "echo 'sleep 10 sec to help capture output. On Windows, failing output might be in wrong section, including this one.'"
+  - sleep 10
+
