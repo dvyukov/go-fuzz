@@ -14,4 +14,9 @@ import (
 // to avoid compilation errors when a user's code shadows the built-in bool.
 type Bool = bool
 
-var CoverTab *[CoverSize]byte
+// CoverTab holds code coverage.
+// It is initialized to a new array so that instrumentation
+// executed during process initialization has somewhere to write to.
+// It is replaced by a newly initialized array when it is
+// time for actual instrumentation to commence.
+var CoverTab = new([CoverSize]byte)

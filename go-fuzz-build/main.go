@@ -614,7 +614,7 @@ package main
 
 import (
 	target "{{.Pkg}}"
-	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
+	dep "go-fuzz-dep"
 )
 
 func main() {
@@ -629,7 +629,7 @@ import (
 	"unsafe"
 	"reflect"
 	target "{{.Pkg}}"
-	dep "github.com/dvyukov/go-fuzz/go-fuzz-dep"
+	dep "go-fuzz-dep"
 )
 
 // #cgo CFLAGS: -Wall -Werror
