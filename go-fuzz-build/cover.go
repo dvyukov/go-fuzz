@@ -498,6 +498,12 @@ var slashslash = []byte("//")
 
 func (f *File) Visit(node ast.Node) ast.Visitor {
 	switch n := node.(type) {
+	case *ast.FuncDecl:
+		if n.Name.String() == "init" {
+			// Don't instrument init functions.
+			// They run regardless of what we do, so it is just noise.
+			return nil
+		}
 	case *ast.GenDecl:
 		if n.Tok != token.VAR {
 			return nil // constants and types are not interesting
