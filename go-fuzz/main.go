@@ -33,6 +33,7 @@ var (
 	flagCoordinator   = flag.String("coordinator", "", "coordinator mode (value is coordinator address)")
 	flagWorker        = flag.String("worker", "", "worker mode (value is coordinator address)")
 	flagBin           = flag.String("bin", "", "test binary built with go-fuzz-build")
+	flagFunc          = flag.String("func", "", "function to fuzz")
 	flagDumpCover     = flag.Bool("dumpcover", false, "dump coverage profile into workdir")
 	flagDup           = flag.Bool("dup", false, "collect duplicate crashers")
 	flagTestOutput    = flag.Bool("testoutput", false, "print test binary output to stdout (for debugging only)")
@@ -99,7 +100,6 @@ func main() {
 			var bin string
 			pkgs, err := packages.Load(nil, ".")
 			if err == nil && len(pkgs) == 1 {
-				// TODO: If go-fuzz-build adds a Context method, apply it here as well.
 				bin = pkgs[0].Name + "-fuzz.zip"
 				_, err := os.Stat(bin)
 				if err != nil {

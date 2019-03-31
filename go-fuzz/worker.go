@@ -113,14 +113,44 @@ func workerMain() {
 		r.Close()
 	}
 	zipr.Close()
-	if coverBin == "" || sonarBin == "" || len(metadata.Blocks) == 0 {
+	if coverBin == "" || sonarBin == "" || len(metadata.Blocks) == 0 || len(metadata.Funcs) == 0 {
 		log.Fatalf("bad input archive: missing file")
 	}
 
-	shutdownCleanup = append(shutdownCleanup, func() {
+	cleanup := func() {
 		os.Remove(coverBin)
 		os.Remove(sonarBin)
-	})
+	}
+
+	// Which function should we fuzz?
+	fnname := *flagFunc
+	if fnname == "" {
+		fnname = metadata.DefaultFunc
+	}
+	if fnname == "" && len(metadata.Funcs) == 1 {
+		fnname = metadata.Funcs[0]
+	}
+	if fnname == "" {
+		cleanup()
+		log.Fatalf("-func flag not provided, but multiple fuzz functions available: %v", strings.Join(metadata.Funcs, ", "))
+	}
+	fnidx := -1
+	for i, n := range metadata.Funcs {
+		if n == fnname {
+			fnidx = i
+			break
+		}
+	}
+	if fnidx == -1 {
+		cleanup()
+		log.Fatalf("function %v not found, available functions are: %v", fnname, strings.Join(metadata.Funcs, ", "))
+	}
+	if int(uint8(fnidx)) != fnidx {
+		cleanup()
+		log.Fatalf("internal consistency error, please file an issue: too many fuzz functions: %v", metadata.Funcs)
+	}
+
+	shutdownCleanup = append(shutdownCleanup, cleanup)
 
 	hub := newHub(metadata)
 	for i := 0; i < *flagProcs; i++ {
@@ -129,8 +159,8 @@ func workerMain() {
 			hub:     hub,
 			mutator: newMutator(),
 		}
-		s.coverBin = newTestBinary(coverBin, s.periodicCheck, &s.stats)
-		s.sonarBin = newTestBinary(sonarBin, s.periodicCheck, &s.stats)
+		s.coverBin = newTestBinary(coverBin, s.periodicCheck, &s.stats, uint8(fnidx))
+		s.sonarBin = newTestBinary(sonarBin, s.periodicCheck, &s.stats, uint8(fnidx))
 		go s.loop()
 	}
 }

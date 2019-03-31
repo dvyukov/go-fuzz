@@ -29,13 +29,14 @@ type Testee struct {
 	inPipe      *os.File
 	outPipe     *os.File
 	stdoutPipe  *os.File
-	datalen     [8]byte  // reusable encoded data length
+	writebuf    [9]byte  // reusable write buffer
 	resbuf      [24]byte // reusable results buffer
 	execs       int
 	startTime   int64
 	outputC     chan []byte
 	downC       chan bool
 	down        bool
+	fnidx       uint8
 }
 
 // TestBinary handles communication with and restring of testee subprocesses.
@@ -53,6 +54,8 @@ type TestBinary struct {
 	testeeBuffer []byte // reusable buffer for collecting testee output
 
 	stats *Stats
+
+	fnidx uint8
 }
 
 func init() {
@@ -66,7 +69,7 @@ func init() {
 // before we start to overwrite old output.
 const testeeBufferSize = 1 << 20
 
-func newTestBinary(fileName string, periodicCheck func(), stats *Stats) *TestBinary {
+func newTestBinary(fileName string, periodicCheck func(), stats *Stats, fnidx uint8) *TestBinary {
 	comm, err := ioutil.TempFile("", "go-fuzz-comm")
 	if err != nil {
 		log.Fatalf("failed to create comm file: %v", err)
@@ -83,6 +86,7 @@ func newTestBinary(fileName string, periodicCheck func(), stats *Stats) *TestBin
 		inputRegion:   mem[CoverSize : CoverSize+SonarRegionSize],
 		sonarRegion:   mem[CoverSize+SonarRegionSize:],
 		stats:         stats,
+		fnidx:         fnidx,
 		testeeBuffer:  make([]byte, testeeBufferSize),
 	}
 }
@@ -108,7 +112,7 @@ func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, outp
 		bin.stats.execs++
 		if bin.testee == nil {
 			bin.stats.restarts++
-			bin.testee = newTestee(bin.fileName, bin.comm, bin.coverRegion, bin.inputRegion, bin.sonarRegion, bin.testeeBuffer)
+			bin.testee = newTestee(bin.fileName, bin.comm, bin.coverRegion, bin.inputRegion, bin.sonarRegion, bin.fnidx, bin.testeeBuffer)
 		}
 		var retry bool
 		res, ns, cover, sonar, crashed, hanged, retry = bin.testee.test(data)
@@ -130,7 +134,7 @@ func (bin *TestBinary) test(data []byte) (res int, ns uint64, cover, sonar, outp
 	}
 }
 
-func newTestee(bin string, comm *Mapping, coverRegion, inputRegion, sonarRegion []byte, buffer []byte) *Testee {
+func newTestee(bin string, comm *Mapping, coverRegion, inputRegion, sonarRegion []byte, fnidx uint8, buffer []byte) *Testee {
 retry:
 	rIn, wIn, err := os.Pipe()
 	if err != nil {
@@ -181,6 +185,7 @@ retry:
 		stdoutPipe:  rStdout,
 		outputC:     make(chan []byte),
 		downC:       make(chan bool),
+		fnidx:       fnidx,
 	}
 	// Stdout reader goroutine.
 	go func() {
@@ -266,8 +271,9 @@ func (t *Testee) test(data []byte) (res int, ns uint64, cover, sonar []byte, cra
 
 	copy(t.inputRegion[:], data)
 	atomic.StoreInt64(&t.startTime, time.Now().UnixNano())
-	binary.LittleEndian.PutUint64(t.datalen[:], uint64(len(data)))
-	if _, err := t.outPipe.Write(t.datalen[:]); err != nil {
+	t.writebuf[0] = t.fnidx
+	binary.LittleEndian.PutUint64(t.writebuf[1:], uint64(len(data)))
+	if _, err := t.outPipe.Write(t.writebuf[:]); err != nil {
 		if *flagV >= 1 {
 			log.Printf("write to testee failed: %v", err)
 		}
