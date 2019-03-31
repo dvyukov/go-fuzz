@@ -39,7 +39,7 @@ var (
 func makeTags() string {
 	tags := "gofuzz"
 	if *flagLibFuzzer {
-		tags += " " + "gofuzz_libfuzzer"
+		tags += " gofuzz_libfuzzer"
 	}
 	if len(*flagTag) > 0 {
 		tags += " " + *flagTag
@@ -151,7 +151,7 @@ func main() {
 
 // Context holds state for a go-fuzz-build run.
 type Context struct {
-	pkgpath string              // import path of package containing Fuzz function
+	fuzzpkg *packages.Package   // package containing Fuzz function
 	pkgs    []*packages.Package // typechecked root packages
 
 	std    map[string]bool // set of packages in the standard library
@@ -203,6 +203,25 @@ func (c *Context) startProfiling() {
 // loadPkg loads, parses, and typechecks pkg (the package containing the Fuzz function),
 // go-fuzz-dep, and their dependencies.
 func (c *Context) loadPkg(pkg string) {
+	// Resolve pkg.
+	// See https://golang.org/issue/30826 and https://golang.org/issue/30828.
+	rescfg := &packages.Config{
+		Mode:       packages.NeedName,
+		BuildFlags: []string{"-tags", makeTags()},
+	}
+	respkgs, err := packages.Load(rescfg, pkg)
+	if err != nil {
+		c.failf("could not resolve package %q: %v", pkg, err)
+	}
+	if len(respkgs) != 1 {
+		paths := make([]string, len(respkgs))
+		for i, p := range respkgs {
+			paths[i] = p.PkgPath
+		}
+		c.failf("cannot build multiple packages, but %q resolved to: %v", pkg, strings.Join(paths, ", "))
+	}
+	pkgpath := respkgs[0].PkgPath
+
 	// Load, parse, and type-check all packages.
 	// We'll use the type information later.
 	// This also provides better error messages in the case
@@ -227,18 +246,29 @@ func (c *Context) loadPkg(pkg string) {
 
 	c.pkgs = initial
 
-	// Set pkgpath to fully resolved package path.
-	c.pkgpath = initial[0].PkgPath
+	// Find the fuzz package among c.pkgs.
+	for _, p := range initial {
+		if p.PkgPath == pkgpath {
+			c.fuzzpkg = p
+			break
+		}
+	}
+	if c.fuzzpkg == nil {
+		c.failf("internal error: failed to find fuzz package; please file an issue")
+	}
 }
 
 // loadStd finds the set of standard library package paths.
 func (c *Context) loadStd() {
 	// Find out what packages are in the standard library.
-	stdpkgs, err := packages.Load(nil, "std")
+	stdpkgs, err := packages.Load(&packages.Config{Mode: packages.NeedName}, "std")
 	if err != nil {
 		c.failf("could not load standard library: %v", err)
 	}
-	c.std = dependencies(stdpkgs)
+	c.std = make(map[string]bool, len(stdpkgs))
+	for _, p := range stdpkgs {
+		c.std[p.PkgPath] = true
+	}
 }
 
 // makeWorkdir creates the workdir, logging as requested.
@@ -298,13 +328,6 @@ func (c *Context) populateWorkdir() {
 		c.clonePackage(p)
 	})
 	c.copyFuzzDep()
-}
-
-// dependencies returns the set of all packages in root packages and their dependencies.
-func dependencies(root []*packages.Package) map[string]bool {
-	deps := make(map[string]bool)
-	packages.Visit(root, nil, func(p *packages.Package) { deps[p.PkgPath] = true })
-	return deps
 }
 
 func (c *Context) createMeta(lits map[Literal]struct{}, blocks []CoverBlock, sonar []CoverBlock) string {
@@ -414,7 +437,7 @@ func (c *Context) funcMain() []byte {
 	if *flagLibFuzzer {
 		t = mainSrcLibFuzzer
 	}
-	dot := map[string]string{"Pkg": c.pkgpath, "Func": *flagFunc}
+	dot := map[string]string{"Pkg": c.fuzzpkg.PkgPath, "Func": *flagFunc}
 	buf := new(bytes.Buffer)
 	if err := t.Execute(buf, dot); err != nil {
 		c.failf("could not execute template: %v", err)
@@ -423,7 +446,7 @@ func (c *Context) funcMain() []byte {
 }
 
 func (c *Context) createFuzzMain() string {
-	mainPkg := filepath.Join(c.pkgpath, "go.fuzz.main")
+	mainPkg := filepath.Join(c.fuzzpkg.PkgPath, "go.fuzz.main")
 	path := filepath.Join(c.workdir, "gopath", "src", mainPkg)
 	c.mkdirAll(path)
 	c.writeFile(filepath.Join(path, "main.go"), c.funcMain())
