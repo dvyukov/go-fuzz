@@ -12,6 +12,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"go/types"
 	"io"
 	"io/ioutil"
 	"os"
@@ -21,6 +22,8 @@ import (
 	"runtime/pprof"
 	"strings"
 	"text/template"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/tools/go/packages"
 
@@ -30,7 +33,7 @@ import (
 var (
 	flagTag       = flag.String("tags", "", "a space-separated list of build tags to consider satisfied during the build")
 	flagOut       = flag.String("o", "", "output file")
-	flagFunc      = flag.String("func", "Fuzz", "entry function")
+	flagFunc      = flag.String("func", "", "preferred entry function")
 	flagWork      = flag.Bool("work", false, "don't remove working directory")
 	flagCPU       = flag.Bool("cpuprofile", false, "generate cpu profile in cpu.pprof")
 	flagLibFuzzer = flag.Bool("libfuzzer", false, "output static archive for use with libFuzzer")
@@ -61,6 +64,9 @@ func main() {
 	if flag.NArg() == 1 {
 		pkg = flag.Arg(0)
 	}
+	if *flagFunc != "" && !isFuzzFuncName(*flagFunc) {
+		c.failf("provided -func=%v, but %v is not a fuzz function name", *flagFunc, *flagFunc)
+	}
 
 	c.startProfiling()  // start pprof as requested
 	c.loadPkg(pkg)      // load and typecheck pkg
@@ -72,7 +78,6 @@ func main() {
 	c.populateWorkdir() // copy tools and packages to workdir as needed
 
 	if *flagOut == "" {
-		// TODO: Context method
 		ext := ".zip"
 		if *flagLibFuzzer {
 			ext = ".a"
@@ -156,6 +161,8 @@ type Context struct {
 
 	std    map[string]bool // set of packages in the standard library
 	ignore map[string]bool // set of packages to ignore during instrumentation
+
+	allFuncs []string // all fuzz functions found in package
 
 	workdir string
 	GOROOT  string
@@ -256,6 +263,93 @@ func (c *Context) loadPkg(pkg string) {
 	if c.fuzzpkg == nil {
 		c.failf("internal error: failed to find fuzz package; please file an issue")
 	}
+
+	// Find all fuzz functions in fuzzpkg.
+	foundFlagFunc := false
+	s := c.fuzzpkg.Types.Scope()
+	for _, n := range s.Names() {
+		if !isFuzzFuncName(n) {
+			continue
+		}
+		// Check that n is a function with an appropriate signature.
+		typ := s.Lookup(n).Type()
+		sig, ok := typ.(*types.Signature)
+		if !ok || sig.Variadic() || !isFuzzSig(sig) {
+			if n == *flagFunc {
+				c.failf("provided -func=%v, but %v is not a fuzz function", *flagFunc, *flagFunc)
+			}
+			continue
+		}
+		// n is a fuzz function.
+		c.allFuncs = append(c.allFuncs, n)
+		foundFlagFunc = foundFlagFunc || n == *flagFunc
+	}
+
+	if len(c.allFuncs) == 0 {
+		c.failf("could not find any fuzz functions in %v", c.fuzzpkg.PkgPath)
+	}
+	if len(c.allFuncs) > 255 {
+		c.failf("go-fuzz-build supports a maximum of 255 fuzz functions, found %v; please file an issue", len(c.allFuncs))
+	}
+
+	if *flagFunc != "" {
+		// Specific fuzz function requested.
+		// If the requested function doesn't exist, fail.
+		if !foundFlagFunc {
+			c.failf("could not find fuzz function %v in %v", *flagFunc, c.fuzzpkg.PkgPath)
+		}
+	} else {
+		// No specific fuzz function requested.
+		// If there's only one fuzz function, mark it as preferred.
+		// If there's more than one...
+		//   ...for go-fuzz, that's fine; one can be specified later on the command line.
+		//   ...for libfuzzer, that's not fine, as there is no way to specify one later.
+		if len(c.allFuncs) == 1 {
+			*flagFunc = c.allFuncs[0]
+		} else if *flagLibFuzzer {
+			c.failf("must specify a fuzz function with -libfuzzer, found: %v", strings.Join(c.allFuncs, ", "))
+		}
+	}
+}
+
+// isFuzzSig reports whether sig is of the form
+//   func FuzzFunc(data []byte) int
+func isFuzzSig(sig *types.Signature) bool {
+	return tupleHasTypes(sig.Params(), "[]byte") && tupleHasTypes(sig.Results(), "int")
+}
+
+// tupleHasTypes reports whether tuple is composed of
+// elements with exactly the types in types.
+func tupleHasTypes(tuple *types.Tuple, types ...string) bool {
+	if tuple.Len() != len(types) {
+		return false
+	}
+	for i, t := range types {
+		if tuple.At(i).Type().String() != t {
+			return false
+		}
+	}
+	return true
+}
+
+func isFuzzFuncName(name string) bool {
+	return isTest(name, "Fuzz")
+}
+
+// isTest is copied verbatim, along with its name,
+// from GOROOT/src/cmd/go/internal/load/test.go.
+// isTest tells whether name looks like a test (or benchmark, according to prefix).
+// It is a Test (say) if there is a character after Test that is not a lower-case letter.
+// We don't want TesticularCancer.
+func isTest(name, prefix string) bool {
+	if !strings.HasPrefix(name, prefix) {
+		return false
+	}
+	if len(name) == len(prefix) { // "Test" is ok
+		return true
+	}
+	rune, _ := utf8.DecodeRuneInString(name[len(prefix):])
+	return !unicode.IsLower(rune)
 }
 
 // loadStd finds the set of standard library package paths.
@@ -331,7 +425,7 @@ func (c *Context) populateWorkdir() {
 }
 
 func (c *Context) createMeta(lits map[Literal]struct{}, blocks []CoverBlock, sonar []CoverBlock) string {
-	meta := MetaData{Blocks: blocks, Sonar: sonar}
+	meta := MetaData{Blocks: blocks, Sonar: sonar, Funcs: c.allFuncs, DefaultFunc: *flagFunc}
 	for k := range lits {
 		meta.Literals = append(meta.Literals, k)
 	}
@@ -437,7 +531,7 @@ func (c *Context) funcMain() []byte {
 	if *flagLibFuzzer {
 		t = mainSrcLibFuzzer
 	}
-	dot := map[string]string{"Pkg": c.fuzzpkg.PkgPath, "Func": *flagFunc}
+	dot := map[string]interface{}{"Pkg": c.fuzzpkg.PkgPath, "AllFuncs": c.allFuncs, "DefaultFunc": *flagFunc}
 	buf := new(bytes.Buffer)
 	if err := t.Execute(buf, dot); err != nil {
 		c.failf("could not execute template: %v", err)
@@ -641,7 +735,12 @@ import (
 )
 
 func main() {
-	dep.Main(target.{{.Func}})
+	fns := []func([]byte)int {
+		{{range .AllFuncs}}
+			target.{{.}},
+		{{end}}
+	}
+	dep.Main(fns)
 }
 `))
 
@@ -679,7 +778,7 @@ func LLVMFuzzerTestOneInput(data uintptr, size uint64) int {
 	}
 
 	input := *(*[]byte)(unsafe.Pointer(sh))
-	target.{{.Func}}(input)
+	target.{{.DefaultFunc}}(input)
 
 	return 0
 }

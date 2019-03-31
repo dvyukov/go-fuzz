@@ -20,7 +20,9 @@ type Literal struct {
 }
 
 type MetaData struct {
-	Literals []Literal
-	Blocks   []CoverBlock
-	Sonar    []CoverBlock
+	Literals    []Literal
+	Blocks      []CoverBlock
+	Sonar       []CoverBlock
+	Funcs       []string // fuzz function names; must have length > 0
+	DefaultFunc string   // default function to fuzz
 }

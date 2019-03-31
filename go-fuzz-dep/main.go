@@ -16,14 +16,14 @@ import (
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 )
 
-func Main(f func([]byte) int) {
+func Main(fns []func([]byte) int) {
 	mem, inFD, outFD := setupCommFile()
 	CoverTab = (*[CoverSize]byte)(unsafe.Pointer(&mem[0]))
 	input := mem[CoverSize : CoverSize+MaxInputSize]
 	sonarRegion = mem[CoverSize+MaxInputSize:]
 	runtime.GOMAXPROCS(1) // makes coverage more deterministic, we parallelize on higher level
 	for {
-		n := read(inFD)
+		fnidx, n := read(inFD)
 		if n > uint64(len(input)) {
 			println("invalid input length")
 			syscall.Exit(1)
@@ -33,16 +33,16 @@ func Main(f func([]byte) int) {
 		}
 		atomic.StoreUint32(&sonarPos, 0)
 		t0 := time.Now()
-		res := f(input[:n])
+		res := fns[fnidx](input[:n])
 		ns := time.Since(t0)
 		write(outFD, uint64(res), uint64(ns), uint64(atomic.LoadUint32(&sonarPos)))
 	}
 }
 
-// read reads little-endian-encoded uint64 from fd.
-func read(fd FD) uint64 {
+// read reads little-endian-encoded uint8+uint64 from fd.
+func read(fd FD) (uint8, uint64) {
 	rd := 0
-	var buf [8]byte
+	var buf [9]byte
 	for rd != len(buf) {
 		n, err := fd.read(buf[rd:])
 		if err == syscall.EINTR {
@@ -57,7 +57,7 @@ func read(fd FD) uint64 {
 		}
 		rd += n
 	}
-	return deserialize64(buf[:])
+	return buf[0], deserialize64(buf[1:])
 }
 
 // write writes little-endian-encoded vals... to fd.
