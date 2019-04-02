@@ -155,14 +155,14 @@ func workerMain() {
 
 	hub := newHub(metadata)
 	for i := 0; i < *flagProcs; i++ {
-		s := &Worker{
+		w := &Worker{
 			id:      i,
 			hub:     hub,
 			mutator: newMutator(),
 		}
-		s.coverBin = newTestBinary(coverBin, s.periodicCheck, &s.stats, uint8(fnidx))
-		s.sonarBin = newTestBinary(sonarBin, s.periodicCheck, &s.stats, uint8(fnidx))
-		go s.loop()
+		w.coverBin = newTestBinary(coverBin, w.periodicCheck, &w.stats, uint8(fnidx))
+		w.sonarBin = newTestBinary(sonarBin, w.periodicCheck, &w.stats, uint8(fnidx))
+		go w.loop()
 	}
 }
 
