@@ -35,6 +35,7 @@ var (
 	flagOut       = flag.String("o", "", "output file")
 	flagFunc      = flag.String("func", "", "preferred entry function")
 	flagWork      = flag.Bool("work", false, "don't remove working directory")
+	flagRace      = flag.Bool("race", false, "enable race detector")
 	flagCPU       = flag.Bool("cpuprofile", false, "generate cpu profile in cpu.pprof")
 	flagLibFuzzer = flag.Bool("libfuzzer", false, "output static archive for use with libFuzzer")
 )
@@ -43,6 +44,9 @@ func makeTags() string {
 	tags := "gofuzz"
 	if *flagLibFuzzer {
 		tags += " gofuzz_libfuzzer"
+	}
+	if *flagRace {
+		tags += " race"
 	}
 	if len(*flagTag) > 0 {
 		tags += " " + *flagTag
@@ -66,6 +70,9 @@ func main() {
 	}
 	if *flagFunc != "" && !isFuzzFuncName(*flagFunc) {
 		c.failf("provided -func=%v, but %v is not a fuzz function name", *flagFunc, *flagFunc)
+	}
+	if *flagLibFuzzer && *flagRace {
+		c.failf("-race and -libfuzzer are incompatible")
 	}
 
 	c.startProfiling()  // start pprof as requested
@@ -401,8 +408,12 @@ func (c *Context) populateWorkdir() {
 
 	// TODO: See if we can avoid making toolchain copies,
 	// using some combination of env vars and toolexec.
-	if *flagLibFuzzer {
+	if *flagLibFuzzer || *flagRace {
 		c.copyDir(filepath.Join(c.GOROOT, "src", "runtime", "cgo"), filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo"))
+	}
+	if *flagRace {
+		c.copyDir(filepath.Join(c.GOROOT, "src", "runtime", "race"), filepath.Join(c.workdir, "goroot", "src", "runtime", "race"))
+		c.copyDir(filepath.Join(c.GOROOT, "src", "sync", "atomic"), filepath.Join(c.workdir, "goroot", "src", "sync", "atomic"))
 	}
 	c.copyDir(filepath.Join(c.GOROOT, "pkg", "tool"), filepath.Join(c.workdir, "goroot", "pkg", "tool"))
 	if _, err := os.Stat(filepath.Join(c.GOROOT, "pkg", "include")); err == nil {
@@ -443,6 +454,9 @@ func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBl
 	mainPkg := c.createFuzzMain()
 	outf := c.tempFile()
 	args := []string{"build", "-tags", makeTags()}
+	if *flagRace {
+		args = append(args, "-race")
+	}
 	if *flagLibFuzzer {
 		args = append(args, "-buildmode=c-archive")
 	}
