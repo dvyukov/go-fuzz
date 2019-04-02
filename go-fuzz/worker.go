@@ -11,6 +11,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/bits"
 	"os"
 	"strings"
 	"sync/atomic"
@@ -537,7 +538,7 @@ func (w *Worker) smash(data []byte, depth int) {
 			*p = x
 			w.testInput(data, depth, execSmash)
 			if x != 0 && x != -1 {
-				*p = int16(swap16(uint16(x)))
+				*p = int16(bits.ReverseBytes16(uint16(x)))
 				w.testInput(data, depth, execSmash)
 			}
 		}
@@ -552,7 +553,7 @@ func (w *Worker) smash(data []byte, depth int) {
 			*p = x
 			w.testInput(data, depth, execSmash)
 			if x != 0 && x != -1 {
-				*p = int32(swap32(uint32(x)))
+				*p = int32(bits.ReverseBytes32(uint32(x)))
 				w.testInput(data, depth, execSmash)
 			}
 		}

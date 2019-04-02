@@ -4,9 +4,9 @@
 package main
 
 import (
+	"encoding/binary"
 	"sort"
 	"strconv"
-	"unsafe"
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 	"github.com/dvyukov/go-fuzz/go-fuzz/internal/pcg"
@@ -27,6 +27,13 @@ func (m *Mutator) rand(n int) int {
 // randbig generates a number in [0, 2³⁰).
 func (m *Mutator) randbig() int64 {
 	return int64(m.r.Uint32() >> 2)
+}
+
+func (m *Mutator) randByteOrder() binary.ByteOrder {
+	if m.r.Bool() {
+		return binary.LittleEndian
+	}
+	return binary.BigEndian
 }
 
 func (m *Mutator) generate(ro *ROData) ([]byte, int) {
@@ -153,19 +160,13 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			pos := m.rand(len(res) - 1)
+			buf := res[pos:]
 			v := uint16(m.rand(35) + 1)
-			switch m.rand(4) {
-			case 0:
-				*(*uint16)(unsafe.Pointer(&res[pos])) += v
-			case 1:
-				*(*uint16)(unsafe.Pointer(&res[pos])) -= v
-			case 2:
-				x := *(*uint16)(unsafe.Pointer(&res[pos]))
-				*(*uint16)(unsafe.Pointer(&res[pos])) = swap16(swap16(x) + v)
-			case 3:
-				x := *(*uint16)(unsafe.Pointer(&res[pos]))
-				*(*uint16)(unsafe.Pointer(&res[pos])) = swap16(swap16(x) - v)
+			if m.r.Bool() {
+				v = 0 - v
 			}
+			enc := m.randByteOrder()
+			enc.PutUint16(buf, enc.Uint16(buf)+v)
 		case 9:
 			// Add/subtract from a uint32.
 			if len(res) < 4 {
@@ -173,19 +174,13 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			pos := m.rand(len(res) - 3)
+			buf := res[pos:]
 			v := uint32(m.rand(35) + 1)
-			switch m.rand(4) {
-			case 0:
-				*(*uint32)(unsafe.Pointer(&res[pos])) += v
-			case 1:
-				*(*uint32)(unsafe.Pointer(&res[pos])) -= v
-			case 2:
-				x := *(*uint32)(unsafe.Pointer(&res[pos]))
-				*(*uint32)(unsafe.Pointer(&res[pos])) = swap32(swap32(x) + v)
-			case 3:
-				x := *(*uint32)(unsafe.Pointer(&res[pos]))
-				*(*uint32)(unsafe.Pointer(&res[pos])) = swap32(swap32(x) - v)
+			if m.r.Bool() {
+				v = 0 - v
 			}
+			enc := m.randByteOrder()
+			enc.PutUint32(buf, enc.Uint32(buf)+v)
 		case 10:
 			// Add/subtract from a uint64.
 			if len(res) < 8 {
@@ -193,19 +188,13 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			pos := m.rand(len(res) - 7)
+			buf := res[pos:]
 			v := uint64(m.rand(35) + 1)
-			switch m.rand(4) {
-			case 0:
-				*(*uint64)(unsafe.Pointer(&res[pos])) += v
-			case 1:
-				*(*uint64)(unsafe.Pointer(&res[pos])) -= v
-			case 2:
-				x := *(*uint64)(unsafe.Pointer(&res[pos]))
-				*(*uint64)(unsafe.Pointer(&res[pos])) = swap64(swap64(x) + v)
-			case 3:
-				x := *(*uint64)(unsafe.Pointer(&res[pos]))
-				*(*uint64)(unsafe.Pointer(&res[pos])) = swap64(swap64(x) - v)
+			if m.r.Bool() {
+				v = 0 - v
 			}
+			enc := m.randByteOrder()
+			enc.PutUint64(buf, enc.Uint64(buf)+v)
 		case 11:
 			// Replace a byte with an interesting value.
 			if len(res) == 0 {
@@ -221,11 +210,9 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			pos := m.rand(len(res) - 1)
+			buf := res[pos:]
 			v := uint16(interesting16[m.rand(len(interesting16))])
-			if m.r.Bool() {
-				v = swap16(v)
-			}
-			*(*uint16)(unsafe.Pointer(&res[pos])) = v
+			m.randByteOrder().PutUint16(buf, v)
 		case 13:
 			// Replace an uint32 with an interesting value.
 			if len(res) < 4 {
@@ -233,11 +220,9 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				continue
 			}
 			pos := m.rand(len(res) - 3)
+			buf := res[pos:]
 			v := uint32(interesting32[m.rand(len(interesting32))])
-			if m.r.Bool() {
-				v = swap32(v)
-			}
-			*(*uint32)(unsafe.Pointer(&res[pos])) = v
+			m.randByteOrder().PutUint32(buf, v)
 		case 14:
 			// Replace an ascii digit with another digit.
 			var digits []int
@@ -413,49 +398,6 @@ func min(a, b int) int {
 		return a
 	}
 	return b
-}
-
-func swap16(v uint16) uint16 {
-	v0 := byte(v >> 0)
-	v1 := byte(v >> 8)
-	v = 0
-	v |= uint16(v1) << 0
-	v |= uint16(v0) << 8
-	return v
-}
-
-func swap32(v uint32) uint32 {
-	v0 := byte(v >> 0)
-	v1 := byte(v >> 8)
-	v2 := byte(v >> 16)
-	v3 := byte(v >> 24)
-	v = 0
-	v |= uint32(v3) << 0
-	v |= uint32(v2) << 8
-	v |= uint32(v1) << 16
-	v |= uint32(v0) << 24
-	return v
-}
-
-func swap64(v uint64) uint64 {
-	v0 := byte(v >> 0)
-	v1 := byte(v >> 8)
-	v2 := byte(v >> 16)
-	v3 := byte(v >> 24)
-	v4 := byte(v >> 32)
-	v5 := byte(v >> 40)
-	v6 := byte(v >> 48)
-	v7 := byte(v >> 56)
-	v = 0
-	v |= uint64(v7) << 0
-	v |= uint64(v6) << 8
-	v |= uint64(v5) << 16
-	v |= uint64(v4) << 24
-	v |= uint64(v3) << 32
-	v |= uint64(v2) << 40
-	v |= uint64(v1) << 48
-	v |= uint64(v0) << 56
-	return v
 }
 
 var (
