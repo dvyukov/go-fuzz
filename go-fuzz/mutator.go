@@ -243,7 +243,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			}
 			res[digits[pos]] = now
 		case 15:
-			// Replace an ascii number with another number.
+			// Replace a multi-byte ASCII number with another number.
 			type arange struct {
 				start int
 				end   int
@@ -251,16 +251,19 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			var numbers []arange
 			start := -1
 			for i, v := range res {
-				if v >= '0' && v <= '9' {
+				if (v >= '0' && v <= '9') || (start == -1 && v == '-') {
 					if start == -1 {
 						start = i
+					} else if i == len(res)-1 {
+						// At final byte of input.
+						if i-start > 0 {
+							numbers = append(numbers, arange{start, i + 1})
+						}
 					}
 				} else {
-					if start != -1 {
-						if i-start > 1 {
-							numbers = append(numbers, arange{start, i})
-							start = -1
-						}
+					if start != -1 && i-start > 1 {
+						numbers = append(numbers, arange{start, i})
+						start = -1
 					}
 				}
 			}
@@ -268,7 +271,6 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				iter--
 				continue
 			}
-			r := numbers[m.rand(len(numbers))]
 			var v int64
 			switch m.rand(4) {
 			case 0:
@@ -279,6 +281,13 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				v = m.randbig() * m.randbig()
 			case 3:
 				v = -m.randbig()
+			}
+			r := numbers[m.rand(len(numbers))]
+			if res[r.start] == '-' {
+				// If we started with a negative number, invert the sign of v.
+				// The idea here is that negative numbers will mostly stay negative;
+				// we only generate a negative (positive) replacement 1/4th of the time.
+				v *= -1
 			}
 			str := strconv.FormatInt(v, 10)
 			tmp := make([]byte, len(res)-(r.end-r.start)+len(str))
