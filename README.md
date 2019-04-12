@@ -98,8 +98,9 @@ Examples directory contains a bunch of examples of test functions and initial
 input corpuses for various packages.
 
 The next step is to get go-fuzz:
+
 ```
-$ go get -u github.com/dvyukov/go-fuzz/...
+$ go get -u github.com/dvyukov/go-fuzz/go-fuzz github.com/dvyukov/go-fuzz/go-fuzz-build
 ```
 
 Then, download the corpus and build the test program with necessary instrumentation:
@@ -110,6 +111,10 @@ $ cd png
 $ go-fuzz-build
 ```
 This will produce png-fuzz.zip archive.
+
+Note that go-fuzz [does not support modules yet](https://github.com/dvyukov/go-fuzz/issues/195).
+You may need to disable modules by setting environment variable `GO111MODULE=off`
+before executing `go-fuzz-build`.
 
 Now we are ready to go:
 ```
