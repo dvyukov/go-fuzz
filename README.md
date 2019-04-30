@@ -113,8 +113,7 @@ $ go-fuzz-build
 This will produce png-fuzz.zip archive.
 
 Note that go-fuzz [does not support modules yet](https://github.com/dvyukov/go-fuzz/issues/195).
-You may need to disable modules by setting environment variable `GO111MODULE=off`
-before executing `go-fuzz-build`.
+`go-fuzz-build` disables modules by setting environment variable `GO111MODULE=off` during the build.
 
 Now we are ready to go:
 ```

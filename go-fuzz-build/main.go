@@ -465,6 +465,7 @@ func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBl
 	cmd.Env = append(os.Environ(),
 		"GOROOT="+filepath.Join(c.workdir, "goroot"),
 		"GOPATH="+filepath.Join(c.workdir, "gopath"),
+		"GO111MODULE=off", // temporary measure until we have proper module support
 	)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		c.failf("failed to execute go build: %v\n%v", err, string(out))
