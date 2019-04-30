@@ -181,6 +181,8 @@ type Context struct {
 	GOPATH  string
 
 	cpuprofile *os.File
+
+	cmdGoHasTrimPath bool // does the active version of cmd/go have the -trimpath flag?
 }
 
 // getEnv determines GOROOT and GOPATH and updates c accordingly.
@@ -204,6 +206,12 @@ func (c *Context) getEnv() {
 	}
 	c.GOROOT = env["GOROOT"]
 	c.GOPATH = env["GOPATH"]
+
+	out, err := exec.Command("go", "list", "-f", "'{{context.ReleaseTags}}'", "runtime").CombinedOutput()
+	if err != nil || len(out) == 0 {
+		c.failf("go list -f '{{context.ReleaseTags}}' runtime returned '%s' (%v)", out, err)
+	}
+	c.cmdGoHasTrimPath = bytes.Contains(out, []byte("go1.13"))
 }
 
 // startProfiling starts pprof profiling, if requested.
@@ -472,6 +480,9 @@ func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBl
 	}
 	if *flagLibFuzzer {
 		args = append(args, "-buildmode=c-archive")
+	}
+	if c.cmdGoHasTrimPath {
+		args = append(args, "-trimpath")
 	}
 	args = append(args, "-o", outf, mainPkg)
 	cmd := exec.Command("go", args...)
