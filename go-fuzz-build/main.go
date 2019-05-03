@@ -54,6 +54,14 @@ func makeTags() string {
 	return tags
 }
 
+// basePackagesConfig returns a base golang.org/x/tools/go/packages.Config
+// that clients can then modify and use for calls to go/packages.
+func basePackagesConfig() *packages.Config {
+	cfg := new(packages.Config)
+	cfg.Env = append(os.Environ(), "GO111MODULE=off")
+	return cfg
+}
+
 // main copies the package with all dependent packages into a temp dir,
 // instruments Go source files there, and builds setting GOROOT to the temp dir.
 func main() {
@@ -219,10 +227,9 @@ func (c *Context) startProfiling() {
 func (c *Context) loadPkg(pkg string) {
 	// Resolve pkg.
 	// See https://golang.org/issue/30826 and https://golang.org/issue/30828.
-	rescfg := &packages.Config{
-		Mode:       packages.NeedName,
-		BuildFlags: []string{"-tags", makeTags()},
-	}
+	rescfg := basePackagesConfig()
+	rescfg.Mode = packages.NeedName
+	rescfg.BuildFlags = []string{"-tags", makeTags()}
 	respkgs, err := packages.Load(rescfg, pkg)
 	if err != nil {
 		c.failf("could not resolve package %q: %v", pkg, err)
@@ -240,13 +247,12 @@ func (c *Context) loadPkg(pkg string) {
 	// We'll use the type information later.
 	// This also provides better error messages in the case
 	// of invalid code than trying to compile instrumented code.
-	cfg := &packages.Config{
-		Mode:       packages.LoadAllSyntax,
-		BuildFlags: []string{"-tags", makeTags()},
-		// use custom ParseFile in order to get comments
-		ParseFile: func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
-			return parser.ParseFile(fset, filename, src, parser.ParseComments)
-		},
+	cfg := basePackagesConfig()
+	cfg.Mode = packages.LoadAllSyntax
+	cfg.BuildFlags = []string{"-tags", makeTags()}
+	// use custom ParseFile in order to get comments
+	cfg.ParseFile = func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
+		return parser.ParseFile(fset, filename, src, parser.ParseComments)
 	}
 	initial, err := packages.Load(cfg, pkg, "github.com/dvyukov/go-fuzz/go-fuzz-dep")
 	if err != nil {
@@ -362,7 +368,9 @@ func isTest(name, prefix string) bool {
 // loadStd finds the set of standard library package paths.
 func (c *Context) loadStd() {
 	// Find out what packages are in the standard library.
-	stdpkgs, err := packages.Load(&packages.Config{Mode: packages.NeedName}, "std")
+	cfg := basePackagesConfig()
+	cfg.Mode = packages.NeedName
+	stdpkgs, err := packages.Load(cfg, "std")
 	if err != nil {
 		c.failf("could not load standard library: %v", err)
 	}
