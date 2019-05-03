@@ -56,6 +56,9 @@ func main() {
 		log.Fatalf("both -http and -worker are specified")
 	}
 
+	// temporary measure until we have proper module support
+	os.Setenv("GO111MODULE", "off")
+
 	go func() {
 		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT)
