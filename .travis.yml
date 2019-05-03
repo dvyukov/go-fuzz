@@ -13,14 +13,14 @@ matrix:
   include:
     - os: linux
       go: tip
-      env: GO111MODULE=on
+      env: SET_GO111MODULE=1
     - os: linux
       go: "1.12.x"
     - os: linux
       go: "1.11.x"
     - os: osx
       go: tip
-      env: GO111MODULE=on
+      env: SET_GO111MODULE=1
     - os: osx
       go: "1.12.x"
     - os: osx
@@ -52,6 +52,10 @@ script:
   
   # Reduce chances of future surprises due to any caching.
   - rm -rf fuzz.zip ./freshworkdir
+
+  # Explicitly set GO111MODULE=on if requested (given Travis sets GO111MODULE=auto).
+  # This is currently intended to test tip / 1.13, which default to GO111MODULE=on.
+  - if [[ ! -z "$SET_GO111MODULE" ]]; then export GO111MODULE=on; fi 
 
   # Instrument using go-fuzz-build on the png example Fuzz function.
   - which go-fuzz-build
