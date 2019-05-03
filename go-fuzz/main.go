@@ -98,7 +98,9 @@ func main() {
 		if *flagBin == "" {
 			// Try the default. Best effort only.
 			var bin string
-			pkgs, err := packages.Load(nil, ".")
+			cfg := new(packages.Config)
+			cfg.Env = append(os.Environ(), "GO111MODULE=off")
+			pkgs, err := packages.Load(cfg, ".")
 			if err == nil && len(pkgs) == 1 {
 				bin = pkgs[0].Name + "-fuzz.zip"
 				_, err := os.Stat(bin)
