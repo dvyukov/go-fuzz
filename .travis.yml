@@ -7,16 +7,20 @@
 
 language: go
 
+# Test Go 1.11 and 1.12 across linux, osx, windows.
+# Test Go tip on linux, osx (and explicitly set GO111MODULE=on given Travis sets GO111MODULE=auto).
 matrix:
   include:
     - os: linux
-      go: "tip"
+      go: tip
+      env: GO111MODULE=on
     - os: linux
       go: "1.12.x"
     - os: linux
       go: "1.11.x"
     - os: osx
-      go: "tip"
+      go: tip
+      env: GO111MODULE=on
     - os: osx
       go: "1.12.x"
     - os: osx
