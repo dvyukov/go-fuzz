@@ -75,6 +75,9 @@ func main() {
 		c.failf("-race and -libfuzzer are incompatible")
 	}
 
+	// temporary measure until we have proper module support
+	os.Setenv("GO111MODULE", "off")
+
 	c.startProfiling()  // start pprof as requested
 	c.loadPkg(pkg)      // load and typecheck pkg
 	c.getEnv()          // discover GOROOT, GOPATH
