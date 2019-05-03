@@ -10,9 +10,13 @@ language: go
 matrix:
   include:
     - os: linux
+      go: "tip"
+    - os: linux
       go: "1.12.x"
     - os: linux
       go: "1.11.x"
+    - os: osx
+      go: "tip"
     - os: osx
       go: "1.12.x"
     - os: osx
