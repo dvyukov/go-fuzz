@@ -121,10 +121,7 @@ func main() {
 
 	if *flagLibFuzzer {
 		archive := c.buildInstrumentedBinary(&blocks, nil)
-		err := os.Rename(archive, *flagOut)
-		if err != nil {
-			c.failf("failed to rename file: %v", err)
-		}
+		c.moveFile(archive, *flagOut)
 		return
 	}
 
@@ -663,10 +660,7 @@ func (c *Context) instrumentPackages(blocks *[]CoverBlock, sonar *[]CoverBlock) 
 			if runtime.GOOS == "windows" {
 				os.Remove(outpath)
 			}
-			err := os.Rename(tmp, outpath)
-			if err != nil {
-				c.failf("failed to rename file: %v", err)
-			}
+			c.moveFile(tmp, outpath)
 		}
 	}
 
@@ -707,6 +701,14 @@ func (c *Context) copyFile(src, dst string) {
 	}
 	if err := w.Close(); err != nil {
 		c.failf("copyFile: closing %v failed: %v", dst, err)
+	}
+}
+
+func (c *Context) moveFile(src, dst string) {
+	c.copyFile(src, dst)
+	err := os.Remove(src)
+	if err != nil {
+		c.failf("moveFile: removing %q failed: %v", src, err)
 	}
 }
 
