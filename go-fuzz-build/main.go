@@ -251,7 +251,15 @@ func (c *Context) loadPkg(pkg string) {
 	cfg.ParseFile = func(fset *token.FileSet, filename string, src []byte) (*ast.File, error) {
 		return parser.ParseFile(fset, filename, src, parser.ParseComments)
 	}
-	initial, err := packages.Load(cfg, pkg, "github.com/dvyukov/go-fuzz/go-fuzz-dep")
+	// We need to load:
+	// * the target package, obviously
+	// * go-fuzz-dep, since we use it for instrumentation
+	// * reflect, if we are using libfuzzer, since its generated main function requires it
+	loadpkgs := []string{pkg, "github.com/dvyukov/go-fuzz/go-fuzz-dep"}
+	if *flagLibFuzzer {
+		loadpkgs = append(loadpkgs, "reflect")
+	}
+	initial, err := packages.Load(cfg, loadpkgs...)
 	if err != nil {
 		c.failf("could not load packages: %v", err)
 	}
