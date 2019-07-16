@@ -94,8 +94,8 @@ Put the initial corpus into the workdir/corpus directory (in our case
 Consider committing the generated inputs to your source control system, this
 will allow you to restart go-fuzz without losing previous work.
 
-Examples directory contains a bunch of examples of test functions and initial
-input corpuses for various packages.
+The [go-fuzz-corpus repository](https://github.com/dvyukov/go-fuzz-corpus) contains 
+a bunch of examples of test functions and initial input corpuses for various packages.
 
 The next step is to get go-fuzz:
 
