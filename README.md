@@ -5,16 +5,6 @@ Fuzzing is mainly applicable to packages that parse complex inputs (both text
 and binary), and is especially useful for hardening of systems that parse inputs
 from potentially malicious users (e.g. anything accepted over a network).
 
-## History rewrite
-
-go-fuzz repository history was recently rewritten to exclude examples directory
-to reduce total repository size and download time (see
-[#88](https://github.com/dvyukov/go-fuzz/issues/88),
-[#114](https://github.com/dvyukov/go-fuzz/issues/114) and
-https://github.com/dvyukov/go-fuzz-corpus). Unfortunately, that means that
-`go get -u` command will fail if you had a previous version installed.
-Please remove $GOPATH/github.com/dvyukov/go-fuzz before running `go get` again.
-
 ## Usage
 
 First, you need to write a test function of the form:
@@ -146,12 +136,11 @@ value should be less than ~5000, otherwise fuzzer can miss new interesting input
 due to hash collisions. And finally ```uptime``` is uptime of the process. This same
 information is also served via http (see the ```-http``` flag).
 
-
 ## libFuzzer support
 
 go-fuzz-build can also generate an archive file
 that can be used with [libFuzzer](https://llvm.org/docs/LibFuzzer.html)
-instead of go-fuzz. (Requires linux.)
+instead of go-fuzz (requires linux).
 
 Sample usage:
 
@@ -165,7 +154,16 @@ $ ./fmt.libfuzzer
 When run with `-libfuzzer`, go-fuzz-build adds the additional build tag
 `gofuzz_libfuzzer` when building code.
 
-### Random Notes
+## Continuous Fuzzing
+
+Just as unit-testing, fuzzing is better done continuously.
+
+Currently there are 2 services that offer continuous fuzzing based on go-fuzz:
+
+- [fuzzit.dev](https://fuzzit.dev/) ([tutorial](https://github.com/fuzzitdev/example-go))
+- [fuzzbuzz.io](https://fuzzbuzz.io/) ([tutorial](https://docs.fuzzbuzz.io/getting-started/find-your-first-bug-in-go))
+
+## Random Notes
 
 go-fuzz-build builds the program with gofuzz build tag, this allows to put the
 Fuzz function implementation directly into the tested package, but exclude it
@@ -193,6 +191,16 @@ $ go-fuzz -bin=./png-fuzz.zip -worker=127.0.0.1:8745 -procs=10
 - [Automated Testing with go-fuzz](https://speakerdeck.com/filosottile/automated-testing-with-go-fuzz)
 - [Going down the rabbit hole with go-fuzz](https://mijailovic.net/2017/07/29/go-fuzz/)
 - [Fuzzing markdown parser with go-fuzz](https://blog.kowalczyk.info/article/n/fuzzing-markdown-parser-written-in-go.html)
+
+## History rewrite
+
+go-fuzz repository history was recently rewritten to exclude examples directory
+to reduce total repository size and download time (see
+[#88](https://github.com/dvyukov/go-fuzz/issues/88),
+[#114](https://github.com/dvyukov/go-fuzz/issues/114) and
+https://github.com/dvyukov/go-fuzz-corpus). Unfortunately, that means that
+`go get -u` command will fail if you had a previous version installed.
+Please remove $GOPATH/github.com/dvyukov/go-fuzz before running `go get` again.
 
 ## Credits and technical details
 
