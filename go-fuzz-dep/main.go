@@ -33,7 +33,7 @@ func Main(fns []func([]byte) int) {
 		}
 		atomic.StoreUint32(&sonarPos, 0)
 		t0 := time.Now()
-		res := fns[fnidx](input[:n])
+		res := fns[fnidx](input[:n:n])
 		ns := time.Since(t0)
 		write(outFD, uint64(res), uint64(ns), uint64(atomic.LoadUint32(&sonarPos)))
 	}

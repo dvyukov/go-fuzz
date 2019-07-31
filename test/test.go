@@ -36,7 +36,9 @@ func init() {
 }
 
 func Fuzz(data []byte) int {
-	// runtime.GOMAXPROCS(runtime.NumCPU())
+	if len(data) != cap(data) {
+		panic("should not happen")
+	}
 	if len(data) == 1 {
 		if data[0] == '!' || data[0] == '#' {
 			panic("bingo 0")
@@ -95,6 +97,9 @@ func Fuzz(data []byte) int {
 		if x == '2' {
 			// new coverage
 		}
+	}
+	if len(data) == 7 && data[7:8][0] == 'a' {
+		// The above should cause OOB.
 	}
 	return 0
 }
