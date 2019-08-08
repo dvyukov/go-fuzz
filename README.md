@@ -592,5 +592,12 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/francoispqt/gojay: panic on malformed JSON floats](https://github.com/francoispqt/gojay/issues/32) **fixed**
 - [github.com/eapache/go-xerial-snappy multiple panics with malformed inputs](https://github.com/eapache/go-xerial-snappy/commit/58803384a8be76cd0f84789b302c7b52d791d95f) **fixed**
 - [github.com/trustelem/zxcvbn: multiple panics in password strength estimator](https://github.com/trustelem/zxcvbn/issues/1) **fixed**
+- https://github.com/google/syzkaller: 6 crashers (
+[1](https://github.com/google/syzkaller/commit/7c7ded697e6322b0975f061b7e268fe44f585dab),
+[2](https://github.com/google/syzkaller/commit/3b37734422dc0cb40100287bbb3628d8d946c271),
+[3](https://github.com/google/syzkaller/commit/f400a0da0fcd3e4d27d915b57c54f504813ef1d3),
+[4](https://github.com/google/syzkaller/commit/967dc02d70f8e3d027738295977762cd4fbed5c7),
+[5](https://github.com/google/syzkaller/commit/78b7ec0fbe23a5c674401123053d6372ea3ca9c6),
+[6](https://github.com/google/syzkaller/commit/413e41473838fb74ccc081784afd6ddbbd44b797))
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
