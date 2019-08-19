@@ -599,5 +599,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 [4](https://github.com/google/syzkaller/commit/967dc02d70f8e3d027738295977762cd4fbed5c7),
 [5](https://github.com/google/syzkaller/commit/78b7ec0fbe23a5c674401123053d6372ea3ca9c6),
 [6](https://github.com/google/syzkaller/commit/413e41473838fb74ccc081784afd6ddbbd44b797))
+- [github.com/chai2010/guetzli-go: index out of range](https://github.com/chai2010/guetzli-go/issues/11)
+- [github.com/pixiv/go-libjpeg: segmentation violation ](https://github.com/pixiv/go-libjpeg/issues/51)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
