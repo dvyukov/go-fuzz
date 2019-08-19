@@ -38,6 +38,7 @@ var (
 	flagRace      = flag.Bool("race", false, "enable race detector")
 	flagCPU       = flag.Bool("cpuprofile", false, "generate cpu profile in cpu.pprof")
 	flagLibFuzzer = flag.Bool("libfuzzer", false, "output static archive for use with libFuzzer")
+	flagBuildX    = flag.Bool("x", false, "print the commands if build fails")
 )
 
 func makeTags() string {
@@ -475,6 +476,13 @@ func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBl
 	mainPkg := c.createFuzzMain()
 	outf := c.tempFile()
 	args := []string{"build", "-tags", makeTags()}
+	if *flagBuildX {
+		args = append(args, "-x")
+
+		if *flagWork {
+			args = append(args, "-work")
+		}
+	}
 	if *flagRace {
 		args = append(args, "-race")
 	}
