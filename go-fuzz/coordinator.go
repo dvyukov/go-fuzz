@@ -149,7 +149,7 @@ func (c *Coordinator) coordinatorStats() coordinatorStats {
 	}
 
 	// Print stats line.
-	if c.statExecs != 0 {
+	if c.statExecs != 0 && c.statRestarts != 0 {
 		stats.RestartsDenom = c.statExecs / c.statRestarts
 	}
 
