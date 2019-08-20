@@ -19,8 +19,9 @@ import (
 )
 
 const (
-	syncPeriod   = 3 * time.Second
-	syncDeadline = 100 * syncPeriod
+	syncPeriod             = 3 * time.Second
+	syncDeadline           = 100 * syncPeriod
+	connectionPollInterval = 100 * time.Millisecond
 
 	minScore = 1.0
 	maxScore = 1000.0
@@ -123,7 +124,17 @@ func newHub(metadata MetaData) *Hub {
 }
 
 func (hub *Hub) connect() error {
-	c, err := rpc.Dial("tcp", *flagWorker)
+	var c *rpc.Client
+	var err error
+
+	t := time.Now()
+	for {
+		c, err = rpc.Dial("tcp", *flagWorker)
+		if err == nil || time.Since(t) > *flagConnectionTimeout {
+			break
+		}
+		time.Sleep(connectionPollInterval)
+	}
 	if err != nil {
 		return err
 	}
