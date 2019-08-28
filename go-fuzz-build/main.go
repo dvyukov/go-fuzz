@@ -59,7 +59,7 @@ func makeTags() string {
 // that clients can then modify and use for calls to go/packages.
 func basePackagesConfig() *packages.Config {
 	cfg := new(packages.Config)
-	cfg.Env = append(os.Environ(), "GO111MODULE=off")
+	cfg.Env = append(os.Environ(), "GO111MODULE=auto")
 	return cfg
 }
 
