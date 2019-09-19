@@ -248,6 +248,9 @@ func (c *Context) loadPkg(pkg string) {
 		}
 		c.failf("cannot build multiple packages, but %q resolved to: %v", pkg, strings.Join(paths, ", "))
 	}
+	if respkgs[0].Name == "main" {
+		c.failf("cannot fuzz package main")
+	}
 	pkgpath := respkgs[0].PkgPath
 
 	// Load, parse, and type-check all packages.
