@@ -39,6 +39,7 @@ var (
 	flagCPU       = flag.Bool("cpuprofile", false, "generate cpu profile in cpu.pprof")
 	flagLibFuzzer = flag.Bool("libfuzzer", false, "output static archive for use with libFuzzer")
 	flagBuildX    = flag.Bool("x", false, "print the commands if build fails")
+	flagPreserve  = flag.String("preserve", "", "a comma-separated list of import paths not to instrument")
 )
 
 func makeTags() string {
@@ -523,6 +524,12 @@ func (c *Context) calcIgnore() {
 		c.ignore[p.PkgPath] = true
 		return true
 	}, nil)
+
+	// Ignore any packages requested explicitly by the user.
+	paths := strings.Split(*flagPreserve, ",")
+	for _, path := range paths {
+		c.ignore[path] = true
+	}
 }
 
 func (c *Context) gatherLiterals() map[Literal]struct{} {
