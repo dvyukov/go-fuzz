@@ -1,0 +1,99 @@
+# These steps validate we can fuzz inside of GOPATH
+# with GO111MODULE on and off.
+
+# Here, we purposefully do not test with GO111MODULE auto and unset,
+# because the meaning of auto within GOPATH has changed with
+# Go 1.13, and the meaning of unset will likely change in Go 1.14
+# (and some chance auto could change meaning again in Go 1.14).
+# However, the Go 1.13 and 1.14 changes ultimately translate
+# to what external conditions enable or disable module mode
+# for cmd/go. Testing here with GO111MODULE on and off allows
+# us to explicitly test with cmd/go's module mode enabled and disabled in GOPATH,
+# which is our current goal here. (These are not cmd/go tests after all).
+ 
+# The foo module being fuzzed depends on a 'replace' 
+# in its go.mod to find one of its dependencies, and that dependency bar
+# is located *outside* of GOPATH, which is a way to check that
+# module-mode is required to compile successfully.
+# (Other go-fuzz tests validate that non-module targets work in GOPATH with 
+# cmd/go's module mode disabled; that has been the status quo).
+
+# Enter a simple module with a fuzz function.
+# This is inside GOPATH.
+cd gopath/src/example.com/foo
+
+# Copy a pristine go.mod file.
+cp go.mod_PRISTINE go.mod
+
+# First, we test with GO111MODULE=on, which will likely be the default in Go 1.14.
+env GO111MODULE=on
+
+# Sanity check the module seems well formed.
+exec go list -m all
+stdout '^example.com/foo$'
+exec go build
+
+# Ask go-fuzz-build to build, including specifying the fuzz function for mod.
+exec go-fuzz-build -func=FuzzMod
+exists foo-fuzz.zip
+
+# Validate we can start fuzzing.
+# Note that 'timeout(1)' will error here, so we preface the invocation with '!'.
+# For travis on Windows, we install 'timeout(1)' as part of our travis setup steps.
+# To test this locally on Windows, you might need to change 'timeout' to '\cygwin64\bin\timeout' or similar.
+! exec timeout 5 go-fuzz -procs=1 -func=FuzzMod
+stderr 'workers: \d+, corpus: '
+
+# Clean up.
+cp go.mod_PRISTINE go.mod
+rm foo-fuzz.zip
+
+# Second, we test with GO111MODULE=off.
+# The meaning of this is unlikely to change in Go 1.14,
+# altough in some (distant?) future, GO111MODULE=off might
+# no longer be supported.
+env GO111MODULE=off
+
+# Confirm 'go list -m' and 'go build' fail.
+! exec go list -m all
+! exec go build
+
+# Confirm go-fuzz-build fails.
+! exec go-fuzz-build -func=FuzzMod
+! exists foo-fuzz.zip
+
+# Clean up (mainly in case we later add another test below).
+cp go.mod_PRISTINE go.mod
+rm foo-fuzz.zip
+
+# Define two modules.
+# example.com/foo has a fuzz function, and depends on example.com/bar.
+# foo is inside GOPATH, and bar is outside of GOPATH.
+
+-- gopath/src/example.com/foo/go.mod_PRISTINE --
+module example.com/foo
+
+require example.com/bar v0.0.0
+
+replace example.com/bar => ../../../../bar
+
+-- gopath/src/example.com/foo/fuzz.go --
+package foo
+
+import "example.com/bar"
+
+func FuzzMod(data []byte) int {
+	bar.Bar()
+	return 0
+}
+
+-- bar/go.mod --
+module example.com/bar
+
+-- bar/bar.go --
+package bar
+
+func Bar() string {
+	return "hello from bar"
+}
+

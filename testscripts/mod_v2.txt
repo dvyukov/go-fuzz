@@ -1,0 +1,76 @@
+# These steps validate we can fuzz a module that depends on a v2 module.
+# v2 modules are particularly problematic if not handled properly.
+# We validate that 'go-fuzz' and 'go-fuzz-build' work with and without 
+# the package path and fuzz function being specified.
+
+# Enter a module that depends on a v2+ module.
+# Note that we are outside of GOPATH, so the presence of the 'go.mod' here will
+# enable module-module for cmd/go (which is true in Go 1.11-1.13, and likely will be true in 1.14 as well).
+cd foo 
+
+# Sanity check the module seems well formed.
+exec go list -m all
+stdout '^example.com/foo$'
+stdout '^example.com/bar/v2 v2.0.0 => ../bar$'
+exec go build
+
+# Ask go-fuzz-build to build, first specifying the package path and fuzz function for foo.
+# foo is a module itself, and foo also depends on a v2 module bar.
+exec go-fuzz-build -func=FuzzDependOnV2Mod example.com/foo
+exists foo-fuzz.zip
+
+# Validate we can start fuzzing, first with the fuzz function specified.
+# Note that 'timeout(1)' will error here, so we preface the invocation with '!'.
+# For travis on Windows, we install 'timeout(1)' as part of our travis setup steps.
+# To test this locally on Windows, you might need to change 'timeout' to '\cygwin64\bin\timeout' or similar.
+! exec timeout 5 go-fuzz -procs=1 -func=FuzzDependOnV2Mod
+stderr 'workers: \d+, corpus: '
+
+# Validate we can start fuzzing, now without a fuzz function specified.
+! exec timeout 5 go-fuzz -procs=1
+stderr 'workers: \d+, corpus: '
+
+# Ask go-fuzz-build to build again, but now do not specify the fuzz function.
+rm foo-fuzz.zip
+exec go-fuzz-build
+exists foo-fuzz.zip
+
+# Validate we can start fuzzing with the new zip, first with a fuzz function specified.
+! exec timeout 5 go-fuzz -procs=1 -func=FuzzDependOnV2Mod
+stderr 'workers: \d+, corpus: '
+
+# Validate we can start fuzzing with the new zip, now without a fuzz function specified.
+! exec timeout 5 go-fuzz -procs=1
+stderr 'workers: \d+, corpus: '
+
+# Define two modules.
+# example.com/foo has a fuzz function, and depends on example.com/bar/v2.
+# The v2 module is following the 'major branch' approach for v2+ modules, 
+# not 'major subdirectory' approach. (Details: https://github.com/golang/go/wiki/Modules#releasing-modules-v2-or-higher)
+
+-- foo/go.mod --
+module example.com/foo
+
+require example.com/bar/v2 v2.0.0
+
+replace example.com/bar/v2 => ../bar
+
+-- foo/fuzz.go --
+package foo
+
+import "example.com/bar/v2"
+
+func FuzzDependOnV2Mod(data []byte) int {
+    bar.Bar()
+    return 0
+}
+
+-- bar/go.mod --
+module example.com/bar/v2
+
+-- bar/bar.go --
+package bar
+
+func Bar() string {
+    return "hello from bar"
+}

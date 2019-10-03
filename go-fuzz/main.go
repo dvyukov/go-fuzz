@@ -99,7 +99,11 @@ func main() {
 			// Try the default. Best effort only.
 			var bin string
 			cfg := new(packages.Config)
-			cfg.Env = append(os.Environ(), "GO111MODULE=off")
+			// Preliminary modules support: note that we do not set 
+			// GO111MODULE here in order to respect any GO111MODULE setting by the user
+			// as we are finding dependencies. See preliminary modules support 
+			// comments in go-fuzz-build/main.go for more details.
+			cfg.Env = os.Environ()
 			pkgs, err := packages.Load(cfg, ".")
 			if err == nil && len(pkgs) == 1 {
 				bin = pkgs[0].Name + "-fuzz.zip"
