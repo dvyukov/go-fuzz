@@ -60,7 +60,13 @@ func makeTags() string {
 // that clients can then modify and use for calls to go/packages.
 func basePackagesConfig() *packages.Config {
 	cfg := new(packages.Config)
-	cfg.Env = append(os.Environ(), "GO111MODULE=off")
+
+	goFuzzModule, isGoFuzzModuleSet := os.LookupEnv("GOFUZZ111MODULE")
+	if isGoFuzzModuleSet {
+		cfg.Env = append(os.Environ(), "GO111MODULE=" + goFuzzModule)
+	} else {
+		cfg.Env = append(os.Environ(), "GO111MODULE=off")
+	}
 	return cfg
 }
 
