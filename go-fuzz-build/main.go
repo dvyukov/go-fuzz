@@ -60,7 +60,12 @@ func makeTags() string {
 // that clients can then modify and use for calls to go/packages.
 func basePackagesConfig() *packages.Config {
 	cfg := new(packages.Config)
-	cfg.Env = append(os.Environ(), "GO111MODULE=off")
+	// Until we have proper module support, disable modules.
+	// However, if a user has explicitly set GO111MODULE,
+	// assume they know what they're doing, and respect it.
+	if _, ok := os.LookupEnv("GO111MODULE"); !ok {
+		cfg.Env = append(os.Environ(), "GO111MODULE=off")
+	}
 	return cfg
 }
 
