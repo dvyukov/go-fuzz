@@ -189,9 +189,21 @@ func (w *Worker) loop() {
 			w.triageInput(input)
 			for {
 				x := atomic.LoadUint32(&w.hub.initialTriage)
-				if x == 0 || atomic.CompareAndSwapUint32(&w.hub.initialTriage, x, x-1) {
+				if x == 0 {
 					break
 				}
+				if atomic.CompareAndSwapUint32(&w.hub.initialTriage, x, x-1) {
+					// After the last initial input was processed, check if anything was actually added to the corpus.
+					// If the corpus is empty at this point, we have nothing to feed to our workers.
+					if x == 1 {
+						// Give the hub time to store the initial inputs
+						time.Sleep(100 * time.Millisecond)
+						if ro := w.hub.ro.Load().(*ROData); len(ro.corpus) == 0 {
+							log.Fatal("all initial inputs crashed. provide at least one non-crashing input.")
+						}
+					}
+				}
+				break
 			}
 			continue
 		default:
