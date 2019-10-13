@@ -29,6 +29,7 @@ var (
 	flagWorkdir           = flag.String("workdir", ".", "dir with persistent work data")
 	flagProcs             = flag.Int("procs", runtime.NumCPU(), "parallelism level")
 	flagTimeout           = flag.Int("timeout", 10, "test timeout, in seconds")
+	flagDuration          = flag.String("duration", "", "exit after this duration")
 	flagMinimize          = flag.Duration("minimize", 1*time.Minute, "time limit for input minimization")
 	flagCoordinator       = flag.String("coordinator", "", "coordinator mode (value is coordinator address)")
 	flagWorker            = flag.String("worker", "", "worker mode (value is coordinator address)")
@@ -57,8 +58,8 @@ func main() {
 		log.Fatalf("both -http and -worker are specified")
 	}
 
+	c := make(chan os.Signal, 1)
 	go func() {
-		c := make(chan os.Signal, 1)
 		signal.Notify(c, syscall.SIGINT)
 		<-c
 		atomic.StoreUint32(&shutdown, 1)
@@ -70,6 +71,18 @@ func main() {
 		}
 		os.Exit(0)
 	}()
+
+	if *flagDuration != "" {
+		d, err := time.ParseDuration(*flagDuration)
+		if err != nil {
+			log.Fatalf("unable to parse duration: %v", err)
+		}
+		go func() {
+			<-time.After(d)
+			log.Print("execution duration reached. starting shutdown...")
+			c <- syscall.SIGINT
+		}()
+	}
 
 	runtime.GOMAXPROCS(min(*flagProcs, runtime.NumCPU()))
 	debug.SetGCPercent(50) // most memory is in large binary blobs
