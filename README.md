@@ -144,12 +144,12 @@ You must have a `require` directive for `github.com/dvyukov/go-fuzz` in your go.
 
 1. Prior to invoking go-fuzz-build, add a `require` for `github.com/dvyukov/go-fuzz` in your go.mod. A common approach for tracking tool dependencies like this is [via a tools.go file](https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module). Alternatively, you could for example manually add `require github.com/dvyukov/go-fuzz latest` to your go.mod.
 
-2. If you do not have a `require` for `github.com/dvyukov/go-fuzz` in your go.mod, go-fuzz-build will add one automatically. If desired, you can revert your go.mod file when you are done.
+2. If you do not have a `require` for `github.com/dvyukov/go-fuzz` in your go.mod, go-fuzz-build will add one automatically. If desired, you can revert your go.mod file when go-fuzz-build is done.
 
 Vendoring with modules is not yet supported. A `vendor` directory will be ignored, and go-fuzz will report an error if `GOFLAGS=-mod=vendor` is set.
 
 Note that while modules are used to prepare the build, the final instrumented build is still done in GOPATH mode.
-For most code, this should not matter.
+For most modules, this should not matter.
 
 ## libFuzzer support
 

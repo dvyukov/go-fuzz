@@ -61,10 +61,9 @@ func makeTags() string {
 func basePackagesConfig() *packages.Config {
 	cfg := new(packages.Config)
 
-	// Preliminary modules support: note that we do not set 
-	// GO111MODULE here in order to respect any GO111MODULE setting by the user
-	// as we are finding dependencies. Note, however, that we are
-	// still setting up a GOPATH to build, so we later will force 
+	// Note that we do not set GO111MODULE here in order to respect any GO111MODULE
+	// setting by the user as we are finding dependencies. Note, however, that 
+	// we are still setting up a GOPATH to build, so we later will force 
 	// GO111MODULE to be off when building so that we are in GOPATH mode.
 	// If the user has not set GO111MODULE, the meaning here is
 	// left up to cmd/go (defaulting to 'auto' in Go 1.11-1.13,
@@ -109,7 +108,7 @@ func main() {
 		c.failf("-race and -libfuzzer are incompatible")
 	}
 	if checkModVendor() {
-		// Preliminary modules support: we don't support -mod=vendor.
+		// We don't support -mod=vendor with modules.
 		// Part of the issue is go-fuzz-dep and go-fuzz-defs
 		// won't be in the user's vendor directory.
 		c.failf("GOFLAGS with -mod=vendor is not supported")
@@ -529,9 +528,8 @@ func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBl
 	args = append(args, "-o", outf, mainPkg)
 	cmd := exec.Command("go", args...)
 
-	// Preliminary modules support: we are constructing a GOPATH
-	// environment, so while building we force GOPATH mode here
-	// via GO111MODULE=off.
+	// We are constructing a GOPATH environment, so while building
+	// we force GOPATH mode here via GO111MODULE=off.
 	cmd.Env = append(os.Environ(),
 		"GOROOT="+filepath.Join(c.workdir, "goroot"),
 		"GOPATH="+filepath.Join(c.workdir, "gopath"),

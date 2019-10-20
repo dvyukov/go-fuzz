@@ -92,6 +92,8 @@ rm foo-fuzz.zip
 # foo has vendored bar and (in theory) made a code change inside foo's vendor 
 # directory. The bar code inside foo's vendor compiles, but the original
 # bar code does not compile.
+# The go.mod files set 'go 1.13' to avoid triggering the Go 1.14 auto
+# detection of a vendor directory.
 
 -- foo/fuzz.go --
 package foo
@@ -105,6 +107,8 @@ func FuzzUsingVendor(data []byte) int {
 
 -- foo/go.mod --
 module example.com/foo
+
+go 1.13
 
 require (
     example.com/bar v0.0.0
@@ -131,3 +135,5 @@ func Bar() string {
 
 -- bar/go.mod --
 module example.com/bar
+
+go 1.13

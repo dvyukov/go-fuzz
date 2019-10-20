@@ -100,9 +100,8 @@ func main() {
 			// Try the default. Best effort only.
 			var bin string
 			cfg := new(packages.Config)
-			// Preliminary modules support: note that we do not set 
-			// GO111MODULE here in order to respect any GO111MODULE setting by the user
-			// as we are finding dependencies. See preliminary modules support 
+			// Note that we do not set GO111MODULE here in order to respect any GO111MODULE 
+			// setting by the user as we are finding dependencies. See modules support 
 			// comments in go-fuzz-build/main.go for more details.
 			cfg.Env = os.Environ()
 			pkgs, err := packages.Load(cfg, ".")
