@@ -607,5 +607,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/uber/makisu: index out of range (1)](https://github.com/uber/makisu/issues/266) **fixed**
 - [github.com/uber/makisu: index out of range (2)](https://github.com/uber/makisu/issues/271)
 - [github.com/google/go-attestation: out of memory](https://github.com/google/go-attestation/issues/126) **fixed**
+- [github.com/buger/jsonparser index out of range](https://github.com/buger/jsonparser/issues/178)
+- [github.com/buger/jsonparser infinite loop](https://github.com/buger/jsonparser/issues/179)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
