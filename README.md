@@ -5,7 +5,9 @@ Fuzzing is mainly applicable to packages that parse complex inputs (both text
 and binary), and is especially useful for hardening of systems that parse inputs
 from potentially malicious users (e.g. anything accepted over a network).
 
-**Note:** go-fuzz has recently added preliminary support for fuzzing [Go Modules](github.com/golang/go/wiki/Modules).  See the [section below](https://github.com/dvyukov/go-fuzz/blob/master/README.md#modules-support) for more details. If you encounter a problem with go-fuzz's module support, a workaround might be to disable modules via `export GO111MODULE=off`.
+**Note:** go-fuzz has recently added preliminary support for fuzzing [Go Modules](github.com/golang/go/wiki/Modules).  See the [section below](https://github.com/dvyukov/go-fuzz/blob/master/README.md#modules-support) for more details. 
+If you encounter a problem with modules, please file an issue with details. A workaround might be to disable modules via `export GO111MODULE=off`.
+
 
 ## Usage
 
@@ -140,11 +142,7 @@ information is also served via http (see the ```-http``` flag).
 go-fuzz has preliminary support for fuzzing [Go Modules](github.com/golang/go/wiki/Modules). 
 go-fuzz respects the standard `GO111MODULE` environment variable, which can be set to `on`, `off`, or `auto`. 
 
-You must have a `require` directive for `github.com/dvyukov/go-fuzz` in your go.mod file. Two approaches are:
-
-1. Prior to invoking go-fuzz-build, add a `require` for `github.com/dvyukov/go-fuzz` in your go.mod. A common approach for tracking tool dependencies like this is [via a tools.go file](https://github.com/golang/go/wiki/Modules#how-can-i-track-tool-dependencies-for-a-module). Alternatively, you could for example manually add `require github.com/dvyukov/go-fuzz latest` to your go.mod.
-
-2. If you do not have a `require` for `github.com/dvyukov/go-fuzz` in your go.mod, go-fuzz-build will add one automatically. If desired, you can revert your go.mod file when go-fuzz-build is done.
+go-fuzz-build will add a `require` for `github.com/dvyukov/go-fuzz` to your go.mod. If desired, you may remove this once the build is complete.
 
 Vendoring with modules is not yet supported. A `vendor` directory will be ignored, and go-fuzz will report an error if `GOFLAGS=-mod=vendor` is set.
 
