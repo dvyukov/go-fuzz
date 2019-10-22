@@ -8,7 +8,6 @@ from potentially malicious users (e.g. anything accepted over a network).
 **Note:** go-fuzz has recently added preliminary support for fuzzing [Go Modules](github.com/golang/go/wiki/Modules).  See the [section below](https://github.com/dvyukov/go-fuzz/blob/master/README.md#modules-support) for more details. 
 If you encounter a problem with modules, please file an issue with details. A workaround might be to disable modules via `export GO111MODULE=off`.
 
-
 ## Usage
 
 First, you need to write a test function of the form:
