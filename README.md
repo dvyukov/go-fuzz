@@ -5,6 +5,9 @@ Fuzzing is mainly applicable to packages that parse complex inputs (both text
 and binary), and is especially useful for hardening of systems that parse inputs
 from potentially malicious users (e.g. anything accepted over a network).
 
+**Note:** go-fuzz has recently added preliminary support for fuzzing [Go Modules](github.com/golang/go/wiki/Modules).  See the [section below](https://github.com/dvyukov/go-fuzz/blob/master/README.md#modules-support) for more details. 
+If you encounter a problem with modules, please file an issue with details. A workaround might be to disable modules via `export GO111MODULE=off`.
+
 ## Usage
 
 First, you need to write a test function of the form:
@@ -102,9 +105,6 @@ $ go-fuzz-build
 ```
 This will produce png-fuzz.zip archive.
 
-Note that go-fuzz [does not support modules yet](https://github.com/dvyukov/go-fuzz/issues/195).
-`go-fuzz-build` disables modules by setting environment variable `GO111MODULE=off` during the build.
-
 Now we are ready to go:
 ```
 $ go-fuzz
@@ -135,6 +135,18 @@ grows fuzzer uncovers new lines of code; size of the bitmap is 64K; ideally ```c
 value should be less than ~5000, otherwise fuzzer can miss new interesting inputs
 due to hash collisions. And finally ```uptime``` is uptime of the process. This same
 information is also served via http (see the ```-http``` flag).
+
+## Modules support
+
+go-fuzz has preliminary support for fuzzing [Go Modules](github.com/golang/go/wiki/Modules). 
+go-fuzz respects the standard `GO111MODULE` environment variable, which can be set to `on`, `off`, or `auto`. 
+
+go-fuzz-build will add a `require` for `github.com/dvyukov/go-fuzz` to your go.mod. If desired, you may remove this once the build is complete.
+
+Vendoring with modules is not yet supported. A `vendor` directory will be ignored, and go-fuzz will report an error if `GOFLAGS=-mod=vendor` is set.
+
+Note that while modules are used to prepare the build, the final instrumented build is still done in GOPATH mode.
+For most modules, this should not matter.
 
 ## libFuzzer support
 

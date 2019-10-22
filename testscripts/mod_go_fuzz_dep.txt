@@ -1,0 +1,56 @@
+# These steps validate that go-fuzz/go-fuzz-dep and go-fuzz/go-fuzz-defs are found,
+# along with validating how they are currently found, and where they end up being located.
+
+# Enter a simple module with a fuzz function.
+# Note that we are outside of GOPATH, so the presence of the 'go.mod' here will
+# enable module-module for cmd/go (which is true in Go 1.11-1.13, and likely will be true in 1.14 as well).
+cd testmod
+
+# Sanity check the module seems well formed.
+exec go list -m all
+stdout '^example.com/testmod$'
+exec go build
+
+# Sanity check go-fuzz is not in our go.mod, nor reported by 'go list -m all'.
+! grep 'github.com/dvyukov/go-fuzz' go.mod
+exec go list -m all
+! stdout 'github.com/dvyukov/go-fuzz'
+
+# Ask go-fuzz-build to build, including specifying the fuzz function for mod.
+exec go-fuzz-build -func=FuzzMod
+exists testmod-fuzz.zip
+
+# Sanity check github.com/dvyukov/go-fuzz was added by go-fuzz-build
+# to our go.mod and is now visible via 'go list -m all'.
+# This is not necessarily a requirement for all time,
+# but this is the way the current modules approach for go-fuzz works.
+# This is important to make sure the go-fuzz-dep source code is
+# findable by go-fuzz-build (when it invokes 'go list').
+grep -count=1 '^require github.com/dvyukov/go-fuzz v[^ ]+ // indirect$' go.mod
+exec go list -m all
+stdout '^example.com/testmod$'
+stdout '^github.com/dvyukov/go-fuzz v[^ ]+$'
+
+# Also output directories for go-fuzz-defs and go-fuzz-dep 
+# in case we need to debug this at some point in the future,
+# or in case cmd/go or go-fuzz change in the future 
+# in some way that moves these out of $GOPATH/pkg/testmod or
+# otherwise alters where these are located.
+# The exact location might not be critical, but we should be aware of what it is, 
+# so capture the location here in this test so we know if it changes later.
+exec go list -f {{.Dir}} github.com/dvyukov/go-fuzz/go-fuzz-defs
+stdout 'gopath.pkg.mod.github.com.dvyukov.go-fuzz@v[^ ]+.go-fuzz-defs$'
+exec go list -f {{.Dir}} github.com/dvyukov/go-fuzz/go-fuzz-dep
+stdout 'gopath.pkg.mod.github.com.dvyukov.go-fuzz@v[^ ]+.go-fuzz-dep$'
+
+# Define a simple module 'mod' that has a fuzz function.
+
+-- testmod/go.mod --
+module example.com/testmod
+
+-- testmod/fuzz.go --
+package testmod
+
+func FuzzMod(data []byte) int {
+    return 0
+}
