@@ -621,5 +621,7 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/google/go-attestation: out of memory](https://github.com/google/go-attestation/issues/126) **fixed**
 - [github.com/buger/jsonparser index out of range](https://github.com/buger/jsonparser/issues/178)
 - [github.com/buger/jsonparser infinite loop](https://github.com/buger/jsonparser/issues/179)
+- [github.com/hjson/hjson-go: panic on nil](https://github.com/hjson/hjson-go/issues/16) **fixed**
+- [github.com/hjson/hjson-go: panic on invalid syntax](https://github.com/hjson/hjson-go/issues/17) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
