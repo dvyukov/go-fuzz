@@ -15,6 +15,7 @@ import (
 	"go/types"
 	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -637,6 +638,8 @@ func (c *Context) createFuzzMain() string {
 }
 
 func (c *Context) clonePackage(p *packages.Package) {
+	log.Printf("clonePackage: %+v", p)
+
 	root := "goroot"
 	if !c.std[p.PkgPath] {
 		root = "gopath"
@@ -652,6 +655,24 @@ func (c *Context) clonePackage(p *packages.Package) {
 	}
 
 	// Copy all the source code.
+
+	if root == "gopath" {
+		dirs := make(map[string]struct{})
+		for _, f := range p.GoFiles {
+			dir := filepath.Dir(f)
+			if _, ok := dirs[dir]; !ok {
+				c.copyDir(dir, newDir)
+				dirs[dir] = struct{}{}
+			}
+		}
+		for _, f := range p.OtherFiles {
+			dir := filepath.Dir(f)
+			if _, ok := dirs[dir]; !ok {
+				c.copyDir(dir, newDir)
+				dirs[dir] = struct{}{}
+			}
+		}
+	}
 
 	// Use GoFiles instead of CompiledGoFiles here.
 	// If we use CompiledGoFiles, we end up with code that cmd/go won't compile.
@@ -737,6 +758,8 @@ func (c *Context) instrumentPackages(blocks *[]CoverBlock, sonar *[]CoverBlock) 
 }
 
 func (c *Context) copyDir(dir, newDir string) {
+	log.Printf("copyDir: %s %s", dir, newDir)
+
 	c.mkdirAll(newDir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
