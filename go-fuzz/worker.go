@@ -202,8 +202,8 @@ func (w *Worker) loop() {
 							log.Fatal("all initial inputs crashed. provide at least one non-crashing input.")
 						}
 					}
+					break
 				}
-				break
 			}
 			continue
 		default:
