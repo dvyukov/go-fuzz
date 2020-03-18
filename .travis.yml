@@ -37,7 +37,6 @@ matrix:
 # Install coreutils for the 'timeout(1)' utility on windows and osx.
 before_install:
   - if [[ "$TRAVIS_OS_NAME" == "windows" ]]; then choco install gnuwin32-coreutils.install; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then ln -s /usr/local/bin/gtimeout /usr/local/bin/timeout ; fi
   - go get -u github.com/rogpeppe/go-internal/cmd/testscript
 
 # Set the import path (including to help with forks).
