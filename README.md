@@ -172,7 +172,7 @@ Just as unit-testing, fuzzing is better done continuously.
 
 Currently there are 2 services that offer continuous fuzzing based on go-fuzz:
 
-- [fuzzit.dev](https://fuzzit.dev/) ([tutorial](https://github.com/fuzzitdev/example-go))
+- [gitlab.com](https://gitlab.com) ([tutorial](https://docs.gitlab.com/ee/user/application_security/coverage_fuzzing/))
 - [fuzzbuzz.io](https://fuzzbuzz.io/) ([tutorial](https://docs.fuzzbuzz.io/getting-started/find-your-first-bug-in-go))
 
 ## Random Notes
