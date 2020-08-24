@@ -320,7 +320,7 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 		return v
 	}
 	v1 = conv("__gofuzz_v1", v1)
-	v2 = conv("__gofuzz_v2", v2)
+	v2 = exprWithMaxPos(conv("__gofuzz_v2", v2), 1)
 
 	block.List = append(block.List,
 		&ast.ExprStmt{
@@ -340,6 +340,23 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 	nn.Y = &ast.BasicLit{Kind: token.INT, Value: "true"}
 	nn.Op = token.EQL
 	return nil
+}
+
+func min(p1, p2 token.Pos) token.Pos {
+	if p1 < p2 {
+		return p1
+	} else {
+		return p1
+	}
+}
+
+func exprWithMaxPos(expr ast.Expr, pos token.Pos) ast.Expr {
+	switch expr := expr.(type) {
+	case *ast.Ident:
+		expr.NamePos = min(pos, expr.NamePos)
+		return expr
+	}
+	return expr
 }
 
 func isWeirdShift(info *types.Info, n ast.Expr) bool {
@@ -646,14 +663,18 @@ func (f *File) Visit(node ast.Node) ast.Visitor {
 
 func (f *File) addImport(path, name, anyIdent string) {
 	newImport := &ast.ImportSpec{
-		Name: ast.NewIdent(name),
+		Name: &ast.Ident{
+			NamePos: 1,
+			Name:    name,
+		},
 		Path: &ast.BasicLit{
 			Kind:  token.STRING,
 			Value: fmt.Sprintf("%q", path),
 		},
 	}
 	impDecl := &ast.GenDecl{
-		Tok: token.IMPORT,
+		TokPos: 1,
+		Tok:    token.IMPORT,
 		Specs: []ast.Spec{
 			newImport,
 		},
