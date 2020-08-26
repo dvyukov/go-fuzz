@@ -5,7 +5,7 @@ Fuzzing is mainly applicable to packages that parse complex inputs (both text
 and binary), and is especially useful for hardening of systems that parse inputs
 from potentially malicious users (e.g. anything accepted over a network).
 
-**Note:** go-fuzz has recently added preliminary support for fuzzing [Go Modules](github.com/golang/go/wiki/Modules).  See the [section below](https://github.com/dvyukov/go-fuzz/blob/master/README.md#modules-support) for more details. 
+**Note:** go-fuzz has recently added preliminary support for fuzzing [Go Modules](https://github.com/golang/go/wiki/Modules).  See the [section below](https://github.com/dvyukov/go-fuzz/blob/master/README.md#modules-support) for more details. 
 If you encounter a problem with modules, please file an issue with details. A workaround might be to disable modules via `export GO111MODULE=off`.
 
 ## Usage
