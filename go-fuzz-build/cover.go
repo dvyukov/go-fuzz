@@ -346,7 +346,7 @@ func min(p1, p2 token.Pos) token.Pos {
 	if p1 < p2 {
 		return p1
 	} else {
-		return p1
+		return p2
 	}
 }
 
