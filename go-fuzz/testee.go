@@ -31,8 +31,8 @@ type Testee struct {
 	stdoutPipe  *os.File
 	writebuf    [9]byte  // reusable write buffer
 	resbuf      [24]byte // reusable results buffer
-	execs       int
 	startTime   int64
+	execs       int
 	outputC     chan []byte
 	downC       chan bool
 	down        bool
