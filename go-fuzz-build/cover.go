@@ -329,7 +329,7 @@ func (s *Sonar) Visit(n ast.Node) ast.Visitor {
 				Args: []ast.Expr{v1, v2, &ast.BasicLit{Kind: token.INT, Value: strconv.Itoa(id)}},
 			},
 		},
-		&ast.ReturnStmt{Results: []ast.Expr{&ast.BinaryExpr{Op: nn.Op, X: v1, Y: v2}}},
+		&ast.ReturnStmt{Results: []ast.Expr{&ast.BinaryExpr{Op: nn.Op, X: v1, Y: v2, OpPos: nn.Pos()}}},
 	)
 	nn.X = &ast.CallExpr{
 		Fun: &ast.FuncLit{
