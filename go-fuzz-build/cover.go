@@ -653,10 +653,12 @@ func (f *File) addImport(path, name, anyIdent string) {
 		},
 	}
 	impDecl := &ast.GenDecl{
-		Tok: token.IMPORT,
+		Lparen: f.astFile.Name.End(),
+		Tok:    token.IMPORT,
 		Specs: []ast.Spec{
 			newImport,
 		},
+		Rparen: f.astFile.Name.End(),
 	}
 	// Make the new import the first Decl in the file.
 	astFile := f.astFile
