@@ -138,7 +138,7 @@ information is also served via http (see the ```-http``` flag).
 
 ## Modules support
 
-go-fuzz has preliminary support for fuzzing [Go Modules](github.com/golang/go/wiki/Modules). 
+go-fuzz has preliminary support for fuzzing [Go Modules](https://github.com/golang/go/wiki/Modules). 
 go-fuzz respects the standard `GO111MODULE` environment variable, which can be set to `on`, `off`, or `auto`. 
 
 go-fuzz-build will add a `require` for `github.com/dvyukov/go-fuzz` to your go.mod. If desired, you may remove this once the build is complete.
