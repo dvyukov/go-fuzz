@@ -625,5 +625,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/hjson/hjson-go: panic on invalid syntax](https://github.com/hjson/hjson-go/issues/17) **fixed**
 - [github.com/google/gofuzz: off-by-one error](https://github.com/google/gofuzz/issues/46) **fixed**
 - [github.com/bookingcom/nanotube: index out of range](https://github.com/bookingcom/nanotube/pull/97) **fixed**
+- [github.com/ProtonMail/crypto: panic on fingerpring subpacket](https://github.com/ProtonMail/crypto/pull/66) **fixed**
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
