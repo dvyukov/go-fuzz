@@ -665,6 +665,20 @@ func (c *Context) clonePackage(p *packages.Package) {
 		c.copyFile(f, dst)
 	}
 
+	// copy subdirs which aren't packages
+	dir := filepath.Dir(p.GoFiles[0])
+	subdirs, err := ioutil.ReadDir(dir)
+	if err != nil {
+		c.failf("failed to scan dir '%v': %v", dir, err)
+	}
+	for _, d := range subdirs {
+		if d.IsDir() {
+			src := filepath.Join(dir, d.Name())
+			dst := filepath.Join(newDir, d.Name())
+			c.copyNotPkgDir(src, dst)
+		}
+	}
+
 	// TODO: do we need to look for and copy go.mod?
 }
 
@@ -750,6 +764,29 @@ func (c *Context) copyDir(dir, newDir string) {
 		} else {
 			c.copyFile(src, dst)
 		}
+	}
+}
+
+func (c *Context) copyNotPkgDir(dir, newDir string) {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		c.failf("failed to scan dir '%v': %v", dir, err)
+	}
+	for _, f := range files {
+		if strings.HasSuffix(f.Name(), ".go") {
+			// it is Pkg dir
+			return
+		}
+	}
+	c.mkdirAll(newDir)
+	for _, f := range files {
+		src := filepath.Join(dir, f.Name())
+		dst := filepath.Join(newDir, f.Name())
+		if f.IsDir() {
+			c.copyNotPkgDir(src, dst)
+			continue
+		}
+		c.copyFile(src, dst)
 	}
 }
 
