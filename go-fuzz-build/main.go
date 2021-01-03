@@ -737,19 +737,19 @@ func (c *Context) instrumentPackages(blocks *[]CoverBlock, sonar *[]CoverBlock) 
 }
 
 func (c *Context) copyDir(dir, newDir string) {
-	c.mkdirAll(newDir)
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		c.failf("failed to scan dir '%v': %v", dir, err)
 	}
+	c.mkdirAll(newDir)
 	for _, f := range files {
-		if f.IsDir() {
-			c.copyDir(filepath.Join(dir, f.Name()), filepath.Join(newDir, f.Name()))
-			continue
-		}
 		src := filepath.Join(dir, f.Name())
 		dst := filepath.Join(newDir, f.Name())
-		c.copyFile(src, dst)
+		if f.IsDir() {
+			c.copyDir(src, dst)
+		} else {
+			c.copyFile(src, dst)
+		}
 	}
 }
 
