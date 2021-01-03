@@ -782,9 +782,9 @@ func (c *Context) copyNotPkgDir(dir, newDir string) {
 		dst := filepath.Join(newDir, f.Name())
 		if f.IsDir() {
 			c.copyNotPkgDir(src, dst)
-			continue
+		} else {
+			c.copyFile(src, dst)
 		}
-		c.copyFile(src, dst)
 	}
 }
 
