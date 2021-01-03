@@ -665,8 +665,8 @@ func (c *Context) clonePackage(p *packages.Package) {
 		c.copyFile(f, dst)
 	}
 
-	// copy subdirs which aren't packages
-	dir := filepath.Dir(p.GoFiles[0])
+	dir := packageDir(p)
+	// Сopy subdirs which aren't packages.
 	subdirs, err := ioutil.ReadDir(dir)
 	if err != nil {
 		c.failf("failed to scan dir '%v': %v", dir, err)
