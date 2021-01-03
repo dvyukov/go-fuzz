@@ -675,7 +675,7 @@ func (c *Context) clonePackage(p *packages.Package) {
 		if d.IsDir() {
 			src := filepath.Join(dir, d.Name())
 			dst := filepath.Join(newDir, d.Name())
-			c.copyNotPkgDir(src, dst)
+			c.copyDir(src, dst, isNotPackage)
 		}
 	}
 
@@ -750,38 +750,23 @@ func (c *Context) instrumentPackages(blocks *[]CoverBlock, sonar *[]CoverBlock) 
 	packages.Visit(c.pkgs, nil, visit)
 }
 
-func (c *Context) copyDir(dir, newDir string) {
+func (c *Context) copyDir(dir, newDir string, filters ...func([]os.FileInfo) bool) {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		c.failf("failed to scan dir '%v': %v", dir, err)
 	}
-	c.mkdirAll(newDir)
-	for _, f := range files {
-		src := filepath.Join(dir, f.Name())
-		dst := filepath.Join(newDir, f.Name())
-		if f.IsDir() {
-			c.copyDir(src, dst)
-		} else {
-			c.copyFile(src, dst)
+	for _, filtered := range filters {
+		if !filtered(files) {
+			// Don't copy filtered dir.
+			return
 		}
 	}
-}
-
-func (c *Context) copyNotPkgDir(dir, newDir string) {
-	files, err := ioutil.ReadDir(dir)
-	if err != nil {
-		c.failf("failed to scan dir '%v': %v", dir, err)
-	}
-	if isPackage(files) {
-		// Don't copy go-package dir.
-		return
-	}
 	c.mkdirAll(newDir)
 	for _, f := range files {
 		src := filepath.Join(dir, f.Name())
 		dst := filepath.Join(newDir, f.Name())
 		if f.IsDir() {
-			c.copyNotPkgDir(src, dst)
+			c.copyDir(src, dst, filters...)
 		} else {
 			c.copyFile(src, dst)
 		}

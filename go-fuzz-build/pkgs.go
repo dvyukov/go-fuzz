@@ -18,12 +18,15 @@ func packageDir(p *packages.Package) string {
 	return dir
 }
 
-// isPackage checks if dir contains go source files.
-func isPackage(files []os.FileInfo) bool {
+// isNotPackage checks if dir contains go source files.
+func isNotPackage(files []os.FileInfo) bool {
 	for _, f := range files {
-		if !f.IsDir() && strings.HasSuffix(f.Name(), ".go") {
-			return true
+		if f.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(f.Name(), ".go") {
+			return false
 		}
 	}
-	return false
+	return true
 }
