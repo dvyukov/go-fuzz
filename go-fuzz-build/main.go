@@ -772,11 +772,9 @@ func (c *Context) copyNotPkgDir(dir, newDir string) {
 	if err != nil {
 		c.failf("failed to scan dir '%v': %v", dir, err)
 	}
-	for _, f := range files {
-		if strings.HasSuffix(f.Name(), ".go") {
-			// it is Pkg dir
-			return
-		}
+	if isPackage(files) {
+		// Don't copy go-package dir.
+		return
 	}
 	c.mkdirAll(newDir)
 	for _, f := range files {
