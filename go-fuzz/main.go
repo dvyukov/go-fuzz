@@ -42,6 +42,7 @@ var (
 	flagSonar             = flag.Bool("sonar", true, "use sonar hints")
 	flagV                 = flag.Int("v", 0, "verbosity level")
 	flagHTTP              = flag.String("http", "", "HTTP server listen address (coordinator mode only)")
+	flagDict              = flag.String("dict", "", "Dictionary file containing string tokens (one per line, not quoted)")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})
@@ -55,6 +56,16 @@ func main() {
 	}
 	if *flagHTTP != "" && *flagWorker != "" {
 		log.Fatalf("both -http and -worker are specified")
+	}
+
+	if *flagDict != "" {
+		dictStat, err := os.Stat(*flagDict)
+		if err != nil {
+			log.Fatalf("cannot read dictionary file '%v'", *flagDict)
+		}
+		if dictStat.Size() == 0 {
+			log.Fatalf("dictionary file '%v' is empty", *flagDict)
+		}
 	}
 
 	go func() {
