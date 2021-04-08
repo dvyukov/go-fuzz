@@ -40,6 +40,7 @@ var (
 	flagLibFuzzer = flag.Bool("libfuzzer", false, "output static archive for use with libFuzzer")
 	flagBuildX    = flag.Bool("x", false, "print the commands if build fails")
 	flagPreserve  = flag.String("preserve", "", "a comma-separated list of import paths not to instrument")
+	flagGoCmd     = flag.String("go", "go", `path to "go" command`)
 )
 
 func makeTags() string {
@@ -229,7 +230,7 @@ func (c *Context) getEnv() {
 			continue
 		}
 		// TODO: make a single call ("go env GOROOT GOPATH") instead
-		out, err := exec.Command("go", "env", k).CombinedOutput()
+		out, err := exec.Command(*flagGoCmd, "env", k).CombinedOutput()
 		if err != nil || len(out) == 0 {
 			c.failf("%s is not set and failed to locate it: 'go env %s' returned '%s' (%v)", k, k, out, err)
 		}
@@ -238,7 +239,7 @@ func (c *Context) getEnv() {
 	c.GOROOT = env["GOROOT"]
 	c.GOPATH = env["GOPATH"]
 
-	out, err := exec.Command("go", "list", "-f", "'{{context.ReleaseTags}}'", "runtime").CombinedOutput()
+	out, err := exec.Command(*flagGoCmd, "list", "-f", "'{{context.ReleaseTags}}'", "runtime").CombinedOutput()
 	if err != nil || len(out) == 0 {
 		c.failf("go list -f '{{context.ReleaseTags}}' runtime returned '%s' (%v)", out, err)
 	}
@@ -526,7 +527,7 @@ func (c *Context) buildInstrumentedBinary(blocks *[]CoverBlock, sonar *[]CoverBl
 		args = append(args, "-trimpath")
 	}
 	args = append(args, "-o", outf, mainPkg)
-	cmd := exec.Command("go", args...)
+	cmd := exec.Command(*flagGoCmd, args...)
 
 	// We are constructing a GOPATH environment, so while building
 	// we force GOPATH mode here via GO111MODULE=off.
