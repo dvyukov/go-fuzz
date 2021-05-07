@@ -121,7 +121,6 @@ func newHub(metadata MetaData) *Hub {
 	if *flagDict != "" {
 		ro.strLits = nil // Discard existing tokens
 		fileName := *flagDict
-		log.Printf("reading token list from \"%v\"\n", fileName)
 		dictData, err := ioutil.ReadFile(fileName)
 		if err != nil {
 			log.Fatalf("could not read tokens from \"%v\": %v\n", fileName, err)
