@@ -42,7 +42,7 @@ var (
 	flagSonar             = flag.Bool("sonar", true, "use sonar hints")
 	flagV                 = flag.Int("v", 0, "verbosity level")
 	flagHTTP              = flag.String("http", "", "HTTP server listen address (coordinator mode only)")
-	flagDict              = flag.String("dict", "", "Dictionary file containing string tokens (one per line, not quoted)")
+	flagDict              = flag.String("dict", "", "dictionary file containing string tokens (one per line, not quoted)")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})
