@@ -123,7 +123,7 @@ func newHub(metadata MetaData) *Hub {
 		fileName := *flagDict
 		dictData, err := ioutil.ReadFile(fileName)
 		if err != nil {
-			log.Fatalf("could not read tokens from %q: %v\n", fileName, err)
+			log.Fatalf("could not read tokens from %q: %v", fileName, err)
 		}
 		textData := string(dictData)
 		splits := strings.Split(textData,"\n")
