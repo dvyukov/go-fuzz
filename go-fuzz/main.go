@@ -61,7 +61,7 @@ func main() {
 	if *flagDict != "" {
 		dictStat, err := os.Stat(*flagDict)
 		if err != nil {
-			log.Fatalf("cannot read dictionary file %q", *flagDict)
+			log.Fatalf("cannot read dictionary file %q: %v", *flagDict, err)
 		}
 		if dictStat.Size() == 0 {
 			log.Fatalf("dictionary file %q is empty", *flagDict)
