@@ -7,7 +7,7 @@
 
 language: go
 
-# Test Go 1.11 and 1.12 across linux, osx, windows.
+# Test Go 1.16 and 1.15 across linux, osx, windows.
 # Test Go tip on linux, osx (and explicitly set GO111MODULE=auto for tip, given default might change).
 matrix:
   include:
@@ -17,22 +17,22 @@ matrix:
     - os: linux
       go: tip
     - os: linux
-      go: "1.13.x"
+      go: "1.16.x"
     - os: linux
-      go: "1.12.x"
+      go: "1.15.x"
     - os: osx
       go: tip
       env: SET_GO111MODULE=1
     - os: osx
       go: tip
     - os: osx
-      go: "1.13.x"
+      go: "1.16.x"
     - os: osx
-      go: "1.12.x"
+      go: "1.15.x"
     - os: windows
-      go: "1.13.x"
+      go: "1.16.x"
     - os: windows
-      go: "1.12.x"
+      go: "1.15.x"
 
 # Install coreutils for the 'timeout(1)' utility on windows and osx.
 before_install:
