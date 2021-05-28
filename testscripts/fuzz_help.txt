@@ -4,5 +4,5 @@
 # start by troubleshooting this.
 
 # Ask go-fuzz-build to emit its help message, which should be a failing status code.
-! exec go-fuzz-build -h
+exec go-fuzz-build -h
 stderr 'Usage of.*go-fuzz-build'
