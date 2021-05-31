@@ -9,26 +9,27 @@ language: go
 
 # Test Go 1.16 and 1.15 across linux, osx, windows.
 # Test Go tip on linux, osx (and explicitly set GO111MODULE=auto for tip, given default might change).
+# SET_GO111MODULE is used because (at least early on) setting GO111MODULE directly interfered with the setup performed by travis.
 matrix:
   include:
     - os: linux
-      go: tip
-      env: SET_GO111MODULE=1
-    - os: linux
-      go: tip
-    - os: linux
       go: "1.16.x"
     - os: linux
       go: "1.15.x"
-    - os: osx
+    - os: linux
       go: tip
-      env: SET_GO111MODULE=1
-    - os: osx
+    - os: linux
       go: tip
+      env: SET_GO111MODULE=auto
     - os: osx
       go: "1.16.x"
     - os: osx
       go: "1.15.x"
+    - os: osx
+      go: tip
+    - os: osx
+      go: tip
+      env: SET_GO111MODULE=auto
     - os: windows
       go: "1.16.x"
     - os: windows
@@ -72,11 +73,11 @@ script:
   # Reduce chances of future surprises due to any caching.
   - rm -rf fuzz.zip ./freshworkdir
 
-  # Explicitly set GO111MODULE=auto if requested.
+  # Explicitly set GO111MODULE if requested.
   # Travis and/or tip might change the default value of GO111MODULE at some point.
   # As of 2019-08-31, travis sets GO111MODULE=auto, and tip defaults to 'auto' if
   # GO111MODULE is unset.
-  - if [[ ! -z "$SET_GO111MODULE" ]]; then export GO111MODULE=auto; fi 
+  - if [[ ! -z "$SET_GO111MODULE" ]]; then export GO111MODULE="$SET_GO111MODULE"; fi 
   - echo "GO111MODULE=$GO111MODULE"
 
   # Instrument using go-fuzz-build on the png example Fuzz function.
