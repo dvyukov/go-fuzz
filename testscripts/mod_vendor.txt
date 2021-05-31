@@ -30,14 +30,14 @@
 # enable module-module for cmd/go (which is true in Go 1.11-1.13, and likely will be true in 1.14 as well).
 cd foo 
 
+# Because cmd/go now defaults to -mod=readonly and requires a valid go.sum entry, we need to explicitly add go-fuzz-dep.
+go get github.com/dvyukov/go-fuzz/go-fuzz-dep
+
 # Sanity check the module seems well formed.
 exec go list -m all
 stdout '^example.com/foo$'
 stdout '^example.com/bar v0.0.0 => ../bar$'
 exec go build
-
-# Because cmd/go now defaults to -mod=readonly, we need to explicitly add go-fuzz-dep.
-go get github.com/dvyukov/go-fuzz/go-fuzz-dep
 
 # Do an intial 'go mod vendor'
 exec go mod vendor
@@ -115,7 +115,6 @@ go 1.13
 
 require (
     example.com/bar v0.0.0
-    github.com/dvyukov/go-fuzz latest
 )
 
 replace example.com/bar => ../bar
