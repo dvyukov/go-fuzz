@@ -72,8 +72,8 @@ script:
   - go mod init github.com/dvyukov/go-fuzz-corpus/png
   - go mod tidy
   - go get -d github.com/dvyukov/go-fuzz/go-fuzz-dep
-  # TODO: temp workaround for 'multiple //go:build comments' error (dvyukov/go-fuzz#313) by setting 'go 1.15' directive.
-  - go mod edit -go=1.15
+  # TODO: temp workaround for 'multiple //go:build comments' error (dvyukov/go-fuzz#313) by setting 'go 1.16' directive.
+  - go mod edit -go=1.16
   - ls -l
 
   # Reduce chances of future surprises due to any caching.
