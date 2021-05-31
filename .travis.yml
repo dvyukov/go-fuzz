@@ -68,8 +68,14 @@ script:
   - git clone --depth=1 https://github.com/thepudds/go-fuzz-corpus $GOPATH/src/github.com/dvyukov/go-fuzz-corpus
   - cd $GOPATH/src/github.com/dvyukov/go-fuzz-corpus/
   - cd png
+  # Create a small module to test the png example.
+  - go mod init github.com/dvyukov/go-fuzz-corpus/png
+  - go mod tidy
+  - go get -d github.com/dvyukov/go-fuzz/go-fuzz-dep
+  # TODO: temp workaround for 'multiple //go:build comments' error (dvyukov/go-fuzz#313) by setting 'go 1.17' directive.
+  - go mod edit -go=1.17
   - ls -l
-  
+
   # Reduce chances of future surprises due to any caching.
   - rm -rf fuzz.zip ./freshworkdir
 
