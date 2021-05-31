@@ -480,7 +480,7 @@ func (c *Context) populateWorkdir() {
 	}
 	// go1.17 added abi_amd64.h
 	if _, err := os.Stat(filepath.Join(c.GOROOT, "src", "runtime", "cgo", "abi_amd64.h")); err == nil {
-		c.mkdirAll(filepath.Join(c.GOROOT, "src", "runtime", "cgo"))
+		c.mkdirAll(filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo"))
 		c.copyFile(filepath.Join(c.GOROOT, "src", "runtime", "cgo", "abi_amd64.h"), filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo", "abi_amd64.h"))
 	}
 
