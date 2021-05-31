@@ -110,7 +110,7 @@ require example.com/bar v0.0.0
 replace example.com/bar => ../bar
 
 // Because cmd/go now defaults to -mod=readonly, we explicitly add go-fuzz-dep here.
-require github.com/dvyukov/go-fuzz/go-fuzz-dep
+require github.com/dvyukov/go-fuzz/go-fuzz-dep latest
 
 -- foo/fuzz.go --
 package foo
