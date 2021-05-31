@@ -16,6 +16,9 @@ exec go build
 exec go list -m all
 ! stdout 'github.com/dvyukov/go-fuzz'
 
+# Because cmd/go now defaults to -mod=readonly, we need to explicitly add go-fuzz-dep.
+go get github.com/dvyukov/go-fuzz/go-fuzz-dep
+
 # Ask go-fuzz-build to build, including specifying the fuzz function for mod.
 exec go-fuzz-build -func=FuzzMod
 exists testmod-fuzz.zip
