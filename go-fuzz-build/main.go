@@ -478,6 +478,11 @@ func (c *Context) populateWorkdir() {
 		// Cross-compilation is not implemented.
 		c.copyDir(filepath.Join(c.GOROOT, "pkg", runtime.GOOS+"_"+runtime.GOARCH), filepath.Join(c.workdir, "goroot", "pkg", runtime.GOOS+"_"+runtime.GOARCH))
 	}
+	// go1.17 added abi_amd64.h
+	if _, err := os.Stat(filepath.Join(c.GOROOT, "src", "runtime", "cgo", "abi_amd64.h")); err == nil {
+		c.mkdirAll(filepath.Join(c.GOROOT, "src", "runtime", "cgo"))
+		c.copyFile(filepath.Join(c.GOROOT, "src", "runtime", "cgo", "abi_amd64.h"), filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo", "abi_amd64.h"))
+	}
 
 	// Clone our package, go-fuzz-deps, and all dependencies.
 	// TODO: we might not need to do this for all packages.
