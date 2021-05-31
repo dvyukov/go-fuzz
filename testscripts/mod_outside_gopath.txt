@@ -21,9 +21,6 @@ exec go list -m all
 stdout '^example.com/foo$'
 exec go build
 
-# Because cmd/go now defaults to -mod=readonly, we need to explicitly add go-fuzz-dep.
-go get github.com/dvyukov/go-fuzz/go-fuzz-dep
-
 # Because we are outside GOPATH, the presence of the 'go.mod' here will
 # enable module-module for cmd/go with GO111MODULE=auto.
 # This is true in Go 1.11-1.13, and likely will be true in 1.14 as well.
@@ -111,6 +108,9 @@ module example.com/foo
 require example.com/bar v0.0.0
 
 replace example.com/bar => ../bar
+
+// Because cmd/go now defaults to -mod=readonly, we explicitly add go-fuzz-dep here.
+require github.com/dvyukov/go-fuzz/go-fuzz-dep
 
 -- foo/fuzz.go --
 package foo
