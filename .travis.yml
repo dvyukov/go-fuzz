@@ -65,7 +65,7 @@ script:
   - testscript -v testscripts/mod_vendor.txt
 
   # Prepare to test the png example from dvyukov/go-fuzz-corpus.
-  - go get -v -d github.com/dvyukov/go-fuzz-corpus/png
+  - git clone --depth=1 https://github.com/thepudds/go-fuzz-corpus $GOPATH/src/github.com/dvyukov/go-fuzz-corpus
   - cd $GOPATH/src/github.com/dvyukov/go-fuzz-corpus/
   - cd png
   - ls -l
