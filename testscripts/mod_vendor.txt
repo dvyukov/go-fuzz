@@ -36,6 +36,9 @@ stdout '^example.com/foo$'
 stdout '^example.com/bar v0.0.0 => ../bar$'
 exec go build
 
+# Because cmd/go now defaults to -mod=readonly, we need to explicitly add go-fuzz-dep.
+go get github.com/dvyukov/go-fuzz/go-fuzz-dep
+
 # Do an intial 'go mod vendor'
 exec go mod vendor
 
