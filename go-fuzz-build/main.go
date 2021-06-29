@@ -683,6 +683,19 @@ func (c *Context) clonePackage(p *packages.Package) {
 	// TODO: do we need to look for and copy go.mod?
 }
 
+// isNotPackage checks if dir contains go source files.
+func isNotPackage(files []os.FileInfo) bool {
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(f.Name(), ".go") {
+			return false
+		}
+	}
+	return true
+}
+
 // packageNamed extracts the package listed in path.
 func (c *Context) packageNamed(path string) (pkgs *packages.Package) {
 	all := c.packagesNamed(path)
