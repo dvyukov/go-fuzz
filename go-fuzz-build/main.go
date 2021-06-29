@@ -683,7 +683,7 @@ func (c *Context) clonePackage(p *packages.Package) {
 	// TODO: do we need to look for and copy go.mod?
 }
 
-// isPackage checks if dir contains go source files.
+// isPackage reports whether dir contains Go source files.
 func isPackage(files []os.FileInfo) bool {
 	for _, f := range files {
 		if f.IsDir() {
