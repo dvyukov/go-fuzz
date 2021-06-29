@@ -676,24 +676,24 @@ func (c *Context) clonePackage(p *packages.Package) {
 		if d.IsDir() {
 			src := filepath.Join(dir, d.Name())
 			dst := filepath.Join(newDir, d.Name())
-			c.copyDir(src, dst, isNotPackage)
+			c.copyDir(src, dst, isPackage)
 		}
 	}
 
 	// TODO: do we need to look for and copy go.mod?
 }
 
-// isNotPackage checks if dir contains go source files.
-func isNotPackage(files []os.FileInfo) bool {
+// isPackage checks if dir contains go source files.
+func isPackage(files []os.FileInfo) bool {
 	for _, f := range files {
 		if f.IsDir() {
 			continue
 		}
 		if strings.HasSuffix(f.Name(), ".go") {
-			return false
+			return true
 		}
 	}
-	return true
+	return false
 }
 
 // packageNamed extracts the package listed in path.
@@ -769,9 +769,8 @@ func (c *Context) copyDir(dir, newDir string, filters ...func([]os.FileInfo) boo
 	if err != nil {
 		c.failf("failed to scan dir '%v': %v", dir, err)
 	}
-	for _, filtered := range filters {
-		if !filtered(files) {
-			// Don't copy filtered dir.
+	for _, filter := range filters {
+		if rejected := filter(files); rejected {
 			return
 		}
 	}
