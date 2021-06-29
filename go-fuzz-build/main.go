@@ -665,7 +665,8 @@ func (c *Context) clonePackage(p *packages.Package) {
 		c.copyFile(f, dst)
 	}
 
-	dir := packageDir(p)
+	// p.GoFiles is always non-empty.
+	dir := filepath.Dir(p.GoFiles[0])
 	// Сopy subdirs which aren't packages.
 	subdirs, err := ioutil.ReadDir(dir)
 	if err != nil {

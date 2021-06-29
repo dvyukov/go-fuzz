@@ -5,18 +5,8 @@ package main
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
-
-	"golang.org/x/tools/go/packages"
 )
-
-// packageDir returns local directory with package source files.
-func packageDir(p *packages.Package) string {
-	// Go-package contains at least one go-file, so GoFiles is not empty without fail.
-	dir := filepath.Dir(p.GoFiles[0])
-	return dir
-}
 
 // isNotPackage checks if dir contains go source files.
 func isNotPackage(files []os.FileInfo) bool {
