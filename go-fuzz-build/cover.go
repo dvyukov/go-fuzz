@@ -15,9 +15,6 @@ import (
 	"io"
 	"strconv"
 	"strings"
-
-	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
-	. "github.com/dvyukov/go-fuzz/internal/go-fuzz-types"
 )
 
 const fuzzdepPkg = "_go_fuzz_dep_"
@@ -33,6 +30,26 @@ func instrument(pkg, fullName string, fset *token.FileSet, parsedFile *ast.File,
 	}
 	if sonar == nil {
 		file.addImport("go-fuzz-dep", fuzzdepPkg, "CoverTab")
+		for _, element := range info.Types {
+			_, named := element.Type.(*types.Named)
+			if named {
+				importPackage := element.Type.(*types.Named).Obj().Pkg()
+				if importPackage != nil {
+					importPath := importPackage.Path()
+					foundImport := false
+					for _, imp := range file.astFile.Imports {
+						impPath := imp.Path.Value
+						impPath = imp.Path.Value[1 : len(impPath)-1]
+						if impPath == importPath {
+							foundImport = true
+						}
+					}
+					if !foundImport && pkg != importPath && !strings.Contains(importPath, "internal/") {
+						file.addImport(importPath, "", "")
+					}
+				}
+			}
+		}
 		ast.Walk(file, file.astFile)
 	} else {
 		s := &Sonar{
@@ -670,23 +687,25 @@ func (f *File) addImport(path, name, anyIdent string) {
 	// Now refer to the package, just in case it ends up unused.
 	// That is, append to the end of the file the declaration
 	//	var _ = _cover_atomic_.AddUint32
-	reference := &ast.GenDecl{
-		Tok: token.VAR,
-		Specs: []ast.Spec{
-			&ast.ValueSpec{
-				Names: []*ast.Ident{
-					ast.NewIdent("_"),
-				},
-				Values: []ast.Expr{
-					&ast.SelectorExpr{
-						X:   ast.NewIdent(name),
-						Sel: ast.NewIdent(anyIdent),
+	if len(name) > 0 && len(anyIdent) > 0 {
+		reference := &ast.GenDecl{
+			Tok: token.VAR,
+			Specs: []ast.Spec{
+				&ast.ValueSpec{
+					Names: []*ast.Ident{
+						ast.NewIdent("_"),
+					},
+					Values: []ast.Expr{
+						&ast.SelectorExpr{
+							X:   ast.NewIdent(name),
+							Sel: ast.NewIdent(anyIdent),
+						},
 					},
 				},
 			},
-		},
+		}
+		astFile.Decls = append(astFile.Decls, reference)
 	}
-	astFile.Decls = append(astFile.Decls, reference)
 }
 
 func (f *File) addCounters(pos, blockEnd token.Pos, list []ast.Stmt, extendToClosingBrace bool) []ast.Stmt {
