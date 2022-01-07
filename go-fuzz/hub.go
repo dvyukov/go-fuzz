@@ -4,10 +4,14 @@
 package main
 
 import (
+	"bytes"
+	"encoding/hex"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/rpc"
 	"path/filepath"
+	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -73,6 +77,101 @@ type Stats struct {
 	restarts uint64
 }
 
+func parseDictTokenLine(tokenLine *[]byte, tokenLineNo int) *[]byte {
+	var err error
+	metaDataMode := true
+	token := make([]byte, 0, len(*tokenLine))
+	tokenLevel := 0
+	for index := 0; index < len(*tokenLine); index++ {
+		switch (*tokenLine)[index] {
+		case byte('"'):
+			if !metaDataMode {
+				// If we are parsing the token (metaDataMode=false) the first " we encounter marks the end of the token
+				metaDataMode = !metaDataMode
+			} else if index == 0 || (*tokenLine)[index-1] == byte('=') {
+				// change the metaDataMode either directly or if a keyword is defined after an equal sign
+				metaDataMode = !metaDataMode
+			}
+			break
+		case byte('\\'):
+			// Handle escape sequence
+			if !metaDataMode {
+				index++
+				if index >= len(*tokenLine) {
+					log.Printf("dictionary token in line %d has incorrect format", tokenLineNo)
+					return nil
+				}
+				switch (*tokenLine)[index] {
+				case byte('"'), byte('\\'):
+					// Handle escaped quote (\") and escaped backslash (\\)
+					token = append(token, (*tokenLine)[index])
+					break
+
+				case byte('x'):
+					// Handle hexadecimal values (e.g. \xFF)
+					if index+2 >= len(*tokenLine) {
+						log.Printf("dictionary token in line %d has incorrect format", tokenLineNo)
+						return nil
+					}
+
+					hexBytes := make([]byte, 1)
+					_, errDecode := hex.Decode(hexBytes, (*tokenLine)[index+1:index+3])
+					if errDecode != nil {
+						log.Printf("dictionary token in line %d has incorrect format", tokenLineNo)
+						return nil
+					}
+
+					token = append(token, hexBytes[0])
+
+					index = index + 2
+					break
+
+				case byte('n'):
+					// Handle newline (\n)
+					token = append(token, byte('\n'))
+					break
+
+				case byte('t'):
+					// Handle tab (\t)
+					token = append(token, byte('\t'))
+					break
+				}
+			}
+			break
+		case byte('@'):
+			//Handle token level if metaDataMode
+			if metaDataMode && index+1 < len(*tokenLine) {
+				num := ""
+				for counter := 1; index+counter < len(*tokenLine); counter++ {
+					value := int((*tokenLine)[index+counter])
+					if 0x30 <= value && value <= 0x39 {
+						num = num + string(rune(value))
+					} else {
+						break
+					}
+				}
+				tokenLevel, err = strconv.Atoi(num)
+				if err != nil {
+					log.Printf("token level in dictionary line %d could not be parsed", tokenLineNo)
+					return nil
+				}
+			}
+			// Fallthrough if not metaDataMode to add the @ to the token
+		default:
+			if !metaDataMode {
+				token = append(token, (*tokenLine)[index])
+			}
+		}
+
+	}
+
+	// If the global dictLevel is equal or higher than the tokenLevel is added, otherwise it is ignored
+	if tokenLevel <= dictLevel {
+		return &token
+	}
+	return nil
+}
+
 func newHub(metadata MetaData) *Hub {
 	procs := *flagProcs
 	hub := &Hub{
@@ -116,6 +215,29 @@ func newHub(metadata MetaData) *Hub {
 			ro.intLits = append(ro.intLits, []byte(lit.Val))
 		}
 	}
+
+	if dictPath != "" {
+		ro.strLits = nil // Discard existing tokens
+		dictionary, err := ioutil.ReadFile(dictPath)
+		if err != nil {
+			log.Fatalf("could not read tokens from %q: %v", dictPath, err)
+		}
+
+		for tokenLineNo, tokenLine := range bytes.Split(dictionary, []byte("\n")) {
+			// Ignore Comments
+			if bytes.HasPrefix(tokenLine, []byte("#")) || len(tokenLine) == 0 {
+				continue
+			}
+			token := parseDictTokenLine(&tokenLine, tokenLineNo)
+			if token != nil {
+				// add token to ro.strLits
+				ro.strLits = append(ro.strLits, *token)
+			}
+
+		}
+
+	}
+
 	hub.ro.Store(ro)
 
 	go hub.loop()
