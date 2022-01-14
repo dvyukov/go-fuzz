@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strconv"
 
-	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 	"github.com/dvyukov/go-fuzz/go-fuzz/internal/pcg"
 )
 
@@ -18,6 +17,14 @@ type Mutator struct {
 
 func newMutator() *Mutator {
 	return &Mutator{r: pcg.New()}
+}
+
+func (m *Mutator) shuffle(a []byte) []byte {
+	for i := len(a) - 1; i > 0; i-- {
+		j := m.r.Intn(i + 1)
+		a[i], a[j] = a[j], a[i]
+	}
+	return a
 }
 
 func (m *Mutator) rand(n int) int {
@@ -53,7 +60,7 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 	copy(res, data)
 	nm := 1 + m.r.Exp2()
 	for iter := 0; iter < nm; iter++ {
-		switch m.rand(20) {
+		switch m.rand(22) {
 		case 0:
 			// Remove a range of bytes.
 			if len(res) <= 1 {
@@ -345,7 +352,6 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			}
 		case 18:
 			// Insert a literal.
-			// TODO: encode int literals in big-endian, base-128, etc.
 			if len(ro.intLits) == 0 && len(ro.strLits) == 0 {
 				iter--
 				continue
@@ -355,8 +361,30 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 				lit = []byte(ro.strLits[m.rand(len(ro.strLits))])
 			} else {
 				lit = ro.intLits[m.rand(len(ro.intLits))]
-				if m.rand(3) == 0 {
-					lit = reverse(lit)
+
+				if (len(lit) == 8 || len(lit) == 4 || len(lit) == 2) && m.rand(6) == 0 {
+					// Encode literal to little endian base 128 (leb128)
+					var num uint64
+					switch len(lit) {
+					case 8:
+						num = binary.LittleEndian.Uint64(lit)
+					case 4:
+						num = uint64(binary.LittleEndian.Uint32(lit))
+					case 2:
+						num = uint64(binary.LittleEndian.Uint16(lit))
+					}
+					if m.r.Bool() {
+						// Unsigned Little Endian Base 128
+						lit = leb128(num)
+					} else {
+						// Signed Little Endian Base 128
+						lit = sleb128(int64(num))
+					}
+				} else {
+					if m.rand(3) == 0 {
+						// Change endianness
+						lit = reverse(lit)
+					}
 				}
 			}
 			pos := m.rand(len(res) + 1)
@@ -386,6 +414,39 @@ func (m *Mutator) mutate(data []byte, ro *ROData) []byte {
 			}
 			pos := m.rand(len(res) - len(lit))
 			copy(res[pos:], lit)
+		case 20:
+			// Insert repeated bytes.
+			minBytesToInsert := 3
+			if minBytesToInsert+len(res) > MaxInputSize {
+				iter--
+				continue
+			}
+			maxBytesToInsert := MaxInputSize - len(res)
+			pos := m.rand(len(res) + 1)
+			n := m.rand(maxBytesToInsert-minBytesToInsert+1) + minBytesToInsert
+			for i := 0; i < n; i++ {
+				res = append(res, 0)
+			}
+			copy(res[pos+n:], res[pos:])
+			randomByte := byte(m.rand(256))
+			for i := 0; i < n; i++ {
+				res[pos+i] = randomByte
+			}
+		case 21:
+			// Shuffle Bytes
+			if len(res) > MaxInputSize || len(res) == 0 {
+				iter--
+				continue
+			}
+
+			shuffleAmount := m.rand(min(len(res)-1, 8)) + 1
+			shuffleStart := m.rand(len(res) - shuffleAmount)
+
+			shuffle := m.shuffle(res[shuffleStart : shuffleStart+shuffleAmount])
+
+			for i := 0; i < shuffleAmount; i++ {
+				res[shuffleStart+i] = shuffle[i]
+			}
 		}
 	}
 	if len(res) > MaxInputSize {
@@ -412,6 +473,36 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func leb128(num uint64) []byte {
+	// Unsigned Little Endian Base 128 Encoding
+	leb := make([]byte, 0, 8)
+	for {
+		b := num & 0x7F
+		num = num >> 7
+
+		if num == 0 {
+			leb = append(leb, byte(b))
+			return leb
+		}
+		leb = append(leb, byte(0x80|b))
+	}
+}
+
+func sleb128(num int64) []byte {
+	// Signed Little Endian Base 128 Encoding
+	sleb := make([]byte, 0, 8)
+
+	for {
+		b := num & 0x7F
+		num = num >> 7
+		if (num == 0 && b&0x40 == 0) || (num == -1 && b&0x40 != 0) {
+			sleb = append(sleb, byte(b))
+			return sleb
+		}
+		sleb = append(sleb, byte(0x80|b))
+	}
 }
 
 var (
