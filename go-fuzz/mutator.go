@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strconv"
 
+	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 	"github.com/dvyukov/go-fuzz/go-fuzz/internal/pcg"
 )
 
