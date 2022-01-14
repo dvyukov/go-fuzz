@@ -157,6 +157,7 @@ func parseDictTokenLine(tokenLine *[]byte, tokenLineNo int) *[]byte {
 				}
 			}
 			// Fallthrough if not metaDataMode to add the @ to the token
+			fallthrough
 		default:
 			if !metaDataMode {
 				token = append(token, (*tokenLine)[index])
