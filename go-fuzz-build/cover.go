@@ -30,6 +30,15 @@ func instrument(pkg, fullName string, fset *token.FileSet, parsedFile *ast.File,
 	}
 	if sonar == nil {
 		file.addImport("go-fuzz-dep", fuzzdepPkg, "CoverTab")
+		/*
+			The types and the corresponding packages that are returned by the type-checker are scanned and
+			compared to the packages that were imported by the file that is being instrumented.
+
+			If there is a type that is defined in a package which has not been imported, we will add an import statement
+			for that specific package.
+
+			Packages that are not used by the instrumentation will be unused and therefore removed by goimports
+		*/
 		for _, element := range info.Types {
 			_, named := element.Type.(*types.Named)
 			if named {
@@ -44,7 +53,7 @@ func instrument(pkg, fullName string, fset *token.FileSet, parsedFile *ast.File,
 							foundImport = true
 						}
 					}
-					if !foundImport && pkg != importPath && !strings.Contains(importPath, "internal/") {
+					if !foundImport && pkg != importPath {
 						file.addImport(importPath, "", "")
 					}
 				}
@@ -687,6 +696,8 @@ func (f *File) addImport(path, name, anyIdent string) {
 	// Now refer to the package, just in case it ends up unused.
 	// That is, append to the end of the file the declaration
 	//	var _ = _cover_atomic_.AddUint32
+	// We don't want to ensure that every import is used, since those imports are removed with goimports
+	// later on, so that if we don't add a name for the import we avoid adding this statement
 	if len(name) > 0 && len(anyIdent) > 0 {
 		reference := &ast.GenDecl{
 			Tok: token.VAR,
