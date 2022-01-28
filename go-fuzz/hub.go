@@ -218,6 +218,12 @@ func newHub(metadata MetaData) *Hub {
 	}
 
 	if dictPath != "" {
+		/*
+			Replaces the low-signal token list with a user defined high-signal token list.
+			Existing tokens that were obtained through token capture and which are stored in ro.strLits are discarded.
+			The intLits tokens are not discarded and will be used. However the user can also specify integers as a
+			bytearray in the dictionary to use them as well.
+		*/
 		ro.strLits = nil // Discard existing tokens
 		dictionary, err := ioutil.ReadFile(dictPath)
 		if err != nil {
