@@ -226,7 +226,7 @@ func newHub(metadata MetaData) *Hub {
 
 		for tokenLineNo, tokenLine := range bytes.Split(dictionary, []byte("\n")) {
 			// Ignore Comments
-			if bytes.HasPrefix(tokenLine, []byte("#")) || len(tokenLine) == 0 {
+			if bytes.HasPrefix(bytes.TrimSpace(tokenLine), []byte("#")) || len(tokenLine) == 0 {
 				continue
 			}
 			token := parseDictTokenLine(&tokenLine, tokenLineNo)
