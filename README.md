@@ -628,5 +628,6 @@ by go-fuzz are inspired by work done by Mateusz Jurczyk, Gynvael Coldwind and
 - [github.com/ProtonMail/crypto: panic on fingerpring subpacket](https://github.com/ProtonMail/crypto/pull/66) **fixed**
 - [github.com/robfig/cron: panic on malformed schedule string](https://github.com/robfig/cron/pull/365)
 - [github.com/cronokirby/saferith: infinite loop in ModSqrt](https://github.com/cronokirby/saferith/commit/d39f5a274f7c3b8c8d60456b1525cce26ffacfe7) **fixed**
+- [github.com/go-git/go-git: infinite loop in revision parser](https://github.com/go-git/go-git/pull/475)
 
 **If you find some bugs with go-fuzz and are comfortable with sharing them, I would like to add them to this list.** Please either send a pull request for README.md (preferable) or file an issue. If the source code is closed, you can say just "found N bugs in project X". Thank you.
