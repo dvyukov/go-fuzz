@@ -483,6 +483,11 @@ func (c *Context) populateWorkdir() {
 		c.mkdirAll(filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo"))
 		c.copyFile(filepath.Join(c.GOROOT, "src", "runtime", "cgo", "abi_amd64.h"), filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo", "abi_amd64.h"))
 	}
+	// go1.18@c856fbf added p256_asm_table.bin
+	if _, err := os.Stat(filepath.Join(c.GOROOT, "src", "crypto", "elliptic", "p256_asm_table.bin")); err == nil {
+		c.mkdirAll(filepath.Join(c.workdir, "goroot", "src", "crypto", "elliptic"))
+		c.copyFile(filepath.Join(c.GOROOT, "src", "crypto", "elliptic", "p256_asm_table.bin"), filepath.Join(c.workdir, "goroot", "src", "crypto", "elliptic", "p256_asm_table.bin"))
+	}
 
 	// Clone our package, go-fuzz-deps, and all dependencies.
 	// TODO: we might not need to do this for all packages.
