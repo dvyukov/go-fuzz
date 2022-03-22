@@ -483,11 +483,6 @@ func (c *Context) populateWorkdir() {
 		c.mkdirAll(filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo"))
 		c.copyFile(filepath.Join(c.GOROOT, "src", "runtime", "cgo", "abi_amd64.h"), filepath.Join(c.workdir, "goroot", "src", "runtime", "cgo", "abi_amd64.h"))
 	}
-	// go1.18@c856fbf added p256_asm_table.bin
-	if _, err := os.Stat(filepath.Join(c.GOROOT, "src", "crypto", "elliptic", "p256_asm_table.bin")); err == nil {
-		c.mkdirAll(filepath.Join(c.workdir, "goroot", "src", "crypto", "elliptic"))
-		c.copyFile(filepath.Join(c.GOROOT, "src", "crypto", "elliptic", "p256_asm_table.bin"), filepath.Join(c.workdir, "goroot", "src", "crypto", "elliptic", "p256_asm_table.bin"))
-	}
 
 	// Clone our package, go-fuzz-deps, and all dependencies.
 	// TODO: we might not need to do this for all packages.
@@ -654,6 +649,22 @@ func (c *Context) clonePackage(p *packages.Package) {
 	}
 	newDir := filepath.Join(c.workdir, root, "src", p.PkgPath)
 	c.mkdirAll(newDir)
+
+	// examine "go:embed" directives, collect embedded filenames, use later
+	for i, fullName := range p.CompiledGoFiles {
+		if strings.HasSuffix(fullName, ".go") {
+			for _, commentGroup := range trimComments(p.Syntax[i], p.Fset) {
+				for _, comment := range commentGroup.List {
+					if strings.HasPrefix(comment.Text, "//go:embed") {
+						filename := comment.Text[len("//go:embed "):]
+						dirname := filepath.Dir(fullName)
+						fullname := fmt.Sprintf("%s/%s", dirname, filename)
+						p.OtherFiles = append(p.OtherFiles, fullname)
+					}
+				}
+			}
+		}
+	}
 
 	if p.PkgPath == "unsafe" {
 		// Write a dummy file. go/packages explicitly returns an empty GoFiles for it,
