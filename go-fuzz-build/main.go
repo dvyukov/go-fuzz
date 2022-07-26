@@ -650,6 +650,22 @@ func (c *Context) clonePackage(p *packages.Package) {
 	newDir := filepath.Join(c.workdir, root, "src", p.PkgPath)
 	c.mkdirAll(newDir)
 
+	// examine "go:embed" directives, collect embedded filenames, use later
+	for i, fullName := range p.CompiledGoFiles {
+		if strings.HasSuffix(fullName, ".go") {
+			for _, commentGroup := range trimComments(p.Syntax[i], p.Fset) {
+				for _, comment := range commentGroup.List {
+					if strings.HasPrefix(comment.Text, "//go:embed") {
+						filename := comment.Text[len("//go:embed "):]
+						dirname := filepath.Dir(fullName)
+						fullname := fmt.Sprintf("%s/%s", dirname, filename)
+						p.OtherFiles = append(p.OtherFiles, fullname)
+					}
+				}
+			}
+		}
+	}
+
 	if p.PkgPath == "unsafe" {
 		// Write a dummy file. go/packages explicitly returns an empty GoFiles for it,
 		// for reasons that are unclear, but cmd/go wants there to be a Go file in the package.
