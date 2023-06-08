@@ -93,13 +93,13 @@ a bunch of examples of test functions and initial input corpuses for various pac
 The next step is to get go-fuzz:
 
 ```
-$ go get -u github.com/dvyukov/go-fuzz/go-fuzz@latest github.com/dvyukov/go-fuzz/go-fuzz-build@latest
+$ go install github.com/dvyukov/go-fuzz/go-fuzz@latest github.com/dvyukov/go-fuzz/go-fuzz-build@latest
 ```
 
 Then, download the corpus and build the test program with necessary instrumentation:
 ```
-$ go get -d github.com/dvyukov/go-fuzz-corpus
-$ cd $GOPATH/src/github.com/dvyukov/go-fuzz-corpus
+$ git clone https://github.com/dvyukov/go-fuzz-corpus.git
+$ cd go-fuzz-corpus
 $ cd png
 $ go-fuzz-build
 ```
