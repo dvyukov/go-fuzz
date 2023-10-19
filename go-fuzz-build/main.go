@@ -562,7 +562,7 @@ func (c *Context) calcIgnore() {
 	// noisy (because they are low level), and/or not interesting.
 	// We could manually maintain this list, but that makes go-fuzz-build
 	// fragile in the face of internal standard library package changes.
-	roots := c.packagesNamed("runtime", "github.com/dvyukov/go-fuzz/go-fuzz-dep")
+	roots := c.packagesNamed("runtime", "reflect", "github.com/dvyukov/go-fuzz/go-fuzz-dep")
 	packages.Visit(roots, func(p *packages.Package) bool {
 		c.ignore[p.PkgPath] = true
 		return true
