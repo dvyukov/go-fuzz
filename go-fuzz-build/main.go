@@ -374,7 +374,8 @@ func (c *Context) loadPkg(pkg string) {
 }
 
 // isFuzzSig reports whether sig is of the form
-//   func FuzzFunc(data []byte) int
+//
+//	func FuzzFunc(data []byte) int
 func isFuzzSig(sig *types.Signature) bool {
 	return tupleHasTypes(sig.Params(), "[]byte") && tupleHasTypes(sig.Results(), "int")
 }
@@ -780,7 +781,7 @@ func (c *Context) copyFile(src, dst string) {
 	if err != nil {
 		c.failf("copyFile: could not read %v", src, err)
 	}
-	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0700)
+	w, err := os.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0o700)
 	if err != nil {
 		c.failf("copyFile: could not write %v: %v", dst, err)
 	}
@@ -831,13 +832,13 @@ func (c *Context) readFile(name string) []byte {
 }
 
 func (c *Context) writeFile(name string, data []byte) {
-	if err := ioutil.WriteFile(name, data, 0700); err != nil {
+	if err := ioutil.WriteFile(name, data, 0o700); err != nil {
 		c.failf("failed to write temp file: %v", err)
 	}
 }
 
 func (c *Context) mkdirAll(dir string) {
-	if err := os.MkdirAll(dir, 0700); err != nil {
+	if err := os.MkdirAll(dir, 0o700); err != nil {
 		c.failf("failed to create temp dir: %v", err)
 	}
 }
