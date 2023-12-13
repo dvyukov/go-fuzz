@@ -426,7 +426,10 @@ func (lc *LiteralCollector) Visit(n ast.Node) (w ast.Visitor) {
 			if err != nil {
 				u, err := strconv.ParseUint(lit, 0, 64)
 				if err != nil {
-					lc.ctxt.failf("failed to parse int literal '%v': %v", lit, err)
+					// Instead of dying here, we just ignore the literal.
+					// https://github.com/dvyukov/go-fuzz/issues/246
+					// lc.ctxt.failf("failed to parse int literal '%v': %v", lit, err)
+					return nil
 				}
 				v = int64(u)
 			}
