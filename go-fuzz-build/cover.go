@@ -856,8 +856,8 @@ func (f *File) newCounter(start, end token.Pos, numStmt int) ast.Stmt {
 	}
 	counter := &ast.IndexExpr{
 		X: &ast.SelectorExpr{
-			X:   ast.NewIdent(fuzzdepPkg),
-			Sel: ast.NewIdent("CoverTab"),
+			X:   &ast.Ident{NamePos: start, Name: fuzzdepPkg},
+			Sel: &ast.Ident{NamePos: start, Name: "CoverTab"},
 		},
 		Index:  idx,
 		Lbrack: start,
