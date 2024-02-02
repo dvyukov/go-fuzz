@@ -850,19 +850,23 @@ func (f *File) newCounter(start, end token.Pos, numStmt int) ast.Stmt {
 	}
 
 	idx := &ast.BasicLit{
-		Kind:  token.INT,
-		Value: strconv.Itoa(cnt),
+		Kind:     token.INT,
+		Value:    strconv.Itoa(cnt),
+		ValuePos: start,
 	}
 	counter := &ast.IndexExpr{
 		X: &ast.SelectorExpr{
 			X:   ast.NewIdent(fuzzdepPkg),
 			Sel: ast.NewIdent("CoverTab"),
 		},
-		Index: idx,
+		Index:  idx,
+		Lbrack: start,
+		Rbrack: end,
 	}
 	return &ast.IncDecStmt{
-		X:   counter,
-		Tok: token.INC,
+		X:      counter,
+		Tok:    token.INC,
+		TokPos: start,
 	}
 }
 
