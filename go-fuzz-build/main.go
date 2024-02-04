@@ -689,7 +689,35 @@ func (c *Context) clonePackage(p *packages.Package) {
 		c.copyFile(f, dst)
 	}
 
+	// p.GoFiles is always non-empty.
+	dir := filepath.Dir(p.GoFiles[0])
+	// Сopy subdirs which aren't packages.
+	subdirs, err := ioutil.ReadDir(dir)
+	if err != nil {
+		c.failf("failed to scan dir '%v': %v", dir, err)
+	}
+	for _, d := range subdirs {
+		if d.IsDir() {
+			src := filepath.Join(dir, d.Name())
+			dst := filepath.Join(newDir, d.Name())
+			c.copyDir(src, dst, isPackage)
+		}
+	}
+
 	// TODO: do we need to look for and copy go.mod?
+}
+
+// isPackage reports whether dir contains Go source files.
+func isPackage(files []os.FileInfo) bool {
+	for _, f := range files {
+		if f.IsDir() {
+			continue
+		}
+		if strings.HasSuffix(f.Name(), ".go") {
+			return true
+		}
+	}
+	return false
 }
 
 // packageNamed extracts the package listed in path.
@@ -760,17 +788,22 @@ func (c *Context) instrumentPackages(blocks *[]CoverBlock, sonar *[]CoverBlock) 
 	packages.Visit(c.pkgs, nil, visit)
 }
 
-func (c *Context) copyDir(dir, newDir string) {
+func (c *Context) copyDir(dir, newDir string, filters ...func([]os.FileInfo) bool) {
 	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		c.failf("failed to scan dir '%v': %v", dir, err)
+	}
+	for _, filter := range filters {
+		if rejected := filter(files); rejected {
+			return
+		}
 	}
 	c.mkdirAll(newDir)
 	for _, f := range files {
 		src := filepath.Join(dir, f.Name())
 		dst := filepath.Join(newDir, f.Name())
 		if f.IsDir() {
-			c.copyDir(src, dst)
+			c.copyDir(src, dst, filters...)
 		} else {
 			c.copyFile(src, dst)
 		}
