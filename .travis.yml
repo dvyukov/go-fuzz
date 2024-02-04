@@ -13,27 +13,27 @@ language: go
 matrix:
   include:
     - os: linux
-      go: "1.16.x"
+      go: "1.17.x"
     - os: linux
-      go: "1.15.x"
+      go: "1.16.x"
     - os: linux
       go: tip
     - os: linux
       go: tip
       env: SET_GO111MODULE=auto
     - os: osx
-      go: "1.16.x"
+      go: "1.17.x"
     - os: osx
-      go: "1.15.x"
+      go: "1.16.x"
     - os: osx
       go: tip
     - os: osx
       go: tip
       env: SET_GO111MODULE=auto
     - os: windows
-      go: "1.16.x"
+      go: "1.17.x"
     - os: windows
-      go: "1.15.x"
+      go: "1.16.x"
 
 # Install coreutils for the 'timeout(1)' utility on windows and osx.
 before_install:
