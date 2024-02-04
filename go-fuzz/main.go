@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
+	"strconv"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -42,10 +44,14 @@ var (
 	flagSonar             = flag.Bool("sonar", true, "use sonar hints")
 	flagV                 = flag.Int("v", 0, "verbosity level")
 	flagHTTP              = flag.String("http", "", "HTTP server listen address (coordinator mode only)")
+	flagDict              = flag.String("dict", "", "optional fuzzer dictionary (using AFL/Libfuzzer format)")
 
 	shutdown        uint32
 	shutdownC       = make(chan struct{})
 	shutdownCleanup []func()
+
+	dictPath  = ""
+	dictLevel = 0
 )
 
 func main() {
@@ -55,6 +61,32 @@ func main() {
 	}
 	if *flagHTTP != "" && *flagWorker != "" {
 		log.Fatalf("both -http and -worker are specified")
+	}
+
+	if *flagDict != "" {
+		// Check if the provided path exists
+		_, err := os.Stat(*flagDict)
+		if err != nil {
+			// If not it might be because a dictLevel was provided by appending @<num> to the dict path
+			atIndex := strings.LastIndex(*flagDict, "@")
+			if atIndex != -1 {
+				dictPath = (*flagDict)[:atIndex]
+				_, errStat := os.Stat(dictPath)
+				if errStat != nil {
+					log.Fatalf("cannot read dictionary file %q: %v", dictPath, err)
+				}
+				dictLevel, err = strconv.Atoi((*flagDict)[atIndex+1:])
+				if err != nil {
+					log.Printf("could not convert dict level using dict level 0 instead")
+					dictLevel = 0
+				}
+			} else {
+				// If no dictLevel is provided and the dictionary does not exist log error and exit
+				log.Fatalf("cannot read dictionary file %q: %v", *flagDict, err)
+			}
+		} else {
+			dictPath = *flagDict
+		}
 	}
 
 	go func() {
@@ -100,8 +132,8 @@ func main() {
 			// Try the default. Best effort only.
 			var bin string
 			cfg := new(packages.Config)
-			// Note that we do not set GO111MODULE here in order to respect any GO111MODULE 
-			// setting by the user as we are finding dependencies. See modules support 
+			// Note that we do not set GO111MODULE here in order to respect any GO111MODULE
+			// setting by the user as we are finding dependencies. See modules support
 			// comments in go-fuzz-build/main.go for more details.
 			cfg.Env = os.Environ()
 			pkgs, err := packages.Load(cfg, ".")
