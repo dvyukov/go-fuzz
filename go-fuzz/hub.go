@@ -6,6 +6,8 @@ package main
 import (
 	"fmt"
 	"log"
+	"io/ioutil"
+	"strings"
 	"net/rpc"
 	"path/filepath"
 	"sync"
@@ -114,6 +116,23 @@ func newHub(metadata MetaData) *Hub {
 			ro.strLits = append(ro.strLits, []byte(lit.Val))
 		} else {
 			ro.intLits = append(ro.intLits, []byte(lit.Val))
+		}
+	}
+	if *flagDict != "" {
+		ro.strLits = nil // Discard existing tokens
+		fileName := *flagDict
+		dictData, err := ioutil.ReadFile(fileName)
+		if err != nil {
+			log.Fatalf("could not read tokens from %q: %v", fileName, err)
+		}
+		textData := string(dictData)
+		splits := strings.Split(textData,"\n")
+		for S := range splits {
+			token := splits[S]
+			if token == "\n" || token == "" {
+				continue // skip blanks
+			}
+			ro.strLits = append(ro.strLits, []byte(token))
 		}
 	}
 	hub.ro.Store(ro)
