@@ -190,6 +190,16 @@ func main() {
 	zipFile("cover.exe", coverBin)
 	zipFile("sonar.exe", sonarBin)
 	zipFile("metadata", metaData)
+
+	// Add version file.
+	w, err := zipw.Create("version")
+	if err != nil {
+		c.failf("failed to create zip file: %v", err)
+	}
+	if _, err := w.Write([]byte(Version)); err != nil {
+		c.failf("failed to write version to zip file: %v", err)
+	}
+
 	if err := zipw.Close(); err != nil {
 		c.failf("failed to close zip file: %v", err)
 	}

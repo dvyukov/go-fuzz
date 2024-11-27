@@ -20,6 +20,7 @@ import (
 
 	. "github.com/dvyukov/go-fuzz/go-fuzz-defs"
 	. "github.com/dvyukov/go-fuzz/internal/go-fuzz-types"
+	types "github.com/dvyukov/go-fuzz/internal/go-fuzz-types"
 )
 
 type execType byte
@@ -78,16 +79,34 @@ func workerMain() {
 	}
 	var coverBin, sonarBin string
 	var metadata MetaData
+	var foundVersion bool
 	for _, zipf := range zipr.File {
 		r, err := zipf.Open()
 		if err != nil {
 			log.Fatalf("failed to unzip file from input archive: %v", err)
 		}
-		if zipf.Name == "metadata" {
+		switch zipf.Name {
+		case "metadata":
 			if err := json.NewDecoder(r).Decode(&metadata); err != nil {
 				log.Fatalf("failed to decode metadata: %v", err)
 			}
-		} else {
+		case "version":
+			foundVersion = true
+			v, err := ioutil.ReadAll(r)
+			if err != nil {
+				log.Fatalf("failed to read version: %v", err)
+			}
+			if types.Version != string(v) {
+				log.Fatalf(`
+Version skew detected.
+
+The zip file %v was built with go-fuzz-build version %q.
+This go-fuzz uses version %q.
+Please ensure that go-fuzz and go-fuzz-build have the
+same version, and then re-build the zip file.
+`[1:], *flagBin, string(v), types.Version)
+			}
+		default:
 			f, err := ioutil.TempFile("", "go-fuzz")
 			if err != nil {
 				log.Fatalf("failed to create temp file: %v", err)
@@ -116,6 +135,14 @@ func workerMain() {
 	zipr.Close()
 	if coverBin == "" || sonarBin == "" || len(metadata.Blocks) == 0 || len(metadata.Funcs) == 0 {
 		log.Fatalf("bad input archive: missing file")
+	}
+	if !foundVersion {
+		log.Fatalf(`
+Version skew detected.
+
+The zip file %v was built with an old version of go-fuzz-build.
+Please ensure that go-fuzz and go-fuzz-build have the
+same version, and then re-build the zip file.`[1:], *flagBin)
 	}
 
 	cleanup := func() {
